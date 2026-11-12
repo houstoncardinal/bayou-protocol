@@ -1,0 +1,15 @@
+{
+  "name": "bayou-protocol",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bayou Protocol: a browser tactical first-person shooter (three.js / React Three Fiber).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

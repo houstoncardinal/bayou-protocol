@@ -1,0 +1,847 @@
+{
+ "sounds": {
+  "weapon.rifle.close": {
+   "files": [
+    "weapons/rifle/close_01",
+    "weapons/rifle/close_02",
+    "weapons/rifle/close_03",
+    "weapons/rifle/close_04",
+    "weapons/rifle/close_05",
+    "weapons/rifle/close_06",
+    "weapons/rifle/close_07",
+    "weapons/rifle/close_08",
+    "weapons/rifle/close_09",
+    "weapons/rifle/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.rifle.far": {
+   "files": [
+    "weapons/rifle/far_1",
+    "weapons/rifle/far_2",
+    "weapons/rifle/far_3",
+    "weapons/rifle/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.rifle.tail.out": {
+   "files": [
+    "weapons/rifle/tail_1",
+    "weapons/rifle/tail_2",
+    "weapons/rifle/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.rifle": {
+   "files": [
+    "weapons/rifle/suppressed_1",
+    "weapons/rifle/suppressed_2",
+    "weapons/rifle/suppressed_3",
+    "weapons/rifle/suppressed_4",
+    "weapons/rifle/suppressed_5",
+    "weapons/rifle/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.rifle": {
+   "files": [
+    "reload/rifle_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.hk416.close": {
+   "files": [
+    "weapons/hk416/close_01",
+    "weapons/hk416/close_02",
+    "weapons/hk416/close_03",
+    "weapons/hk416/close_04",
+    "weapons/hk416/close_05",
+    "weapons/hk416/close_06",
+    "weapons/hk416/close_07",
+    "weapons/hk416/close_08",
+    "weapons/hk416/close_09",
+    "weapons/hk416/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.hk416.far": {
+   "files": [
+    "weapons/hk416/far_1",
+    "weapons/hk416/far_2",
+    "weapons/hk416/far_3",
+    "weapons/hk416/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.hk416.tail.out": {
+   "files": [
+    "weapons/hk416/tail_1",
+    "weapons/hk416/tail_2",
+    "weapons/hk416/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.hk416": {
+   "files": [
+    "weapons/hk416/suppressed_1",
+    "weapons/hk416/suppressed_2",
+    "weapons/hk416/suppressed_3",
+    "weapons/hk416/suppressed_4",
+    "weapons/hk416/suppressed_5",
+    "weapons/hk416/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.hk416": {
+   "files": [
+    "reload/hk416_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.m16.close": {
+   "files": [
+    "weapons/m16/close_01",
+    "weapons/m16/close_02",
+    "weapons/m16/close_03",
+    "weapons/m16/close_04",
+    "weapons/m16/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.m16.far": {
+   "files": [
+    "weapons/m16/far_1",
+    "weapons/m16/far_2",
+    "weapons/m16/far_3",
+    "weapons/m16/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.m16": {
+   "files": [
+    "weapons/m16/suppressed_1",
+    "weapons/m16/suppressed_2",
+    "weapons/m16/suppressed_3",
+    "weapons/m16/suppressed_4",
+    "weapons/m16/suppressed_5",
+    "weapons/m16/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.m16": {
+   "files": [
+    "reload/m16_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.sentinel.close": {
+   "files": [
+    "weapons/sentinel/close_01",
+    "weapons/sentinel/close_02",
+    "weapons/sentinel/close_03",
+    "weapons/sentinel/close_04",
+    "weapons/sentinel/close_05",
+    "weapons/sentinel/close_06",
+    "weapons/sentinel/close_07",
+    "weapons/sentinel/close_08",
+    "weapons/sentinel/close_09",
+    "weapons/sentinel/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.sentinel.far": {
+   "files": [
+    "weapons/sentinel/far_1",
+    "weapons/sentinel/far_2",
+    "weapons/sentinel/far_3",
+    "weapons/sentinel/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.sentinel.tail.out": {
+   "files": [
+    "weapons/sentinel/tail_1",
+    "weapons/sentinel/tail_2",
+    "weapons/sentinel/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.sentinel": {
+   "files": [
+    "weapons/sentinel/suppressed_1",
+    "weapons/sentinel/suppressed_2",
+    "weapons/sentinel/suppressed_3",
+    "weapons/sentinel/suppressed_4",
+    "weapons/sentinel/suppressed_5",
+    "weapons/sentinel/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.sentinel": {
+   "files": [
+    "reload/sentinel_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.ak47.close": {
+   "files": [
+    "weapons/ak47/close_01",
+    "weapons/ak47/close_02",
+    "weapons/ak47/close_03",
+    "weapons/ak47/close_04",
+    "weapons/ak47/close_05",
+    "weapons/ak47/close_06",
+    "weapons/ak47/close_07",
+    "weapons/ak47/close_08",
+    "weapons/ak47/close_09",
+    "weapons/ak47/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.ak47.far": {
+   "files": [
+    "weapons/ak47/far_1",
+    "weapons/ak47/far_2",
+    "weapons/ak47/far_3",
+    "weapons/ak47/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.ak47.tail.out": {
+   "files": [
+    "weapons/ak47/tail_1",
+    "weapons/ak47/tail_2",
+    "weapons/ak47/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.ak47": {
+   "files": [
+    "weapons/ak47/suppressed_1",
+    "weapons/ak47/suppressed_2",
+    "weapons/ak47/suppressed_3",
+    "weapons/ak47/suppressed_4",
+    "weapons/ak47/suppressed_5",
+    "weapons/ak47/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.ak47": {
+   "files": [
+    "reload/ak47_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.midas.close": {
+   "files": [
+    "weapons/midas/close_01",
+    "weapons/midas/close_02",
+    "weapons/midas/close_03",
+    "weapons/midas/close_04",
+    "weapons/midas/close_05",
+    "weapons/midas/close_06",
+    "weapons/midas/close_07",
+    "weapons/midas/close_08",
+    "weapons/midas/close_09",
+    "weapons/midas/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.midas.far": {
+   "files": [
+    "weapons/midas/far_1",
+    "weapons/midas/far_2",
+    "weapons/midas/far_3",
+    "weapons/midas/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.midas.tail.out": {
+   "files": [
+    "weapons/midas/tail_1",
+    "weapons/midas/tail_2",
+    "weapons/midas/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.midas": {
+   "files": [
+    "weapons/midas/suppressed_1",
+    "weapons/midas/suppressed_2",
+    "weapons/midas/suppressed_3",
+    "weapons/midas/suppressed_4",
+    "weapons/midas/suppressed_5",
+    "weapons/midas/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.midas": {
+   "files": [
+    "reload/midas_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.rampart.close": {
+   "files": [
+    "weapons/rampart/close_01",
+    "weapons/rampart/close_02",
+    "weapons/rampart/close_03",
+    "weapons/rampart/close_04",
+    "weapons/rampart/close_05",
+    "weapons/rampart/close_06",
+    "weapons/rampart/close_07",
+    "weapons/rampart/close_08",
+    "weapons/rampart/close_09",
+    "weapons/rampart/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.rampart.far": {
+   "files": [
+    "weapons/rampart/far_1",
+    "weapons/rampart/far_2",
+    "weapons/rampart/far_3",
+    "weapons/rampart/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.rampart.tail.out": {
+   "files": [
+    "weapons/rampart/tail_1",
+    "weapons/rampart/tail_2",
+    "weapons/rampart/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.rampart": {
+   "files": [
+    "weapons/rampart/suppressed_1",
+    "weapons/rampart/suppressed_2",
+    "weapons/rampart/suppressed_3",
+    "weapons/rampart/suppressed_4",
+    "weapons/rampart/suppressed_5",
+    "weapons/rampart/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.rampart": {
+   "files": [
+    "reload/rampart_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.bastion.close": {
+   "files": [
+    "weapons/bastion/close_01",
+    "weapons/bastion/close_02",
+    "weapons/bastion/close_03",
+    "weapons/bastion/close_04",
+    "weapons/bastion/close_05",
+    "weapons/bastion/close_06",
+    "weapons/bastion/close_07",
+    "weapons/bastion/close_08",
+    "weapons/bastion/close_09",
+    "weapons/bastion/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.bastion.far": {
+   "files": [
+    "weapons/bastion/far_1",
+    "weapons/bastion/far_2",
+    "weapons/bastion/far_3",
+    "weapons/bastion/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.bastion.tail.out": {
+   "files": [
+    "weapons/bastion/tail_1",
+    "weapons/bastion/tail_2",
+    "weapons/bastion/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.bastion": {
+   "files": [
+    "weapons/bastion/suppressed_1",
+    "weapons/bastion/suppressed_2",
+    "weapons/bastion/suppressed_3",
+    "weapons/bastion/suppressed_4",
+    "weapons/bastion/suppressed_5",
+    "weapons/bastion/suppressed_6"
+   ],
+   "gain": 1.1,
+   "source": "pack"
+  },
+  "reload.bastion": {
+   "files": [
+    "reload/bastion_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.sniper.close": {
+   "files": [
+    "weapons/sniper/close_01",
+    "weapons/sniper/close_02",
+    "weapons/sniper/close_03",
+    "weapons/sniper/close_04",
+    "weapons/sniper/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.sniper.far": {
+   "files": [
+    "weapons/sniper/far_1",
+    "weapons/sniper/far_2",
+    "weapons/sniper/far_3",
+    "weapons/sniper/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.sniper": {
+   "files": [
+    "weapons/sniper/suppressed_1",
+    "weapons/sniper/suppressed_2",
+    "weapons/sniper/suppressed_3",
+    "weapons/sniper/suppressed_4",
+    "weapons/sniper/suppressed_5",
+    "weapons/sniper/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.sniper.cycle": {
+   "files": [
+    "weapons/sniper/cycle_1"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "reload.sniper": {
+   "files": [
+    "reload/sniper_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.phantom.close": {
+   "files": [
+    "weapons/phantom/close_01",
+    "weapons/phantom/close_02",
+    "weapons/phantom/close_03",
+    "weapons/phantom/close_04"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.phantom.far": {
+   "files": [
+    "weapons/phantom/far_1",
+    "weapons/phantom/far_2",
+    "weapons/phantom/far_3",
+    "weapons/phantom/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.phantom": {
+   "files": [
+    "weapons/phantom/suppressed_1",
+    "weapons/phantom/suppressed_2",
+    "weapons/phantom/suppressed_3",
+    "weapons/phantom/suppressed_4",
+    "weapons/phantom/suppressed_5",
+    "weapons/phantom/suppressed_6"
+   ],
+   "gain": 1.1,
+   "source": "pack"
+  },
+  "weapon.phantom.cycle": {
+   "files": [
+    "weapons/phantom/cycle_1"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "reload.phantom": {
+   "files": [
+    "reload/phantom_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.br.close": {
+   "files": [
+    "weapons/br/close_01",
+    "weapons/br/close_02",
+    "weapons/br/close_03",
+    "weapons/br/close_04",
+    "weapons/br/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.br.far": {
+   "files": [
+    "weapons/br/far_1",
+    "weapons/br/far_2",
+    "weapons/br/far_3",
+    "weapons/br/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.br": {
+   "files": [
+    "weapons/br/suppressed_1",
+    "weapons/br/suppressed_2",
+    "weapons/br/suppressed_3",
+    "weapons/br/suppressed_4",
+    "weapons/br/suppressed_5",
+    "weapons/br/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.br": {
+   "files": [
+    "reload/br_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.lmg.close": {
+   "files": [
+    "weapons/lmg/close_01",
+    "weapons/lmg/close_02",
+    "weapons/lmg/close_03",
+    "weapons/lmg/close_04",
+    "weapons/lmg/close_05",
+    "weapons/lmg/close_06",
+    "weapons/lmg/close_07",
+    "weapons/lmg/close_08",
+    "weapons/lmg/close_09",
+    "weapons/lmg/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.lmg.far": {
+   "files": [
+    "weapons/lmg/far_1",
+    "weapons/lmg/far_2",
+    "weapons/lmg/far_3",
+    "weapons/lmg/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.lmg.tail.out": {
+   "files": [
+    "weapons/lmg/tail_1",
+    "weapons/lmg/tail_2",
+    "weapons/lmg/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.lmg": {
+   "files": [
+    "weapons/lmg/suppressed_1",
+    "weapons/lmg/suppressed_2",
+    "weapons/lmg/suppressed_3",
+    "weapons/lmg/suppressed_4",
+    "weapons/lmg/suppressed_5",
+    "weapons/lmg/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.lmg": {
+   "files": [
+    "reload/lmg_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.pistol.close": {
+   "files": [
+    "weapons/pistol/close_01",
+    "weapons/pistol/close_02",
+    "weapons/pistol/close_03",
+    "weapons/pistol/close_04",
+    "weapons/pistol/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.pistol.far": {
+   "files": [
+    "weapons/pistol/far_1",
+    "weapons/pistol/far_2",
+    "weapons/pistol/far_3",
+    "weapons/pistol/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.pistol": {
+   "files": [
+    "weapons/pistol/suppressed_1",
+    "weapons/pistol/suppressed_2",
+    "weapons/pistol/suppressed_3",
+    "weapons/pistol/suppressed_4",
+    "weapons/pistol/suppressed_5",
+    "weapons/pistol/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.pistol": {
+   "files": [
+    "reload/pistol_1",
+    "reload/pistol_2"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.warden.close": {
+   "files": [
+    "weapons/warden/close_01",
+    "weapons/warden/close_02",
+    "weapons/warden/close_03",
+    "weapons/warden/close_04",
+    "weapons/warden/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.warden.far": {
+   "files": [
+    "weapons/warden/far_1",
+    "weapons/warden/far_2",
+    "weapons/warden/far_3",
+    "weapons/warden/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.warden": {
+   "files": [
+    "weapons/warden/suppressed_1",
+    "weapons/warden/suppressed_2",
+    "weapons/warden/suppressed_3",
+    "weapons/warden/suppressed_4",
+    "weapons/warden/suppressed_5",
+    "weapons/warden/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.warden": {
+   "files": [
+    "reload/warden_1",
+    "reload/warden_2"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.smg.close": {
+   "files": [
+    "weapons/smg/close_01",
+    "weapons/smg/close_02",
+    "weapons/smg/close_03",
+    "weapons/smg/close_04",
+    "weapons/smg/close_05",
+    "weapons/smg/close_06",
+    "weapons/smg/close_07",
+    "weapons/smg/close_08",
+    "weapons/smg/close_09",
+    "weapons/smg/close_10"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.smg.far": {
+   "files": [
+    "weapons/smg/far_1",
+    "weapons/smg/far_2",
+    "weapons/smg/far_3",
+    "weapons/smg/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.smg.tail.out": {
+   "files": [
+    "weapons/smg/tail_1",
+    "weapons/smg/tail_2",
+    "weapons/smg/tail_3"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.suppressed.smg": {
+   "files": [
+    "weapons/smg/suppressed_1",
+    "weapons/smg/suppressed_2",
+    "weapons/smg/suppressed_3",
+    "weapons/smg/suppressed_4",
+    "weapons/smg/suppressed_5",
+    "weapons/smg/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.smg": {
+   "files": [
+    "reload/smg_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.deagle.close": {
+   "files": [
+    "weapons/deagle/close_01",
+    "weapons/deagle/close_02",
+    "weapons/deagle/close_03",
+    "weapons/deagle/close_04",
+    "weapons/deagle/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.deagle.far": {
+   "files": [
+    "weapons/deagle/far_1",
+    "weapons/deagle/far_2",
+    "weapons/deagle/far_3",
+    "weapons/deagle/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.deagle": {
+   "files": [
+    "weapons/deagle/suppressed_1",
+    "weapons/deagle/suppressed_2",
+    "weapons/deagle/suppressed_3",
+    "weapons/deagle/suppressed_4",
+    "weapons/deagle/suppressed_5",
+    "weapons/deagle/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.deagle": {
+   "files": [
+    "reload/deagle_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "weapon.shotgun.close": {
+   "files": [
+    "weapons/shotgun/close_01",
+    "weapons/shotgun/close_02",
+    "weapons/shotgun/close_03",
+    "weapons/shotgun/close_04",
+    "weapons/shotgun/close_05"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.shotgun.far": {
+   "files": [
+    "weapons/shotgun/far_1",
+    "weapons/shotgun/far_2",
+    "weapons/shotgun/far_3",
+    "weapons/shotgun/far_4"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "weapon.suppressed.shotgun": {
+   "files": [
+    "weapons/shotgun/suppressed_1",
+    "weapons/shotgun/suppressed_2",
+    "weapons/shotgun/suppressed_3",
+    "weapons/shotgun/suppressed_4",
+    "weapons/shotgun/suppressed_5",
+    "weapons/shotgun/suppressed_6"
+   ],
+   "gain": 1,
+   "source": "pack"
+  },
+  "reload.shotgun": {
+   "files": [
+    "reload/shotgun_1"
+   ],
+   "gain": 0.85,
+   "source": "pack"
+  },
+  "ui.buy": {
+   "files": [
+    "ui/buy_1",
+    "ui/buy_2",
+    "ui/buy_3",
+    "ui/buy_4",
+    "ui/buy_5"
+   ],
+   "gain": 0.7,
+   "source": "pack"
+  },
+  "dryfire": {
+   "files": [
+    "weapons/dryfire_1"
+   ],
+   "gain": 0.8,
+   "source": "pack"
+  }
+ },
+ "ext": [
+  "ogg",
+  "m4a"
+ ]
+}
