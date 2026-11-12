@@ -83,6 +83,13 @@ function __bodyRig(s) {
 function __bodyFeet(s, v, K, dt) {
   const r = __bodyRig(s);
   if (!r.ok) return;
+  // far away or not drawn (your own body): feet are not worth the work; ease the pelvis back
+  const cam = typeof __R3F < 'u' && __R3F && __R3F.camera;
+  if (!K.visible || (cam && Math.hypot(cam.position.x - K.position.x, cam.position.z - K.position.z) > 32)) {
+    r.drop *= 0.8;
+    s.position.y = r.baseY + r.drop;
+    return;
+  }
   const url = s.userData.bpChar,
     ankleH = (__CHAR.ankle.get(url) ?? 0.055) * kO,
     rootY = K.position.y,
@@ -153,12 +160,14 @@ function __hbBones(s) {
   s.traverse((o) => o.isBone && o.name.startsWith('mixamorig') && (b[o.name.slice(9)] = o));
   return (s.userData.__hbBones = b);
 }
+// bone positions straight from matrixWorld (the caller updates the skeleton once per frame)
+const __wp = (bone, out) => out.setFromMatrixPosition(bone.matrixWorld);
 function __hbEnd(B, name, out) {
-  if (B[name]) return B[name].getWorldPosition(out);
+  if (B[name]) return __wp(B[name], out);
   const e = __HB_EXT[name];
   if (!e || !B[e[0]] || !B[e[1]]) return null;
-  const p = B[e[1]].getWorldPosition(out),
-    q = B[e[0]].getWorldPosition(__bt.e);
+  const p = __wp(B[e[1]], out),
+    q = __wp(B[e[0]], __bt.e);
   return p.addScaledVector(q.sub(p).negate(), e[2]);
 }
 const __segDist = (p, a, b) => {
@@ -175,8 +184,9 @@ function __hbRadii(s) {
   __HB_SEGS.forEach((g, i) => {
     for (const [n, bone] of Object.entries(B)) if (g[4].some((p) => n === p || (n.startsWith(p) && (p === 'LeftHand' || p === 'RightHand' || p.endsWith('Toe') || p === 'HeadTop')))) owner.has(bone) || owner.set(bone, i);
   });
+  s.updateMatrixWorld(!0);
   const ends = __HB_SEGS.map((g) => {
-      const a = B[g[1]] ? B[g[1]].getWorldPosition(new U()) : null,
+      const a = B[g[1]] ? __wp(B[g[1]], new U()) : null,
         b = __hbEnd(B, g[2], new U());
       return a && b ? [a, b] : null;
     }),
@@ -184,7 +194,7 @@ function __hbRadii(s) {
     v = new U();
   s.updateMatrixWorld(!0);
   s.traverse((o) => {
-    if (!o.isSkinnedMesh) return;
+    if (!o.isSkinnedMesh || o.userData.lod) return;
     o.skeleton.update();
     const p = o.geometry.attributes.position,
       si = o.geometry.attributes.skinIndex,
@@ -223,10 +233,11 @@ function __hbCapture(s, v, K) {
   const a = new U(),
     b = new U();
   let R = 0;
+  s.updateMatrixWorld(!0);
   __HB_SEGS.forEach((g, i) => {
     rec.ok[i] = 0;
     if (!B[g[1]] || !__hbEnd(B, g[2], b)) return;
-    B[g[1]].getWorldPosition(a);
+    __wp(B[g[1]], a);
     const r = radii[i],
       L = a.distanceTo(b);
     if (L > 1e-4 && (g[5][0] || g[5][1])) {

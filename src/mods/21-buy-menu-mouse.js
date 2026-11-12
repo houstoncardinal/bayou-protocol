@@ -5,11 +5,20 @@
 // game takes the mouse back when the menu closes. Losing the lock here does not pause the match:
 // the core's pointerlockchange handler skips the pause while the buy menu is open.
 if (typeof document < 'u') {
-  let wasOpen = !1;
+  let wasOpen = !1,
+    pending = !1;
+  // Browsers only grant mouse capture during a click or key press. When the menu closes on its own (buy time
+  // ran out) there is none: asking anyway fails, and repeated failures used to switch on the free-aim
+  // fallback (with its faster edge-turning). Instead the capture waits for the next click.
   const relock = () => {
     const z = Zw.getState();
     if (z.screen !== 'playing' || z.paused || z.buyOpen || document.pointerLockElement) return;
     if (WI.kind === 'pad' || M9()) return;
+    if (navigator.userActivation && !navigator.userActivation.isActive) {
+      pending = !0;
+      return;
+    }
+    pending = !1;
     try {
       const c = document.querySelector('.fps-root canvas') || document.querySelector('canvas'),
         r = c && c.requestPointerLock && c.requestPointerLock();
@@ -34,6 +43,13 @@ if (typeof document < 'u') {
       }, 0);
     } else relock();
   });
+  document.addEventListener(
+    'mousedown',
+    () => {
+      pending && !Zw.getState().buyOpen && relock();
+    },
+    !0,
+  );
   // clicking empty space around the panel closes it, like a modal
   document.addEventListener(
     'mousedown',

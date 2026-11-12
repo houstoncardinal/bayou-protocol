@@ -64,9 +64,13 @@ src/
                                shell-by-shell reload, slide lock, physics casings, inspect key (X)
     40-body.js                 Foot IK on stairs and slopes; hitboxes built from each character's skeleton
     41-world-collision.js      Colliders for placed models and cacti that had none
+    42-smooth.js               Viewmodel memory leak fix, background shader compile, meshopt decoder,
+                               character and third-person gun levels of detail, menu preloading, FPS readout
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
+  optimize-models.mjs        meshopt-compresses every GLB under public/game (run after adding models)
+  inspect-glb.mjs            What takes the space in a GLB (textures, geometry, animation)
   optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
   build-gunshots.mjs         Builds all weapon sounds from assets-src/soundfx (slices shots, layers, encodes)
   fetch-freesound.mjs        Downloads CC0 Freesound effects for every sound key (needs a free API key)
@@ -154,7 +158,10 @@ Keep two copies of every heavy asset:
     `audio/manifest.json`. Loops (ambience) at 96 kbps.
   - `textures/` 1-2k JPEG/WebP; normal maps stay PNG or WebP lossless.
 
-Optimise a model (resize textures, WebP, dedupe) with gltf-transform:
+After adding or replacing any model, run `node tools/optimize-models.mjs`: it meshopt-compresses geometry
+and animation (about 40% smaller; the game registers the decoder) and skips files already done.
+
+Optimise a model's textures (resize, WebP, dedupe) with gltf-transform:
 
 ```bash
 npx @gltf-transform/cli resize assets-src/models/foo.glb /tmp/a.glb --width 1024 --height 1024

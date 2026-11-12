@@ -8,17 +8,27 @@
 // - Backdrop trees outside the walls do not cast shadows (the sun never puts them between it and the play area).
 // - Frame statistics for testing and tuning: window.__perf() (draw calls, triangles, lights, objects for the
 //   whole last frame) and window.__perfBreakdown('tris' | 'meshes').
-function __instanceStatic(g) {
+function __instanceStatic(g, m) {
   g.updateMatrixWorld(!0);
   const inv = new _A().copy(g.matrixWorld).invert(),
-    groups = new Map();
-  g.traverse((o) => {
-    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material)) return;
-    for (let p = o.parent; p && p !== g; p = p.parent) if (p.type === 'LOD') return;
-    const k = o.geometry.uuid + '|' + o.material.uuid;
-    groups.has(k) || groups.set(k, []);
-    groups.get(k).push(o);
-  });
+    groups = new Map(),
+    drop = [];
+  // plants outside the walls are only ever seen from 15+ m: their spines go and their geometry is
+  // simplified once the simplifier has made a lighter version (42-smooth.js)
+  const outside = (c) => m && (c.position.x < -2 || c.position.z < -2 || c.position.x > m.w + 2 || c.position.z > m.d + 2);
+  for (const c of g.children) {
+    if (c.type === 'LOD') continue;
+    const far = outside(c);
+    c.traverse((o) => {
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material)) return;
+      for (let p = o.parent; p && p !== g; p = p.parent) if (p.type === 'LOD') return;
+      if (far && /spine/i.test(o.name + ' ' + (o.material.name || ''))) return void drop.push(o);
+      const k = o.geometry.uuid + '|' + o.material.uuid + '|' + (far ? 'far' : 'near');
+      groups.has(k) || groups.set(k, []);
+      groups.get(k).push(o);
+    });
+  }
+  for (const o of drop) o.removeFromParent();
   let merged = 0;
   for (const list of groups.values()) {
     if (list.length < 2) continue;
@@ -28,6 +38,7 @@ function __instanceStatic(g) {
     im.receiveShadow = list[0].receiveShadow;
     im.name = 'instanced:' + (list[0].name || list[0].material.name || 'mesh');
     im.computeBoundingSphere();
+    im.userData.farVeg = /\|far$/.test([...groups.entries()].find((e) => e[1] === list)[0]);
     g.add(im);
     for (const o of list) o.removeFromParent();
     merged += list.length;
@@ -47,7 +58,7 @@ function __instanceStatic(g) {
       // backdrop trees outside the walls are never between the sun and the play area: no shadow pass
       for (const o of g.children)
         if (o.type === 'LOD' && (o.position.x < -2 || o.position.z < -2 || o.position.x > m.w + 2 || o.position.z > m.d + 2)) o.traverse((c) => (c.castShadow = !1));
-      __instanceStatic(g);
+      __instanceStatic(g, m);
     } catch (e) {
       console.warn('[perf] vegetation instancing', e);
     }
@@ -125,3 +136,5 @@ typeof window < 'u' &&
   });
 // every map's data (tests and tools): [{ id, m }]
 typeof window < 'u' && (window.__bpMaps = () => Object.keys(XE).map((id) => ({ id, m: vT(id) })));
+// shader programs in use (tests): one key per compiled program
+typeof window < 'u' && (window.__progs = () => (__R3F && __R3F.gl.info.programs ? __R3F.gl.info.programs.map((p) => p.name + ':' + p.cacheKey.length + ':' + p.cacheKey.slice(0, 160).replace(/,/g, ' ')) : []));

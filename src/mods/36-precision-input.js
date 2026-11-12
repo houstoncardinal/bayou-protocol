@@ -48,16 +48,45 @@ zZ = function () {
     return coreSave.apply(this, arguments);
   };
 }
-// raw input: record whether the browser granted unadjusted movement
+// Raw input on every mouse capture. The game takes the mouse in several places: deploying and resuming
+// from Esc (the core, which asked for raw input), closing the buy menu (21-buy-menu-mouse.js) and the
+// free-aim fallback (01-mouse-capture.js), which did not. After buying a gun the mouse was therefore
+// captured with the operating system's pointer acceleration on, so the same hand movement turned further
+// the faster you moved, and pausing with Esc "fixed" it by capturing again with raw input. Every capture
+// now goes through here: raw input when the setting is on and the browser supports it; if the browser
+// refuses raw input, every capture falls back the same way, so the turn rate never changes mid-match.
 if (typeof Element < 'u' && Element.prototype.requestPointerLock) {
   const coreLock = Element.prototype.requestPointerLock;
   Element.prototype.requestPointerLock = function (opts) {
-    const r = coreLock.apply(this, arguments);
-    if (opts && opts.unadjustedMovement) {
-      if (r && typeof r.then == 'function') r.then(() => (__LOOK.raw = !0)).catch(() => (__LOOK.raw = !1));
-      else __LOOK.raw = null;
+    const want = eA.settings.rawInput !== !1 && __LOOK.rawOk !== !1,
+      o = want ? { ...(opts || {}), unadjustedMovement: !0 } : void 0;
+    let r;
+    try {
+      r = coreLock.call(this, o);
+    } catch (e) {
+      r = null;
     }
-    return r;
+    if (!r || typeof r.then != 'function') {
+      __LOOK.raw = null;
+      return r;
+    }
+    const el = this;
+    return r.then(
+      () => {
+        __LOOK.raw = !!o;
+        __LOOK.locks = (__LOOK.locks || 0) + 1;
+      },
+      (err) => {
+        // raw input not supported here: remember it, and lock the plain way (every time from now on)
+        if (o && err && err.name === 'NotSupportedError') {
+          __LOOK.rawOk = !1;
+          __LOOK.raw = !1;
+          const r2 = coreLock.call(el);
+          return r2 && r2.then ? r2.then(() => (__LOOK.locks = (__LOOK.locks || 0) + 1)) : r2;
+        }
+        throw err;
+      },
+    );
   };
 }
 // ---------- settings rows (under Mouse smoothing) ----------
@@ -133,4 +162,6 @@ typeof window < 'u' &&
   (window.__look = {
     // degrees turned per mouse count for the current weapon and aim state
     degPerCount: () => (kq * eA.settings.mouseSens * zZ() * 180) / Math.PI,
+    raw: () => ({ granted: __LOOK.raw, supported: __LOOK.rawOk !== !1, locks: __LOOK.locks || 0 }),
   });
+typeof window < 'u' && (window.__nlState = () => ({ freeAim: __NL.on, fails: __NL.fails.length }));
