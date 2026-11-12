@@ -56,6 +56,7 @@ src/
     28-fp-arms.js              Shared first-person arm kit (switched off; original rigs are in use)
     29-audio-samples.js        Recorded-sample sound engine (falls back to the synth per sound)
     30-frag-grenade.js         Frag grenade model in hand and in flight (CC BY-ND, unmodified)
+    31-preset-operators.js     Five preset CT and five preset T operators only; Profile screen holds the callsign
 tools/
   build-gunshots.mjs         Builds all weapon sounds from assets-src/soundfx (slices shots, layers, encodes)
   fetch-freesound.mjs        Downloads CC0 Freesound effects for every sound key (needs a free API key)
