@@ -1,0 +1,229 @@
+{
+  "built": "2026-11-12T20:12:33.237Z",
+  "characters": {
+    "counter-terrorists": [
+      {
+        "fbx": "Ch15_nonPBR.fbx",
+        "file": "counter-terrorists/Ch15_nonPBR.glb",
+        "tris": 21999,
+        "trisSource": 46297,
+        "bytes": 1402208,
+        "sourceBytes": 115014208
+      },
+      {
+        "fbx": "Ch35_nonPBR.fbx",
+        "file": "counter-terrorists/Ch35_nonPBR.glb",
+        "tris": 22131,
+        "trisSource": 41171,
+        "bytes": 1300752,
+        "sourceBytes": 142437824
+      },
+      {
+        "fbx": "Ch49_nonPBR.fbx",
+        "file": "counter-terrorists/Ch49_nonPBR.glb",
+        "tris": 22234,
+        "trisSource": 54662,
+        "bytes": 1101428,
+        "sourceBytes": 117142864
+      },
+      {
+        "fbx": "Swat.fbx",
+        "file": "counter-terrorists/Swat.glb",
+        "tris": 19450,
+        "trisSource": 19450,
+        "bytes": 795328,
+        "sourceBytes": 5674912
+      }
+    ],
+    "terrorists": [
+      {
+        "fbx": "Ch10_nonPBR.fbx",
+        "file": "terrorists/Ch10_nonPBR.glb",
+        "tris": 21998,
+        "trisSource": 49584,
+        "bytes": 1159716,
+        "sourceBytes": 110587680
+      },
+      {
+        "fbx": "Ch45_nonPBR.fbx",
+        "file": "terrorists/Ch45_nonPBR.glb",
+        "tris": 21999,
+        "trisSource": 29011,
+        "bytes": 789808,
+        "sourceBytes": 16610864
+      },
+      {
+        "fbx": "Warzombie F Pedroso.fbx",
+        "file": "terrorists/Warzombie_F_Pedroso.glb",
+        "tris": 14934,
+        "trisSource": 14934,
+        "bytes": 744708,
+        "sourceBytes": 13774720
+      },
+      {
+        "fbx": "copzombie_l_actisdato.fbx",
+        "file": "terrorists/copzombie_l_actisdato.glb",
+        "tris": 9845,
+        "trisSource": 9845,
+        "bytes": 715616,
+        "sourceBytes": 22052544
+      }
+    ]
+  },
+  "animations": {
+    "file": "animations.glb",
+    "clips": [
+      {
+        "name": "ClimbingLadder",
+        "source": "Climbing Ladder.fbx",
+        "duration": 0.75,
+        "speed": 0.035,
+        "drift": {
+          "x": 0.005,
+          "z": 0.035
+        }
+      },
+      {
+        "name": "CrouchWalking",
+        "source": "Crouch Walking.fbx",
+        "duration": 1.167,
+        "speed": 1.137,
+        "drift": {
+          "x": 0,
+          "z": 1.137
+        }
+      },
+      {
+        "name": "Dying",
+        "source": "Dying.fbx",
+        "duration": 4.375,
+        "speed": 0.076,
+        "drift": {
+          "x": -0.075,
+          "z": 0.011
+        }
+      },
+      {
+        "name": "FiringRifle",
+        "source": "Firing Rifle.fbx",
+        "duration": 1.333,
+        "speed": 0.005,
+        "drift": {
+          "x": 0.002,
+          "z": 0.005
+        }
+      },
+      {
+        "name": "JumpUp",
+        "source": "Jump Up.fbx",
+        "duration": 0.5,
+        "speed": 0.007,
+        "drift": {
+          "x": -0.007,
+          "z": 0.001
+        }
+      },
+      {
+        "name": "JumpingDown",
+        "source": "Jumping Down.fbx",
+        "duration": 2.833,
+        "speed": 0.562,
+        "drift": {
+          "x": 0.018,
+          "z": 0.562
+        }
+      },
+      {
+        "name": "LeftStrafingJump",
+        "source": "Left Strafing Jump.fbx",
+        "duration": 3.375,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "PistolKneelingIdle",
+        "source": "Pistol Kneeling Idle.fbx",
+        "duration": 3.792,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "RifleIdle",
+        "source": "Rifle Idle.fbx",
+        "duration": 8.542,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "RifleRunToStop",
+        "source": "Rifle Run To Stop.fbx",
+        "duration": 1.458,
+        "speed": 1.856,
+        "drift": {
+          "x": 0.001,
+          "z": 1.856
+        }
+      },
+      {
+        "name": "RifleWalk",
+        "source": "Rifle Walk.fbx",
+        "duration": 1.292,
+        "speed": 0.001,
+        "drift": {
+          "x": 0,
+          "z": 0.001
+        }
+      },
+      {
+        "name": "RunForward",
+        "source": "Run Forward.fbx",
+        "duration": 0.5,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "SteppingBackward",
+        "source": "Stepping Backward.fbx",
+        "duration": 1.833,
+        "speed": 0.266,
+        "drift": {
+          "x": 0,
+          "z": -0.266
+        }
+      },
+      {
+        "name": "Strafing",
+        "source": "Strafing.fbx",
+        "duration": 1.208,
+        "speed": 0.982,
+        "drift": {
+          "x": 0.982,
+          "z": 0.025
+        }
+      },
+      {
+        "name": "TurnLeft",
+        "source": "Turn Left.fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      }
+    ],
+    "bytes": 456504
+  }
+}

@@ -3,3 +3,6 @@ dist
 .DS_Store
 *.log
 .vite
+# Character FBX sources: 0.5 GB, several over GitHub's 100 MB file limit. Built GLBs in
+# public/game/characters are committed; keep the FBX backed up separately or use Git LFS.
+assets-src/characters/

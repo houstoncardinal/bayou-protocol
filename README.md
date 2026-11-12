@@ -48,20 +48,27 @@ src/
     20-audio-engine.js         Voice manager: frees finished sound chains, caps voices, keeps audio alive
     21-buy-menu-mouse.js       Frees the cursor while the buy menu is open (hover, scroll, click to buy)
     22-stance-accuracy.js      Spread model: crouching and aiming always tighten spread and the crosshair
-    23-theme-and-home.js       Light/dark theme switch and the one-screen home dashboard
+    23-theme-and-home.js       Dark theme (the only theme) and the one-screen home dashboard
     24-vegetation.js           Fir, conifer, cactus and daisy models placed per map setting
-    25-operators.js            The 10 operators (5 CT, 5 T): names, roles, outfits, body ids
-    26-character-builder.js    Builds each operator's body, clothes and gear on the shared skeleton
-    27-locomotion.js           Foot-planted walking/running/strafing IK, turn-in-place, finger grip
-    28-fp-arms.js              Shared first-person arm kit (switched off; original rigs are in use)
     29-audio-samples.js        Recorded-sample sound engine (falls back to the synth per sound)
     30-frag-grenade.js         Frag grenade model in hand and in flight (CC BY-ND, unmodified)
-    31-preset-operators.js     Five preset CT and five preset T operators only; Profile screen holds the callsign
+    31-preset-operators.js     Preset operators only (no customisation); Profile screen holds the callsign
+    32-ground-combat.js        No scorestreaks (UAV, airstrike, Aegis), no power-up pads, no rocket launcher
+    33-knife.js                Animated first-person knife (knife_animated.glb): idle, slashes, stabs
+    34-physics.js              Rapier physics: world per map, character controller, grenades, props, rays
+    35-prison.js               Blackwater Penitentiary map
+    36-precision-input.js      Mouse: same aim sensitivity on every gun, DPI keeps cm/360, raw-input status
+    37-characters.js           The 8 Mixamo character models, shared animations, locomotion, <GameCharacter>
+    38-performance.js          Scenery instancing, shader warm-up, frame statistics
 tools/
+  build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
+  optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
   build-gunshots.mjs         Builds all weapon sounds from assets-src/soundfx (slices shots, layers, encodes)
   fetch-freesound.mjs        Downloads CC0 Freesound effects for every sound key (needs a free API key)
   import-audio.mjs           Adds your own recordings (e.g. Sonniss) to a sound key, converts to Opus
 assets-src/                  Full-size source assets. Not shipped; optimised copies live in public/
+  characters/<faction>/      Character FBX from Mixamo (kept out of git: several are over GitHub's 100 MB limit)
+  animations/                Mixamo animation FBX (without skin), shared by every character
 core/
   game.core.js             The engine core (compiled, see below)
 public/game/               Models (.glb), textures, sky maps and fonts as real files
@@ -86,6 +93,16 @@ call into the mods). Those are already applied in `core/game.core.js`.
 
 ### Common tasks
 
+- **Add or replace a character:** put the FBX in `assets-src/characters/counter-terrorists/` or
+  `terrorists/`, run `node tools/build-characters.mjs --chars`, then list the file in `__CHAR.files` and
+  give an operator its `model` in `src/mods/37-characters.js`.
+- **Add an animation:** put the Mixamo FBX (without skin, "In Place" for walks and runs) in
+  `assets-src/animations/` and run `node tools/build-characters.mjs --anims`. The clip is named after the
+  file ("Rifle Walk.fbx" -> `RifleWalk`).
+- **Show a character anywhere** (menus, cut-scenes): `<GameCharacter faction="terrorists"
+  fileName="t-guy-1.fbx" currentAnimation="FiringRifle" />` inside `<Suspense>`; in a mod,
+  `M.jsx(GameCharacter, { ... })`. See the comment above `GameCharacter` in `37-characters.js`.
+
 - **Tune a weapon:** edit its entry in `src/mods/04-weapons.js` (damage, fire
   rate, magazine, recoil, price).
 - **Add a weapon model:** put a `.glb` in `public/game/models`, add an entry to
@@ -97,6 +114,20 @@ call into the mods). Those are already applied in `core/game.core.js`.
   look and feel is in `ui.css` under "touch HUD".
 - **Debug in the browser console:** `window.cds` is the game controller and
   `window.cdsUi` is the UI store.
+
+## Physics
+
+Rapier 3D (`@dimforge/rapier3d-compat`) runs the physics; three.js renders. `src/mods/34-physics.js`:
+
+- One Rapier world per map, built from the map's boxes (every wall, floor, stair, door, window), stepped
+  at a fixed 1/60 s from an accumulator, with interpolation for anything drawn from it.
+- Players and bots move with Rapier's kinematic character controller (capsule, step climbing, slopes,
+  snap to ground, walls and ceilings), so the game's own speeds, jump height and air control are kept.
+- Hitscan, line of sight and rockets cast rays through Rapier (verified identical to the old caster on
+  2,000 random rays). Thrown grenades are rigid bodies with CCD; explosions push players and props.
+- Props (`map.physProps`) can be pushed, shot and knocked over; crates break into planks. Online, props
+  run on each screen and never block shots, so they cannot desync a match.
+- `window.__phx.stats()` and `window.__perf()` in the browser console show what is running.
 
 ## Asset pipeline
 

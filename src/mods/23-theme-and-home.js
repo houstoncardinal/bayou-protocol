@@ -1,24 +1,23 @@
-/* ===== Bayou Protocol mod: light/dark theme + redesigned home screen ===== */
-// Theme: html[data-theme="light" | "dark"], saved in localStorage 'bp-theme', light by default.
-// Every menu, sheet, the buy menu, scoreboard, pause menu and HUD panels read it (see ui.css, "Theme").
+/* ===== Bayou Protocol mod: dark theme + redesigned home screen ===== */
+// Theme: the game is dark only. html[data-theme="dark"] is set at start-up; menus, sheets, the buy menu,
+// scoreboard, pause menu and HUD panels read it (see ui.css, "Theme"). The old light theme and its switch
+// are gone, and a saved light choice from an older version is cleared.
 // Home: the operator showcase is gone (you pick an operator after choosing a side), and the page is a
 // single-screen dashboard that fits without scrolling on desktop.
 const __THEME_KEY = 'bp-theme';
 function __themeGet() {
-  try {
-    const v = localStorage.getItem(__THEME_KEY);
-    return v === 'dark' || v === 'light' ? v : 'light';
-  } catch {
-    return 'light';
-  }
+  return 'dark';
 }
+try {
+  typeof localStorage < 'u' && localStorage.removeItem(__THEME_KEY);
+} catch {}
 const __themeSubs = new Set();
 function __themeApply(v) {
   const H = document.documentElement;
   H.dataset.theme = v;
   H.style.colorScheme = v;
   const m = document.querySelector('meta[name="theme-color"]');
-  m && m.setAttribute('content', v === 'light' ? '#eef0f3' : '#0b0e14');
+  m && m.setAttribute('content', '#0b0e14');
 }
 function __themeSet(v) {
   try {
@@ -35,68 +34,6 @@ function __useTheme() {
     return () => __themeSubs.delete(setV);
   }, []);
   return v;
-}
-const __sunIco = () =>
-  M.jsxs('svg', {
-    viewBox: '0 0 24 24',
-    width: 16,
-    height: 16,
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    children: [
-      M.jsx('circle', { cx: 12, cy: 12, r: 4.2 }),
-      M.jsx('path', {
-        d: 'M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6',
-      }),
-    ],
-  });
-const __moonIco = () =>
-  M.jsx('svg', {
-    viewBox: '0 0 24 24',
-    width: 16,
-    height: 16,
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinejoin: 'round',
-    children: M.jsx('path', { d: 'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z' }),
-  });
-function __ThemeToggle({ compact }) {
-  const v = __useTheme();
-  return M.jsxs('div', {
-    className: `bp-theme ${compact ? 'bp-theme--compact' : ''}`,
-    role: 'group',
-    'aria-label': 'Colour theme',
-    children: [
-      M.jsxs('button', {
-        'aria-pressed': v === 'light',
-        onClick: () => __themeSet('light'),
-        title: 'Light theme',
-        children: [M.jsx(__sunIco, {}), compact ? null : M.jsx('span', { children: 'Light' })],
-      }),
-      M.jsxs('button', {
-        'aria-pressed': v === 'dark',
-        onClick: () => __themeSet('dark'),
-        title: 'Dark theme',
-        children: [M.jsx(__moonIco, {}), compact ? null : M.jsx('span', { children: 'Dark' })],
-      }),
-    ],
-  });
-}
-function __ThemeRow() {
-  return M.jsx(rw, {
-    label: 'Theme',
-    desc: 'Light or dark menus, buy menu, scoreboard and HUD panels.',
-    children: M.jsx(__ThemeToggle, {}),
-  });
-}
-{
-  const cb = __CbRow;
-  __CbRow = function () {
-    return M.jsxs(M.Fragment, { children: [M.jsx(__ThemeRow, {}), M.jsx(cb, {})] });
-  };
 }
 // Operator is chosen after picking a side (offline setup: Side → Operator), so it is not a top-level tab.
 {
@@ -243,7 +180,6 @@ function __Home() {
                     }),
                   ],
                 }),
-                M.jsx(__ThemeToggle, { compact: !0 }),
               ],
             }),
           ],
