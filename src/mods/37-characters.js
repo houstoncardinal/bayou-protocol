@@ -30,6 +30,8 @@ const __CHAR = {
   alias: { Idle: 'RifleIdle', Walk: 'RifleWalk', Run: 'RunForward', Fire: 'FiringRifle', Crouch: 'CrouchWalking', CrouchIdle: 'PistolKneelingIdle', Jump: 'JumpUp', Fall: 'JumpingDown', Death: 'Dying' },
   urls: new Set(),
   gait: new Map(), // model url -> { clip: metres per second at timeScale 1 }
+  hipsScale: new Map(), // model url -> hips track scale applied to the shared clips
+  ankle: new Map(), // model url -> ankle height above the soles / standing height (bind pose)
 };
 for (const [f, list] of Object.entries(__CHAR.files)) for (const n of list) __CHAR.urls.add(__CHAR.base + f + '/' + n + '.glb');
 // ---------------------------------------------------------------- roster: operator -> model
@@ -81,14 +83,34 @@ function __isCharUrl(u) {
 }
 // ---------------------------------------------------------------- loading: shared clips + gait measurement
 const __LOCO_CLIPS = { Walk: 'z', Run: 'z', Strafing: 'x', CrouchWalking: 'z' };
-function __charClips(animGltf) {
-  if (animGltf.__bpClips) return animGltf.__bpClips;
-  const list = [...animGltf.animations];
+// The shared clips were recorded on one skeleton; the hips translation in them is in that skeleton's units.
+// A model whose legs are shorter or longer would stand in the floor or float, so every model gets its own
+// copy of the clips with the hips track scaled by (its hips rest height / the clip skeleton's).
+function __charClips(animGltf, f = 1, key = '') {
+  animGltf.__bpClips || (animGltf.__bpClips = new Map());
+  const k = key + ':' + f.toFixed(4);
+  if (animGltf.__bpClips.has(k)) return animGltf.__bpClips.get(k);
+  const scaled = (c) =>
+    Math.abs(f - 1) < 1e-4
+      ? c
+      : new so(
+          c.name,
+          c.duration,
+          c.tracks.map((t) => {
+            if (!/Hips\.position$/.test(t.name)) return t;
+            const u = t.clone();
+            u.values = u.values.map((x) => x * f);
+            return u;
+          }),
+        );
+  const base = animGltf.animations.map(scaled),
+    list = [...base];
   for (const [a, src] of Object.entries(__CHAR.alias)) {
-    const c = animGltf.animations.find((x) => x.name === src);
+    const c = base.find((x) => x.name === src);
     c && list.push(new so(a, c.duration, c.tracks));
   }
-  return (animGltf.__bpClips = list);
+  animGltf.__bpClips.set(k, list);
+  return list;
 }
 // metres per second each locomotion clip covers at normal speed: during the stance phase a foot travels
 // backwards relative to the hips by one stride, so speed = 2 x foot travel / cycle length
@@ -144,8 +166,19 @@ function __charGait(url, gltf) {
   SZ = function (url) {
     const g = coreLoad(url);
     if (__isCharUrl(url) && !g.__bp) {
-      const a = coreLoad(__CHAR.anims);
-      g.animations = __charClips(a);
+      const a = coreLoad(__CHAR.anims),
+        mh = g.scene.getObjectByName('mixamorigHips'),
+        ah = a.scene.getObjectByName('mixamorigHips'),
+        f = mh && ah && Math.abs(ah.position.y) > 1e-6 ? mh.position.y / ah.position.y : 1;
+      g.animations = __charClips(a, f, url);
+      __CHAR.hipsScale.set(url, f);
+      // ankle height above the soles in the bind pose, as a fraction of standing height (for foot IK)
+      try {
+        g.scene.updateMatrixWorld(!0);
+        const bb = new xi().setFromObject(g.scene),
+          fl = g.scene.getObjectByName('mixamorigLeftFoot');
+        fl && __CHAR.ankle.set(url, (fl.getWorldPosition(new U()).y - bb.min.y) / Math.max(1e-4, bb.max.y - bb.min.y));
+      } catch (e) {}
       g.scene.userData.bpChar = url;
       g.__bp = 1;
       __charGait(url, g);

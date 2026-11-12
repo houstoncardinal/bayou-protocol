@@ -6,3 +6,5 @@ dist
 # Character FBX sources: 0.5 GB, several over GitHub's 100 MB file limit. Built GLBs in
 # public/game/characters are committed; keep the FBX backed up separately or use Git LFS.
 assets-src/characters/
+# 128 MB download, over GitHub's 100 MB file limit (the optimised copy in public/ is committed)
+assets-src/weapons/g17_pistol_-_animated.glb

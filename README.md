@@ -60,8 +60,13 @@ src/
     36-precision-input.js      Mouse: same aim sensitivity on every gun, DPI keeps cm/360, raw-input status
     37-characters.js           The 8 Mixamo character models, shared animations, locomotion, <GameCharacter>
     38-performance.js          Scenery instancing, shader warm-up, frame statistics
+    39-animated-weapons.js     Hornet .45, Mauler 12, Kestrel 9, Anvil 7.62, Striker 17: animated arms, clips,
+                               shell-by-shell reload, slide lock, physics casings, inspect key (X)
+    40-body.js                 Foot IK on stairs and slopes; hitboxes built from each character's skeleton
+    41-world-collision.js      Colliders for placed models and cacti that had none
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
+  build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
   optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
   build-gunshots.mjs         Builds all weapon sounds from assets-src/soundfx (slices shots, layers, encodes)
   fetch-freesound.mjs        Downloads CC0 Freesound effects for every sound key (needs a free API key)
@@ -69,6 +74,7 @@ tools/
 assets-src/                  Full-size source assets. Not shipped; optimised copies live in public/
   characters/<faction>/      Character FBX from Mixamo (kept out of git: several are over GitHub's 100 MB limit)
   animations/                Mixamo animation FBX (without skin), shared by every character
+  weapons/                   Animated arms + gun GLBs as downloaded (the G17 source is over 100 MB: kept out of git)
 core/
   game.core.js             The engine core (compiled, see below)
 public/game/               Models (.glb), textures, sky maps and fonts as real files
@@ -99,6 +105,11 @@ call into the mods). Those are already applied in `core/game.core.js`.
 - **Add an animation:** put the Mixamo FBX (without skin, "In Place" for walks and runs) in
   `assets-src/animations/` and run `node tools/build-characters.mjs --anims`. The clip is named after the
   file ("Rifle Walk.fbx" -> `RifleWalk`).
+- **Add an animated weapon:** put the GLB in `assets-src/weapons/`, add it to `MAP` in
+  `tools/build-weapons.mjs` and run it, then add an entry to `__AW` (model, gun node name, clip time ranges)
+  and `__AW_STATS` in `src/mods/39-animated-weapons.js`. To find the clip ranges, chart which gun parts
+  move when, then check rendered frames: `window.__bpRigSheet(url, times)` renders the model at given times.
+- **Check hitboxes:** `window.__bpHitboxes = true` in the browser console draws every character's capsules.
 - **Show a character anywhere** (menus, cut-scenes): `<GameCharacter faction="terrorists"
   fileName="t-guy-1.fbx" currentAnimation="FiringRifle" />` inside `<Suspense>`; in a mod,
   `M.jsx(GameCharacter, { ... })`. See the comment above `GameCharacter` in `37-characters.js`.

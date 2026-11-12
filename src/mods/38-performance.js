@@ -123,3 +123,5 @@ typeof window < 'u' &&
       .slice(0, 25)
       .map(([k, v]) => `${k}: ${v.meshes} meshes, ${Math.round(v.tris / 1000)}k tris`);
   });
+// every map's data (tests and tools): [{ id, m }]
+typeof window < 'u' && (window.__bpMaps = () => Object.keys(XE).map((id) => ({ id, m: vT(id) })));
