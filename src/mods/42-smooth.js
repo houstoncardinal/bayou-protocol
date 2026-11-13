@@ -93,9 +93,9 @@ function __vmRelease() {
   };
 }
 // ---------------------------------------------------------------- 4. simplified geometry
-const __LOD = { geo: new WeakMap(), queue: [], busy: !1, chars: new Set() };
+const __LOD = { geo: new WeakMap(), queue: [], busy: !1, chars: new Set(), pendingTp: [] };
 // index buffers at the given triangle ratios for a geometry; null until made (made in the background)
-function __lodIndices(geo, ratios, err) {
+function __lodIndices(geo, ratios, err, lock = !0) {
   const key = ratios.join(',');
   let e = __LOD.geo.get(geo);
   e || __LOD.geo.set(geo, (e = {}));
@@ -108,14 +108,30 @@ function __lodIndices(geo, ratios, err) {
           n = P.count,
           pos = new Float32Array(n * 3);
         for (let i = 0; i < n; i++) (pos[i * 3] = P.getX(i)), (pos[i * 3 + 1] = P.getY(i)), (pos[i * 3 + 2] = P.getZ(i));
-        const src = geo.index ? new Uint32Array(geo.index.array) : Uint32Array.from({ length: n }, (_, i) => i);
+        let src;
+        if (geo.index) src = new Uint32Array(geo.index.array);
+        else {
+          // non-indexed (merged) meshes: weld corners that share a position, so triangles can collapse
+          const seen = new Map();
+          src = new Uint32Array(n);
+          for (let i = 0; i < n; i++) {
+            const k = Math.round(pos[i * 3] * 1e4) + ',' + Math.round(pos[i * 3 + 1] * 1e4) + ',' + Math.round(pos[i * 3 + 2] * 1e4);
+            let r = seen.get(k);
+            r === void 0 && seen.set(k, (r = i));
+            src[i] = r;
+          }
+        }
         e[key] = ratios.map((r) => {
           const target = Math.max(3, Math.floor((src.length * r) / 3) * 3);
-          const [out] = __MO.simp.simplify(src, pos, 3, target, err, ['LockBorder']);
+          // third-person pieces are often fragmented (no shared edges to collapse): the sloppy simplifier
+          // ignores topology, which is fine for a gun seen in someone else's hands
+          const [out] = lock ? __MO.simp.simplify(src, pos, 3, target, err, ['LockBorder']) : __MO.simp.simplifySloppy(src, pos, 3, null, target, err);
+          __LOD.last = [src.length, out.length, target];
           return out.length < src.length * 0.92 ? new gi(n < 65536 ? new Uint16Array(out) : out, 1) : null;
         });
       } catch (x) {
         e[key] = null;
+        __LOD.err = String(x && x.message);
       }
     });
     __lodPump();
@@ -211,8 +227,10 @@ function __lodSelect(s, K) {
     const B = coreHd.apply(this, arguments);
     try {
       B.traverse((o) => {
-        if (!o.isMesh || o.isSkinnedMesh || !o.geometry.index || o.geometry.index.count < 7500) return;
-        const ix = __lodIndices(o.geometry, [0.35], 0.004);
+        if (!o.isMesh || o.isSkinnedMesh || (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) < 3000) return;
+        const ix = __lodIndices(o.geometry, [0.35], 0.02, !1);
+        // not made yet: swap it in when it is (the gun stays in the character's hands until it changes)
+        if (ix === void 0) return void __LOD.pendingTp.push(o);
         if (!ix || !ix[0]) return;
         const e = __LOD.geo.get(o.geometry);
         o.geometry = e.tp || (e.tp = __lodGeo(o.geometry, ix[0]));
@@ -243,6 +261,14 @@ function __warmTick(g) {
   if (now - __WARM.veg > 1000) {
     __WARM.veg = now;
     __farVeg(g.scene);
+    for (let i = __LOD.pendingTp.length - 1; i >= 0; i--) {
+      const o = __LOD.pendingTp[i],
+        e = __LOD.geo.get(o.geometry),
+        ix = e && e['0.35'];
+      if (ix === void 0) continue;
+      __LOD.pendingTp.splice(i, 1);
+      ix && ix[0] && (o.geometry = e.tp || (e.tp = __lodGeo(o.geometry, ix[0])));
+    }
   }
   // (re)build the list when the map or the loaded models change
   const key = (eA.state ? aw().id || '' : '') + ':' + Gc;
@@ -358,3 +384,4 @@ function __FpsRow({ row }) {
     return p.label === 'Dynamic resolution' ? M.jsxs(M.Fragment, { children: [r, M.jsx(__FpsRow, { row: coreRow })] }) : r;
   };
 }
+typeof window < 'u' && (window.__bpLod = __LOD);

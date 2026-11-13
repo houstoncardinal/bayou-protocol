@@ -26,6 +26,7 @@ src/
     ui.css                 Buy menu, end screen, HUD, mobile layout, rank cards
   mods/                    Game features, one file each, loaded in file-name order
     00-environment-shims.js    Safe loading in sandboxed frames
+    00b-movement.js            Movement tuning: speeds, sprint, acceleration, backpedal, tagging
     01-mouse-capture.js        Pointer lock handling and free-aim fallback
     02-weapon-models.js        Loader for the GLB weapon models
     03-ballistic-fx.js         Bullet streaks, muzzle flash, smoke, shell casings

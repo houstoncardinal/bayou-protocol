@@ -125,30 +125,40 @@ function __charGait(url, gltf) {
       scale = kO / h,
       mixer = new TZ(root),
       hips = root.getObjectByName('mixamorigHips'),
-      feet = ['mixamorigLeftFoot', 'mixamorigRightFoot'].map((n) => root.getObjectByName(n)),
+      feet = ['LeftToeBase', 'RightToeBase'].map((n) => root.getObjectByName('mixamorig' + n) || root.getObjectByName('mixamorig' + n.replace('ToeBase', 'Foot'))),
       a = new U(),
       b = new U();
+    // ground speed at which the planted foot stays still: while a foot is the lower one (on the ground), it
+    // moves backwards relative to the hips at exactly the speed the body must travel for it not to slide
+    const N = 120;
     for (const clip of gltf.animations) {
-      const axis = __LOCO_CLIPS[clip.name];
-      if (!axis || !hips || !feet[0] || !feet[1]) continue;
-      const act = mixer.clipAction(clip).play();
-      const lo = [1e9, 1e9],
-        hi = [-1e9, -1e9];
-      for (let i = 0; i <= 48; i++) {
-        mixer.setTime((clip.duration * i) / 48);
+      if (!__LOCO_CLIPS[clip.name] || !hips || !feet[0] || !feet[1]) continue;
+      const act = mixer.clipAction(clip).play(),
+        P = [];
+      for (let i = 0; i <= N; i++) {
+        mixer.setTime((clip.duration * i) / N);
         root.updateMatrixWorld(!0);
         hips.getWorldPosition(a);
-        feet.forEach((f, k) => {
-          f.getWorldPosition(b);
-          const d = b[axis] - a[axis];
-          lo[k] = Math.min(lo[k], d);
-          hi[k] = Math.max(hi[k], d);
-        });
+        P.push(
+          feet.map((f) => {
+            f.getWorldPosition(b);
+            return [b.x - a.x, b.y, b.z - a.z];
+          }),
+        );
       }
       act.stop();
       mixer.uncacheClip(clip);
-      const range = (hi[0] - lo[0] + hi[1] - lo[1]) / 2;
-      g[clip.name] = Math.max(0.3, (2 * range * scale) / clip.duration);
+      const dts = clip.duration / N;
+      let sum = 0,
+        n = 0;
+      for (let i = 0; i < N; i++) {
+        const k = P[i][0][1] < P[i][1][1] ? 0 : 1,
+          k2 = P[i + 1][0][1] < P[i + 1][1][1] ? 0 : 1;
+        if (k !== k2) continue;
+        sum += Math.hypot(P[i + 1][k][0] - P[i][k][0], P[i + 1][k][2] - P[i][k][2]) / dts;
+        n++;
+      }
+      n && (g[clip.name] = Math.max(0.3, (sum / n) * scale));
     }
   } catch (e) {
     console.warn('[characters] gait', e);
@@ -222,26 +232,27 @@ typeof window < 'u' &&
 const __LOCO = new Map();
 function __locoState(v) {
   let st = __LOCO.get(v.id);
-  st || __LOCO.set(v.id, (st = { last: null, vx: 0, vz: 0, speed: 0, air: 0, clip: 'Idle', ts: {}, crouchClip: !1, moving: !1, move: 'Walk', cand: null, candT: 0, yaw: null, lastShot: -1, kickT: -9 }));
+  st || __LOCO.set(v.id, (st = { last: null, vx: 0, vz: 0, speed: 0, air: 0, clip: 'Idle', ts: {}, crouchClip: !1, moving: !1, move: 'Walk', cand: null, candT: 0, yaw: null, off: 0, back: !1 }));
   return st;
 }
 // Stability rules (what made characters twitch, duck and scramble):
 //   - moving vs standing has hysteresis (starts above 0.85 m/s, stops below 0.4 m/s): collision nudges and
 //     aim corrections no longer flick the legs between idle and walk
-//   - crouched vs standing has hysteresis too (on above 0.62, off below 0.3 of the crouch)
-//   - a change of movement clip (walk, strafe, back, run, crouch-walk) must hold for 0.18 s before it plays
-//   - the visible body turns towards the aim direction smoothly (critically damped) instead of snapping
-//     to every small aim correction; big turns (respawn, > 145°) snap
-//   - no full firing animation swapped in and out on every shot: the aiming stance stays, and each shot
-//     gives the upper body a small recoil kick (__locoAfter)
-//   - legs play at most 1.5x (walks) / 1.8x (run): the run clip takes over from 2.6 m/s
+//   - crouched vs standing has hysteresis too (on above 0.55, off below 0.3 of the crouch)
+//   - a change of movement clip must hold for 0.15 s before it plays
+//   - the visible body turns towards the aim direction smoothly instead of snapping to every correction
 //   - jump / fall only after 0.28 s in the air with real vertical speed (not every stair step)
+// Feet that do not slide: the lower body turns towards the direction of travel (up to 77 degrees either
+// side) and walks or runs forwards at the clip's own pace, while the spine turns back by the same angle so
+// the chest, head and gun stay on the aim (applied just before the weapon-holding IK, see Ou below).
+// Moving backwards, the legs angle back up to 57 degrees and the walk / run plays in reverse. The clip speed
+// matches the ground speed (the stride measured from each clip), so a foot in contact with the floor stays
+// put instead of gliding.
 function __locoSpeed(v, K, dt) {
   const st = __locoState(v),
     p = v.pos,
     R = jV.realistic;
   dt = Math.max(1e-3, Math.min(dt, 0.1));
-  // velocity of the rendered body (smoothed): bots' stored velocity can lag their real movement
   if (!st.last || !v.alive || Math.hypot(p.x - st.last.x, p.z - st.last.z) > 3) st.last = { x: p.x, z: p.z };
   const k = 1 - Math.exp(-dt * 10);
   st.vx += ((p.x - st.last.x) / dt - st.vx) * k;
@@ -251,38 +262,57 @@ function __locoSpeed(v, K, dt) {
   const speed = Math.hypot(st.vx, st.vz);
   st.speed = speed;
   st.moving = st.moving ? speed > 0.4 : speed > 0.85;
-  // the body's visible heading: smoothed towards the aim yaw
   const target = v.yaw + Math.PI;
   if (st.yaw === null || !v.alive) st.yaw = target;
   const dy = Math.atan2(Math.sin(target - st.yaw), Math.cos(target - st.yaw));
   st.yaw = Math.abs(dy) > 2.5 ? target : st.yaw + dy * (1 - Math.exp(-dt * 13));
   K.rotation.y = st.yaw;
-  const yaw = st.yaw - Math.PI;
-  // direction of travel relative to that heading
-  const fx = -Math.sin(yaw),
-    fz = -Math.cos(yaw),
-    fwd = (st.vx * fx + st.vz * fz) / (speed || 1),
-    right = (st.vx * Math.cos(yaw) - st.vz * Math.sin(yaw)) / (speed || 1);
+  const yaw = st.yaw - Math.PI,
+    fwd = st.vx * -Math.sin(yaw) + st.vz * -Math.cos(yaw),
+    right = st.vx * Math.cos(yaw) - st.vz * Math.sin(yaw),
+    ang = Math.atan2(right, fwd);
   st.air = v.onGround || Math.abs(v.vel.y) < 1.2 ? 0 : st.air + dt;
   const s = K.children[0],
-    gait = (s && __CHAR.gait.get(s.userData.bpChar)) || { Walk: 1.5, Run: 4.8, Strafing: 1.1, CrouchWalking: 1.1 };
-  st.crouchClip = st.crouchClip ? v.crouch > 0.3 : v.crouch > 0.62;
+    gait = (s && __CHAR.gait.get(s.userData.bpChar)) || { Walk: 1.1, Run: 3.1, CrouchWalking: 1.1 };
+  st.crouchClip = st.crouchClip ? v.crouch > 0.3 : v.crouch > 0.55;
   const crouch = st.crouchClip;
-  let cand;
-  if (crouch) cand = fwd < -0.3 ? 'CrouchWalking-' : 'CrouchWalking';
-  else if (Math.abs(right) > 0.72) cand = right > 0 ? 'Strafing-' : 'Strafing';
-  else if (fwd < -0.3) cand = 'Walk-';
-  else cand = speed > (st.move === 'Run' ? 2.3 : 2.6) ? 'Run' : 'Walk';
+  // Which clip, and where the legs point (relative to the aim):
+  //   sideways (55-125 degrees) and slower than the side-step clip can go: the side-step clip, legs turned
+  //     up to 35 degrees so a diagonal still steps along the line of travel
+  //   forwards-ish, or sideways too fast to side-step: walk (<= 1.85 m/s) or run, legs turned towards the
+  //     direction of travel (up to 77 degrees)
+  //   backwards (beyond 125 degrees): walk / run played in reverse, legs turned up to 57 degrees
+  //   crouched: crouch-walk forwards or reversed, legs turned like walking
+  // Every clip plays at ground speed / its measured stride speed, so a planted foot stays planted.
+  const A = Math.abs(ang),
+    side = !crouch && A > 0.96 && A < 2.18 && speed <= (gait.Strafing || 1.03) * 1.95,
+    backA = A > 2.18;
+  let off = 0,
+    cand;
+  if (!st.moving) cand = st.move;
+  else if (crouch) {
+    cand = backA ? 'CrouchWalking-' : 'CrouchWalking';
+    off = backA ? Math.max(-1, Math.min(1, Math.atan2(Math.sin(ang - Math.PI), Math.cos(ang - Math.PI)))) : Math.max(-1.35, Math.min(1.35, ang));
+  } else if (side) {
+    cand = ang > 0 ? 'Strafing-' : 'Strafing';
+    off = Math.max(-0.6, Math.min(0.6, ang - Math.sign(ang) * Math.PI * 0.5));
+  } else if (backA) {
+    cand = speed > 1.85 ? 'Run-' : 'Walk-';
+    off = Math.max(-1, Math.min(1, Math.atan2(Math.sin(ang - Math.PI), Math.cos(ang - Math.PI))));
+  } else {
+    cand = speed > 1.85 ? 'Run' : 'Walk';
+    off = Math.max(-1.35, Math.min(1.35, ang));
+  }
+  st.off += (off - st.off) * (1 - Math.exp(-dt * 9));
   if (cand !== st.move) {
     st.cand === cand ? (st.candT += dt) : ((st.cand = cand), (st.candT = 0));
-    (st.candT > 0.18 || !st.moving) && (st.move = cand);
+    (st.candT > 0.15 || !st.moving) && (st.move = cand);
   } else st.cand = null;
   const move = st.move.replace('-', ''),
     sign = st.move.endsWith('-') ? -1 : 1,
-    nat = gait[move] || 1.2,
-    rate = sign * Math.max(0.6, Math.min(move === 'Run' ? 1.8 : 1.5, speed / nat));
+    nat = gait[move] || 1.1,
+    rate = sign * Math.max(move === 'Run' ? 0.45 : 0.5, Math.min(move === 'Run' ? 1.9 : 1.95, speed / nat));
   st.ts = { [move]: rate };
-  // what the core will pick from: idle / walk / run / aim for this character this frame
   R.idle = crouch ? 'CrouchIdle' : 'Idle';
   R.walk = move;
   R.run = move;
@@ -291,21 +321,15 @@ function __locoSpeed(v, K, dt) {
   s && (s.userData.__bpLoco = st);
   return st.moving ? Math.max(speed, 0.7) : 0;
 }
-// a shot: the upper body takes a small, quick recoil kick (instead of swapping in a firing animation)
-function __locoAfter(s, v) {
-  const st = __LOCO.get(v.id);
-  if (!st || !v.alive) return;
-  const now = performance.now() / 1e3;
-  if (v.lastShotAt !== st.lastShot) {
-    st.lastShot !== -1 && (st.kickT = now);
-    st.lastShot = v.lastShotAt;
-  }
-  const t = now - st.kickT;
-  if (t > 0.25) return;
-  const a = 0.055 * Math.exp(-t * 18) * Math.min(1, t * 60);
-  const sp = s.userData.__spine || (s.userData.__spine = [s.getObjectByName('mixamorigSpine2'), s.getObjectByName('mixamorigNeck')]);
-  sp[0] && sp[0].rotateX(-a);
-  sp[1] && sp[1].rotateX(a * 0.5);
+function __locoAfter() {}
+// rotate a bone about the world up axis
+const __lq = { q: new Kw(), p: new Kw(), up: new U(0, 1, 0) };
+function __rotY(bone, a) {
+  if (!bone || !a) return;
+  bone.parent.getWorldQuaternion(__lq.p);
+  __lq.q.setFromAxisAngle(__lq.up, a);
+  bone.quaternion.premultiply(__lq.p.clone().invert().multiply(__lq.q).multiply(__lq.p));
+  bone.updateMatrixWorld(!0);
 }
 // clip playback speed comes from the locomotion state for these models (the core's own timeScale writes,
 // tuned for the old clips, are kept for every other model)
@@ -314,6 +338,7 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
   get() {
     const st = this._mixer && this._mixer._root && this._mixer._root.userData && this._mixer._root.userData.__bpLoco,
       v = st && st.ts[this._clip.name];
+    st && !st.mixer && (st.mixer = this._mixer);
     return v !== void 0 ? v : this.__ts;
   },
   set(v) {
@@ -324,13 +349,30 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
 {
   const coreIk = Ou.prototype.update;
   Ou.prototype.update = function (o) {
-    const st = this.body && this.body.userData && this.body.userData.__bpLoco;
-    // aim pitch follows smoothly (no shaking upper body when the aim jitters)
-    const now = performance.now() / 1e3,
+    const body = this.body,
+      st = body && body.userData && body.userData.__bpLoco,
+      now = performance.now() / 1e3,
       dt = Math.min(0.1, now - (this.__pt || now));
     this.__pt = now;
+    // lower body towards the direction of travel, upper body back onto the aim (before the arms are solved)
+    if (st && Math.abs(st.off) > 0.01 && !o.hidden) {
+      const B = this.__lb || (this.__lb = ['Hips', 'Spine', 'Spine1', 'Spine2'].map((n) => body.getObjectByName('mixamorig' + n)));
+      if (B[0] && B[1]) {
+        body.updateMatrixWorld(!0);
+        __rotY(B[0], -st.off);
+        __rotY(B[1], st.off * 0.45);
+        __rotY(B[2], st.off * 0.3);
+        __rotY(B[3], st.off * 0.25);
+      }
+    }
+    // aim pitch follows smoothly
     this.__p === void 0 || Math.abs(o.pitch - this.__p) > 1.2 ? (this.__p = o.pitch) : (this.__p += (o.pitch - this.__p) * (1 - Math.exp(-dt * 12)));
-    return coreIk.call(this, { ...o, pitch: this.__p, crouch: st && st.crouchClip ? 0 : o.crouch });
+    // the gun stays up for 2.5 s after the last reason to aim (a shot, a target): no snapping between
+    // low ready and aim on every shot, which read as ducking
+    o.aiming && (this.__aimUntil = now + 2.5);
+    const aiming = !!o.aiming || now < (this.__aimUntil || 0) || (eA.state && eA.state.mode === 'range');
+    // crouching is the crouch animation's job: never squat the hips on top of it
+    return coreIk.call(this, { ...o, pitch: this.__p, aiming, crouch: 0 });
   };
 }
 // the old classic / realistic choice no longer exists: hide the setting

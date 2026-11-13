@@ -341,7 +341,7 @@ function __rayCapsule(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, r) {
     prev.apply(this, arguments);
     if (!s || !s.userData || !s.userData.bpChar) return;
     try {
-      __bodyFeet(s, v, K, Math.min(dt, 0.1));
+      (typeof window > 'u' || !window.__noFootIk) && __bodyFeet(s, v, K, Math.min(dt, 0.1));
     } catch (e) {
       window.__bodyErr = String(e && e.stack);
     }

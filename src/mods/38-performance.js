@@ -138,3 +138,8 @@ typeof window < 'u' &&
 typeof window < 'u' && (window.__bpMaps = () => Object.keys(XE).map((id) => ({ id, m: vT(id) })));
 // shader programs in use (tests): one key per compiled program
 typeof window < 'u' && (window.__progs = () => (__R3F && __R3F.gl.info.programs ? __R3F.gl.info.programs.map((p) => p.name + ':' + p.cacheKey.length + ':' + p.cacheKey.slice(0, 160).replace(/,/g, ' ')) : []));
+// tests: step the renderer by hand (frameloop "never" + advance(t) with fixed time steps)
+typeof window < 'u' &&
+  (window.__r3fStep = (t) => mb(t, !0)) &&
+  (window.__r3fLoop = (mode) => __R3F && __R3F.setFrameloop && __R3F.setFrameloop(mode));
+typeof window < 'u' && (window.__r3fClock = () => __R3F && __R3F.clock && __R3F.clock.elapsedTime);

@@ -57,7 +57,19 @@ try {
   });
 } catch (e) {}
 const __RG_D = [8, 15, 25, 40, 55],
-  __RG_X = [-5, -2.5, 0, 2.5, 5];
+  __RG_X = [-5, -2.5, 0, 2.5, 5],
+  // every target carries a real gun (they never fire): one per lane, and a sidearm
+  __RG_W = ['sentinel', 'ak47', 'hornet', 'anvil', 'phantom'];
+// Lanes: 8 m stands still; 15 m peeks (crouches and stands up every 2.4 s); 25 m strafes left and right at a
+// running pace; 40 m walks towards you and back; 55 m stands still for long shots. They move with real
+// velocity (so their legs walk and run), face you with their gun up, flinch when hit and stand up again
+// 1.4 s after going down.
+function __rgArm(p, k) {
+  const id = __RG_W[k % __RG_W.length],
+    g = gw[id];
+  (!p.weapons[1] || p.weapons[1].id !== id) && (p.weapons = { 1: { id, mag: g.mag, reserve: g.reserve, max: g.mag }, 2: { id: 'kestrel', mag: 15, reserve: 45, max: 15 }, 3: { id: 'knife', mag: 0, reserve: 0, max: 0 } });
+  p.active = 1;
+}
 function __rangeTick(w, dt) {
   const h = XB(w, w.humanId);
   if (!h) return;
@@ -73,7 +85,7 @@ function __rangeTick(w, dt) {
     let k = 0;
     for (const p of w.players)
       p.id !== h.id &&
-        ((p.__lane = k++), (p.weapons = { 3: { id: 'knife', mag: 0, reserve: 0, max: 0 } }), (p.active = 3));
+        ((p.__lane = k++), __rgArm(p, p.__lane));
   }
   w.phase === 'live' ? (w.phaseLeft = 600) : (w.phaseLeft = Math.min(w.phaseLeft, 1));
   h.money = uE;
@@ -89,17 +101,21 @@ function __rangeTick(w, dt) {
       continue;
     }
     const k = p.__lane ?? 0,
-      d = __RG_D[k % 5],
-      x = R.x + __RG_X[k % 5] + (k === 2 ? Math.sin(w.t * 1.3) * 3.2 : 0);
+      lane = k % 5,
+      x = R.x + __RG_X[lane] + (lane === 2 ? Math.sin(w.t * 0.95) * 3.2 : 0),
+      z = R.z - __RG_D[lane] + (lane === 3 ? Math.sin(w.t * 0.45) * 2.4 : 0),
+      dtt = Math.max(1e-3, dt || 1 / 60);
+    p.vel.x = (x - p.pos.x) / dtt;
+    p.vel.z = (z - p.pos.z) / dtt;
+    p.vel.y = 0;
     p.pos.x = x;
-    p.pos.z = R.z - d;
+    p.pos.z = z;
     p.pos.y = R.y;
-    p.vel.x = p.vel.y = p.vel.z = 0;
-    p.yaw = Math.atan2(-(h.pos.x - x), -(h.pos.z - p.pos.z));
+    p.onGround = !0;
+    p.yaw = Math.atan2(-(h.pos.x - x), -(h.pos.z - z));
     p.pitch = 0;
     p.spawnProtUntil = 0;
-    p.weapons = { 3: { id: 'knife', mag: 0, reserve: 0, max: 0 } };
-    p.active = 3;
+    __rgArm(p, k);
   }
 }
 function __rangeBot(w, B, A) {
@@ -115,7 +131,7 @@ function __rangeBot(w, B, A) {
     sprint: !1,
     tactical: !1,
     aim: !1,
-    crouch: !1,
+    crouch: B.__lane % 5 === 1 && Math.floor(w.t / 2.4) % 2 === 1,
     reload: !1,
     slot: null,
     streak: !1,
