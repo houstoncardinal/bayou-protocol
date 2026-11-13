@@ -66,6 +66,11 @@ src/
     41-world-collision.js      Colliders for placed models and cacti that had none
     42-smooth.js               Viewmodel memory leak fix, background shader compile, meshopt decoder,
                                character and third-person gun levels of detail, menu preloading, FPS readout
+    43-impacts.js              Bullet holes and blood only on drawn surfaces; blood mist, droplets, spatter, pools
+    44-bot-behaviour.js        Bots hold crouch decisions and walk while fighting (no bobbing, no scrambling)
+    45-weapon-roster.js        Model-based weapons only; removed guns remap to their closest replacement
+    46-credits.js              About screen credits (kept in step with CREDITS.md)
+    47-pause-menu.js           Esc menu: match card, overview with loadout pictures and quick settings
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
@@ -201,6 +206,7 @@ git push -u origin main
 
 ## Asset credits
 
-Credits are shown in the game under About. Third-party models added in this
-project include "VSSK Vykhlop" by Diamonddogkz (Sketchfab), used with credit.
-Check the licence of every model you add before publishing.
+Every third-party model, sound, texture, library and font, with author, source link and licence, is listed in
+[CREDITS.md](CREDITS.md) and shown in the game under About (`src/mods/46-credits.js`). When you add a model,
+add it to both. Sketchfab downloads carry the author, title and licence in the file itself
+(`asset.extras`), which is where the current list comes from.

@@ -66,6 +66,9 @@ const __AW = {
     world: { len: 1.12, grip: 0.3, gripTop: 0.34, gz: 0.05, fore: 0.55, sight: 0.84, fb: 'lmg' },
     mag: /^mag|^bullet/,
     casing: '762',
+    // the belt's rounds: animated only while a belt is being laid in (reloads); everywhere else they hold
+    // the loaded position (the model's per-shot belt step snaps back out of line, which looked like flicker)
+    freeze: { parts: /^bullet\d/, at: 0, clips: ['fire', 'idle', 'inspect', 'melee'] },
     clips: { fire: [0, 0.27], reload: [0.27, 4.6], inspect: [4.6, 6.13], reloadEmpty: [6.13, 10.5], idle: [10.5, 11.17], melee: [11.17, 11.83] },
   },
   striker: {
@@ -354,7 +357,12 @@ typeof window < 'u' &&
         c.url,
         (g) => {
           try {
-            __rigPrep(g, c);
+            __AW_PREP = { c, g };
+            try {
+              __rigPrep(g, c);
+            } finally {
+              __AW_PREP = null;
+            }
             __awFit(id);
             Gc += 1;
           } catch (e) {
@@ -366,6 +374,29 @@ typeof window < 'u' &&
       );
     }
   }, 600);
+// clips listed in a weapon's `freeze`: the matching parts get a constant track (their value at `at` seconds
+// on the model's animation track) instead of their animated one
+let __AW_PREP = null;
+{
+  const coreClip = __rigClip;
+  __rigClip = function (g, spec) {
+    const clip = coreClip.apply(this, arguments),
+      P = __AW_PREP,
+      F = P && P.c.freeze;
+    if (!clip || !F) return clip;
+    const key = Object.keys(P.c.clips).find((k) => P.c.clips[k] === spec);
+    if (!F.clips.includes(key)) return clip;
+    const src = g.animations[0];
+    clip.tracks = clip.tracks.map((t) => {
+      if (!F.parts.test(t.name.split('.')[0])) return t;
+      const st = src.tracks.find((x) => x.name === t.name);
+      if (!st) return t;
+      const v = Array.from(st.createInterpolant(new st.ValueBufferType(st.getValueSize())).evaluate(F.at));
+      return new t.constructor(t.name, [0, clip.duration], [...v, ...v]);
+    });
+    return clip;
+  };
+}
 // ---------------------------------------------------------------- first-person animation
 function __awPlay(R, k, o = {}) {
   const ok = __rigPlay(R, k, o);

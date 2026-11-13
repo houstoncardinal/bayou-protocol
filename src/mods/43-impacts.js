@@ -159,19 +159,20 @@ const __IMP_TEX = {
   // spatter: dense core, droplets and streaks thrown towards +x (the bullet's direction)
   splat: () =>
     __impCanvas(256, 128, (g, w, h) => {
-      const cx = w * 0.3,
+      const cx = w * 0.27,
         cy = h / 2;
-      __blob(g, cx, cy, 26, 'rgba(92,6,8,0.92)', 14);
-      __blob(g, cx + 6, cy - 4, 15, 'rgba(70,4,6,0.95)', 10);
-      for (let i = 0; i < 46; i++) {
+      __blob(g, cx, cy, 40, 'rgba(92,6,8,0.92)', 16);
+      __blob(g, cx + 8, cy - 5, 24, 'rgba(70,4,6,0.95)', 12);
+      for (let i = 0; i < 9; i++) __blob(g, cx + __rnd(10, 70), cy + __rnd(-26, 26), __rnd(8, 16), 'rgba(88,6,8,0.9)', 9);
+      for (let i = 0; i < 60; i++) {
         const a = __rnd(-0.55, 0.55) + (Math.random() < 0.15 ? Math.PI : 0),
-          d = __rnd(18, 118),
-          r = Math.max(1, 6 * Math.random() * (1 - d / 140));
+          d = __rnd(30, 180),
+          r = Math.max(1.2, 8 * Math.random() * (1 - d / 200));
         __blob(g, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.55, r, `rgba(${80 + Math.random() * 30},5,7,${__rnd(0.6, 0.95)})`, 6);
       }
       for (let i = 0; i < 7; i++) {
         const a = __rnd(-0.35, 0.35),
-          d = __rnd(40, 110);
+          d = __rnd(70, 180);
         g.strokeStyle = 'rgba(85,6,8,0.75)';
         g.lineWidth = __rnd(1.5, 3.5);
         g.lineCap = 'round';
@@ -215,9 +216,9 @@ const __IMP_TEX = {
       }
       const wood = mat === 'wood';
       // chipped crater: a pale ring of exposed material, scorched edge, dark hole
-      __blob(g, c, c, wood ? 22 : 25, wood ? 'rgba(196,160,116,0.55)' : 'rgba(205,198,186,0.5)', 12);
-      __blob(g, c, c, wood ? 13 : 15, 'rgba(70,60,50,0.75)', 10);
-      __blob(g, c, c, wood ? 7 : 8, 'rgba(10,9,8,1)', 8);
+      __blob(g, c, c, wood ? 24 : 27, wood ? 'rgba(170,132,90,0.7)' : 'rgba(160,152,140,0.65)', 12);
+      __blob(g, c, c, wood ? 15 : 17, 'rgba(58,50,42,0.9)', 10);
+      __blob(g, c, c, wood ? 9 : 10, 'rgba(8,7,6,1)', 8);
       g.strokeStyle = 'rgba(30,26,22,0.6)';
       g.lineWidth = 1;
       for (let i = 0; i < (wood ? 4 : 7); i++) {
@@ -393,6 +394,7 @@ function __bloodHit(e) {
   if (e.headshot || (e.dmg || 0) >= 35 || Math.random() < 0.55) {
     const o = { x: p.x + d.x * 0.25, y: p.y + d.y * 0.25, z: p.z + d.z * 0.25 },
       h = __impRay(o, d, 2.4, !1);
+    __IMP.log && __IMP.log.push({ blood: [p.x, p.y, p.z].map((x) => +x.toFixed(2)), d: [d.x, d.y, d.z].map((x) => +x.toFixed(2)), ray: h && { t: +h.t.toFixed(2), p: [h.p.x, h.p.y, h.p.z].map((x) => +x.toFixed(2)), n: h.n, prop: h.prop, ok: !!__impSurface(h.p, h.n) } });
     if (h && !h.prop) {
       const s = __impSurface(h.p, h.n);
       if (s) {
@@ -534,14 +536,17 @@ function __impFilter(list) {
       const s = __impSurface(e.pos, e.normal);
       if (!s) continue; // nothing drawn there: no hole, no dust in the air
       const kind = e.mat === 'wood' ? 'holeWood' : e.mat === 'metal' ? 'holeMetal' : 'hole';
-      e.noHole || __impPlace(kind, s.p, s.n, __rnd(0.065, 0.09), Math.random() * 6.28, 1, s.box);
+      e.noHole || __impPlace(kind, s.p, s.n, __rnd(0.085, 0.11), Math.random() * 6.28, 1, s.box);
+      __IMP.log && __IMP.log.push({ at: [s.p.x, s.p.y, s.p.z].map((x) => +x.toFixed(2)), box: s.box && s.box.kind, n: [s.n.x, s.n.y, s.n.z].map((x) => +x.toFixed(2)) });
       out.push({ ...e, pos: s.p, normal: s.n, noHole: !0 });
     } else if (e.type === 'blood') continue;
     else if (e.type === 'kill') e.victim && __bloodPoolLater(e.victim);
     else if (e.type === 'hit') {
       try {
         __bloodHit(e);
-      } catch (x) {}
+      } catch (x) {
+        __IMP.err = String(x && x.stack);
+      }
       out.push(e);
     } else {
       e.type === 'roundStart' && __impClear();
@@ -576,5 +581,7 @@ typeof window < 'u' &&
     drops: (__IMP.pools.drop || []).reduce((a, P) => a + Math.min(P.n, P.cap), 0),
     pools: (__IMP.pools.pool || []).reduce((a, P) => a + Math.min(P.n, P.cap), 0),
     tracked: __IMP.track.length,
+    err: __IMP.err || null,
     check: (p, n) => __impSurface(p, n),
+    log: (on) => (on ? (__IMP.log = []) : __IMP.log),
   }));

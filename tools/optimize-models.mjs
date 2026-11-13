@@ -14,6 +14,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
 
+const SKIP = ['grenade-frag.glb'];
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 await MeshoptEncoder.ready;
 await MeshoptDecoder.ready;
@@ -23,6 +24,8 @@ const files = process.argv.slice(2).length ? process.argv.slice(2) : walk(path.j
 let before = 0,
   after = 0;
 for (const f of files) {
+  // CC BY-ND models may not be modified (see CREDITS.md): shipped exactly as licensed
+  if (SKIP.some((s) => f.endsWith(s))) continue;
   const doc = await io.read(f);
   if (doc.getRoot().listExtensionsUsed().some((e) => e.extensionName === 'EXT_meshopt_compression')) continue;
   const b = fs.statSync(f).size;

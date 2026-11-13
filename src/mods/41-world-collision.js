@@ -26,7 +26,7 @@ const __WC_SIZE = { cone: [0.36, 0.7, 0.36], hydrant: [0.4, 0.8, 0.4], dumpster:
 function __wcAdd(m) {
   const added = [];
   const push = (min, max, mat, what) => {
-    const b = { min, max, kind: 'prop', solid: !0, mat, pen: mat === 'metal' ? 2 : 1 };
+    const b = { min, max, kind: 'prop', solid: !0, mat, pen: mat === 'metal' ? 2 : 1, __wc: what };
     m.boxes.push(b);
     added.push(what);
   };
@@ -70,3 +70,17 @@ typeof window < 'u' &&
     return Object.fromEntries(Object.entries(__WC.added).map(([k, v]) => [k, v.reduce((o, x) => ((o[x] = (o[x] || 0) + 1), o), {})]));
   });
 typeof window < 'u' && window.__phx && (window.__phx.map = () => aw());
+// the plants are stood on the ground when the vegetation layer is built: their own new colliders must not
+// count as ground (that stood every cactus on top of its collider, 0.7-1 m in the air)
+{
+  const coreVeg = __vegBuild;
+  __vegBuild = function (m) {
+    const mine = m.boxes.filter((b) => b.__wc === 'cactus' && !b.off);
+    for (const b of mine) b.off = !0;
+    try {
+      return coreVeg.apply(this, arguments);
+    } finally {
+      for (const b of mine) b.off = !1;
+    }
+  };
+}

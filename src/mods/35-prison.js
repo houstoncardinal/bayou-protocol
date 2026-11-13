@@ -104,6 +104,9 @@ function __prisonBuild() {
       : [[0, -1], [0, 1], [-1, 0], [1, 0]];
     for (const [sx, sz] of st) {
       bx(x + sx - 0.19, 0, zz + sz - 0.19, x + sx + 0.19, 0.46, zz + sz + 0.19, 'prop', 'metal', '#7e878d', { pen: 3 });
+      // a thin invisible cap: the collider top (0.53 m) is above the automatic step-up height (0.48 m), so
+      // running into a stool does not carry you up onto it and over the table; jumping still does
+      w.box(x + sx - 0.19, 0.46, zz + sz - 0.19, x + sx + 0.19, 0.53, zz + sz + 0.19, 'prop', { mat: 'metal' });
       w.vis(x + sx * 0.5 - 0.03, 0.1, zz + sz * 0.5 - 0.03, x + sx * 0.95 + 0.03, 0.14, zz + sz * 0.95 + 0.03, 'metal', C.steel);
     }
   };
@@ -393,6 +396,7 @@ function __prisonBuild() {
       for (const s of [-1, 1]) {
         w.vis(x + 0.64, 1.25, vz + s * 0.31 - 0.03, x + 0.88, 1.5, vz + s * 0.31 + 0.03, 'metal', '#1d1f21');
         bx(x + 0.56, 0, vz + s * 0.85 - 0.2, x + 0.96, 0.46, vz + s * 0.85 + 0.2, 'prop', 'metal', '#7e878d', { pen: 3 });
+        w.box(x + 0.56, 0.46, vz + s * 0.85 - 0.2, x + 0.96, 0.53, vz + s * 0.85 + 0.2, 'prop', { mat: 'metal' });
       }
     }
     w.vis(vx0, 2.35, vz - 0.32, vx1, 2.45, vz + 0.32, 'metal', '#8e959a');
