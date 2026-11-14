@@ -1,3 +1,16 @@
 [build]
   command = "npm run build"
   publish = "dist"
+
+# Browser caching (repeat visits and second matches load from the player's disk, not the network).
+# Code bundles have content hashes in their names: cached for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+# Models, textures, sounds and maps keep their names between versions: used from the cache for a day, and
+# refreshed in the background for a week after that (an update reaches players within a day).
+[[headers]]
+  for = "/game/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"

@@ -4,13 +4,76 @@ function __b64buf(u) {
   for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
   return b.buffer;
 }
-function __glbParse(u, ok, err) {
+// Model loading queue. At start-up the game used to request ~30 models at once (every gun, crate, mask,
+// character, the Ridgeback collision), which buried the few files the menu scene needs (its lighting
+// environment arrived after 20 s, so every shader was compiled twice). Now:
+//   - the menu's environment map is fetched first, the moment the page starts
+//   - background model loads wait until the menu scene is lit (or 8 s, or a match starts)
+//   - then at most 6 run at once (what a browser opens per server anyway), so the parse work is spread out
+//   - a model asked for during a match goes to the front of the queue
+const __GLQ = { q: [], active: 0, max: 6, open: !1, after: [], iv: null, t0: typeof performance < 'u' ? performance.now() : 0 };
+function __glbGateCheck() {
+  if (__GLQ.open) return !0;
+  let lit = !1,
+    playing = !1;
   try {
-    u.startsWith('data:') ? new nu().parse(__b64buf(u), '', ok, err) : new nu().load(u, ok, void 0, err);
-  } catch (e) {
-    err && err(e);
-  }
+    lit = !!(__R3F && __R3F.scene && __R3F.scene.environment);
+    playing = !!(eA.state && !eA.attract);
+  } catch (e) {}
+  if (!lit && !playing && performance.now() - __GLQ.t0 < 8000) return !1;
+  __GLQ.open = !0;
+  clearInterval(__GLQ.iv);
+  for (const f of __GLQ.after.splice(0)) setTimeout(f, 0);
+  __glbPump();
+  return !0;
 }
+// run fn once the start-up loads are released (used for preloads elsewhere)
+function __glbAfter(fn, delay = 0) {
+  if (typeof window > 'u') return;
+  const go = () => setTimeout(fn, delay);
+  if (__GLQ.open) return go();
+  __GLQ.after.push(go);
+  __GLQ.iv || (__GLQ.iv = setInterval(__glbGateCheck, 150));
+}
+function __glbPump() {
+  if (!__GLQ.open && !__glbGateCheck()) return void (__GLQ.iv || (__GLQ.iv = setInterval(__glbGateCheck, 150)));
+  while (__GLQ.active < __GLQ.max && __GLQ.q.length) __GLQ.q.shift()();
+}
+function __glbParse(u, ok, err) {
+  if (u.startsWith('data:'))
+    try {
+      return new nu().parse(__b64buf(u), '', ok, err);
+    } catch (e) {
+      return err && err(e);
+    }
+  const run = () => {
+    __GLQ.active++;
+    let fin = !1;
+    const end = (f) => (...a) => {
+      fin || ((fin = !0), __GLQ.active--, setTimeout(__glbPump, 0));
+      f && f(...a);
+    };
+    try {
+      new nu().load(u, end(ok), void 0, end(err));
+    } catch (e) {
+      end(err)(e);
+    }
+  };
+  let urgent = !1;
+  try {
+    urgent = !!(eA.state && !eA.attract);
+  } catch (e) {}
+  urgent ? __GLQ.q.unshift(run) : __GLQ.q.push(run);
+  __glbPump();
+}
+// the menu's lighting environment first (day / dusk / night)
+typeof window < 'u' &&
+  setTimeout(() => {
+    try {
+      const tod = Zw.getState().timeOfDay;
+      Jd.preload(TwA, './game/env/env-0' + (tod === 'day' ? 1 : tod === 'night' ? 3 : 2) + '.bin');
+    } catch (e) {}
+  }, 0);
 /* ===== Bayou Protocol mod: GLB weapon models ===== */
 const __XG = {
   warden: {
@@ -62,30 +125,6 @@ const __XG = {
     fore: 0.67,
     sight: 0.86,
     fb: 'br',
-  },
-  phantom: {
-    id: 'phantom',
-    url: './game/models/weapon-phantom.glb',
-    rotY: Math.PI / 2,
-    len: 1.05,
-    grip: 0.345,
-    gripTop: 0.35,
-    gz: 0.06,
-    fore: 0.52,
-    sight: 0.81,
-    fb: 'sniper',
-  },
-  sentinel: {
-    id: 'sentinel',
-    url: './game/models/weapon-sentinel.glb',
-    rotY: Math.PI / 2,
-    len: 0.84,
-    grip: 0.31,
-    gripTop: 0.46,
-    gz: 0.045,
-    fore: 0.62,
-    sight: 0.9,
-    fb: 'rifle',
   },
 };
 function __xgPrep(scene, c) {

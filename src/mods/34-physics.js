@@ -251,9 +251,11 @@ function __phxRayBoxes(o, d, maxT, pred) {
   return {
     t,
     point: { x: o.x + d.x * t, y: o.y + d.y * t, z: o.z + d.z * t },
-    // boxes are axis-aligned: snap the normal so it matches the grid cast exactly
-    normal:
-      Math.abs(n.x) > 0.5
+    // boxes are axis-aligned: snap the normal so it matches the grid cast exactly (terrain and rocks on a
+    // model map keep their real normal)
+    normal: P.boxOf.get(hit.collider.handle).__mesh
+      ? { x: n.x, y: n.y, z: n.z }
+      : Math.abs(n.x) > 0.5
         ? { x: Math.sign(n.x), y: 0, z: 0 }
         : Math.abs(n.y) > 0.5
           ? { x: 0, y: Math.sign(n.y), z: 0 }
@@ -385,8 +387,11 @@ function __phxMove(w, dt) {
   let nx = w.pos.x + mv.x,
     ny = w.pos.y + mv.y,
     nz = w.pos.z + mv.z;
+  // stairs: walking on the ground into something no higher than a step, go up onto it
+  const stepped = stick && __phxStepUp(w, c, k, lift, mv);
+  stepped && ((nx = stepped.x), (ny = stepped.y), (nz = stepped.z));
   // velocity response: keep sliding along surfaces, stop into them
-  for (let i = 0, n = k.numComputedCollisions(); i < n; i++) {
+  for (let i = 0, n = stepped ? 0 : k.numComputedCollisions(); i < n; i++) {
     const h = k.computedCollision(i);
     if (!h) continue;
     const N = h.normal1;
@@ -447,6 +452,8 @@ function __phxMove(w, dt) {
       }
     }
   }
+  // walking down a step (snap-to-ground drops the feet a step at once): the camera glides down too
+  stick && !stepped && w.pos.y - ny > 0.08 && w.pos.y - ny <= __KCC.snap + 0.01 && (w.__stepOff = Math.max(-0.5, (w.__stepOff || 0) - (w.pos.y - ny)));
   w.pos.x = nx;
   w.pos.y = ny;
   w.pos.z = nz;
@@ -456,6 +463,60 @@ function __phxMove(w, dt) {
     w.onGround = !0;
   } else w.onGround = !1;
   w.pos.y < 0 && ((w.pos.y = 0), w.vel.y < 0 && (w.vel.y = 0), (w.onGround = !0));
+}
+// Step-up. Rapier's own autostep does not fire for a controller swept horizontally along the ground, so a
+// stair riser stopped people dead and they had to jump. When a grounded move is blocked, try it again from
+// a step higher: sweep up (no further than the ceiling allows), sweep the same move forward, sweep down
+// onto what is there. Accept it if that is walkable ground no more than a step (0.48 m) above the feet and
+// the move got further. Kerbs, stairs, rock lips and tunnel sills are walked up; the first-person camera
+// glides up over each step (__stepCam) instead of popping.
+const __su = { up: { x: 0, y: 0, z: 0 }, f: { x: 0, y: 0, z: 0 }, d: { x: 0, y: 0, z: 0 } };
+function __phxStepUp(w, c, k, lift, mv) {
+  const want = Math.hypot(__kv.x, __kv.z),
+    got = Math.hypot(mv.x, mv.z);
+  if (want < 1e-4 || got > want * 0.92) return null;
+  const P = __PHX,
+    F = P.R.QueryFilterFlags.EXCLUDE_SENSORS,
+    max = __KCC.step,
+    x0 = w.pos.x,
+    y0 = w.pos.y,
+    z0 = w.pos.z;
+  try {
+    c.probe.setTranslation({ x: x0, y: y0 + lift, z: z0 });
+    __su.up.y = max;
+    k.computeColliderMovement(c.probe, __su.up, F, __CF.kcc, __kccPred);
+    const rise = k.computedMovement().y,
+      S = P.stats.step || (P.stats.step = { ok: 0, rise: 0, fwd: 0, land: 0 });
+    if (rise < 0.06) return S.rise++, null;
+    c.probe.setTranslation({ x: x0, y: y0 + rise + lift, z: z0 });
+    __su.f.x = __kv.x;
+    __su.f.z = __kv.z;
+    k.computeColliderMovement(c.probe, __su.f, F, __CF.kcc, __kccPred);
+    const f = k.computedMovement(),
+      fx = f.x,
+      fz = f.z;
+    if (Math.hypot(fx, fz) < got + 0.004) return S.fwd++, null;
+    c.probe.setTranslation({ x: x0 + fx, y: y0 + rise + lift, z: z0 + fz });
+    __su.d.y = -(rise + 0.06);
+    k.computeColliderMovement(c.probe, __su.d, F, __CF.kcc, __kccPred);
+    const dn = k.computedMovement().y,
+      y = y0 + rise + dn,
+      up = y - y0;
+    if (!k.computedGrounded() || up < 0.015 || up > max + 0.01) return (S.land++, (S.last = [+up.toFixed(3), k.computedGrounded()])), null;
+    S.ok++;
+    w.__stepOff = Math.min(0.5, (w.__stepOff || 0) + up);
+    return { x: x0 + fx, y, z: z0 + fz };
+  } finally {
+    c.probe.setTranslation({ x: x0, y: y0 + lift, z: z0 });
+  }
+}
+// the camera lags a step's height and catches up in about a tenth of a second
+function __stepCam(s, dt) {
+  const o = s.__stepOff || 0;
+  if (!o) return 0;
+  s.__stepOff = o * Math.exp(-dt * 16);
+  Math.abs(s.__stepOff) < 0.002 && (s.__stepOff = 0);
+  return s.__stepOff;
 }
 {
   const coreMove = h4;

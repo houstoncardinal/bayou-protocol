@@ -196,7 +196,7 @@ function __lodChar(s) {
 }
 function __lodSelect(s, K) {
   const cam = __R3F && __R3F.camera;
-  if (!cam || !s.userData.bpChar) return;
+  if (!cam || !s.userData.bpChar || (typeof window < 'u' && window.__noLod)) return;
   const L = __lodChar(s);
   if (!L) return;
   const d = Math.hypot(cam.position.x - K.position.x, cam.position.y - K.position.y - 1, cam.position.z - K.position.z),
@@ -302,9 +302,10 @@ function __warmTick(g) {
 }
 // ---------------------------------------------------------------- 5. fetch match assets in the menus
 typeof window < 'u' &&
-  setTimeout(() => {
+  __glbAfter(() => {
     const urls = [];
-    for (const [f, list] of Object.entries(__CHAR.files)) for (const n of list) urls.push(__CHAR.base + f + '/' + n + '.glb');
+    // the prisoners only appear in Blackwater: they load with that map (50-prisoners.js)
+    for (const [f, list] of Object.entries(__CHAR.files)) if (f !== 'prisoners') for (const n of list) urls.push(__CHAR.base + f + '/' + n + '.glb');
     let i = 0;
     const next = () => {
       if (i >= urls.length) return;
@@ -314,7 +315,7 @@ typeof window < 'u' &&
       typeof requestIdleCallback == 'function' ? requestIdleCallback(next, { timeout: 1500 }) : setTimeout(next, 400);
     };
     next();
-  }, 2500);
+  }, 1500);
 typeof window < 'u' &&
   (window.__bpSmooth = () => ({
     lodQueue: __LOD.queue.length,
@@ -385,3 +386,46 @@ function __FpsRow({ row }) {
   };
 }
 typeof window < 'u' && (window.__bpLod = __LOD);
+// ---------------------------------------------------------------- shader failure guard
+// High quality used to turn on 8 real-time lights; on some GPUs (notably Apple's) the map's surface shader
+// then exceeded the per-shader uniform limits, failed to compile and the whole map was not drawn (only the
+// gun and hands, which use simpler materials, showed against the grey sky). High now uses 6 lights like
+// Medium (core patch). As a safety net, every compiled program's link status is checked in the background
+// (without stalling: only once the driver reports it finished, and only where the driver compiles in the
+// background at all); if any failed, quality steps down one level
+// and a message says why, instead of leaving an empty grey screen.
+const __SHG = { checked: new WeakSet(), t: 0, done: !1 };
+function __shaderGuard(g) {
+  const now = performance.now();
+  if (__SHG.done || now - __SHG.t < 2500) return;
+  __SHG.t = now;
+  const gl = g.gl.getContext(),
+    ext = gl.getExtension('KHR_parallel_shader_compile'),
+    progs = g.gl.info.programs || [];
+  // without background compiling, asking for a program's status would make the driver finish compiling it
+  // right now, on the main thread (seconds of stalls on some machines): no check there
+  if (!ext) return void (__SHG.done = !0);
+  let failed = 0;
+  for (const p of progs) {
+    const prog = p.program;
+    if (!prog || __SHG.checked.has(prog)) continue;
+    if (ext && !gl.getProgramParameter(prog, ext.COMPLETION_STATUS_KHR)) continue;
+    __SHG.checked.add(prog);
+    gl.getProgramParameter(prog, gl.LINK_STATUS) || failed++;
+  }
+  if (!failed) return;
+  const z = Zw.getState();
+  if (z.quality === 'low') return void (__SHG.done = !0);
+  z.setup({ quality: z.quality === 'high' ? 'medium' : 'low' });
+  z.flash && z.flash(`This graphics card could not run every ${z.quality === 'high' ? 'High' : 'Medium'} quality effect, so quality was lowered one step.`);
+  __SHG.done = z.quality === 'medium';
+}
+{
+  const coreDet = __detTick;
+  __detTick = function (g) {
+    try {
+      __shaderGuard(g);
+    } catch (e) {}
+    return coreDet.apply(this, arguments);
+  };
+}

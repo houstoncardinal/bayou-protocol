@@ -1,0 +1,10 @@
+import puppeteer from 'puppeteer-core';
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', protocolTimeout: 3000000, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const p = await b.newPage(); await p.setViewport({ width: 1280, height: 720 });
+await p.goto('http://localhost:8123/index.html?q=high');
+await p.waitForFunction(() => window.status_ !== 'loading', { timeout: 540000, polling: 1000 });
+const r = await p.evaluate((n) => window.holeScan(n), parseInt(process.argv[2] || '60'));
+console.log('top-down magenta pixels', JSON.stringify(r.topdown));
+const bad = r.player.filter((x) => x.holes > 0);
+console.log('player positions tested', r.player.length, 'with holes', bad.length, JSON.stringify(bad.slice(0, 12)));
+await b.close();

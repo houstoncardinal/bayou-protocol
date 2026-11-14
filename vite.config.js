@@ -25,6 +25,8 @@ function bayouMods() {
 export default defineConfig({
   base: './',
   plugins: [bayouMods()],
+  // map packages import 'three': give them the core's copy (src/engine/three.js), never a second one
+  resolve: { alias: [{ find: /^three$/, replacement: path.resolve(process.cwd(), 'src/engine/three.js') }] },
   server: { host: true, port: 5173 },
   build: { target: 'es2020', chunkSizeWarningLimit: 6000, assetsInlineLimit: 0 },
 });

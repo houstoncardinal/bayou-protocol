@@ -142,4 +142,22 @@ typeof window < 'u' && (window.__progs = () => (__R3F && __R3F.gl.info.programs 
 typeof window < 'u' &&
   (window.__r3fStep = (t) => mb(t, !0)) &&
   (window.__r3fLoop = (mode) => __R3F && __R3F.setFrameloop && __R3F.setFrameloop(mode));
+typeof window < 'u' && (window.__bpR3F = () => __R3F);
 typeof window < 'u' && (window.__r3fClock = () => __R3F && __R3F.clock && __R3F.clock.elapsedTime);
+// test hook: time spent in the simulation tick (players, bots, physics) and the map's per-frame update
+const __PROF = { sim: 0, simN: 0, map: 0, mapN: 0 };
+{
+  const coreTick = U1;
+  U1 = function () {
+    const t = performance.now();
+    try {
+      return coreTick.apply(this, arguments);
+    } finally {
+      __PROF.sim += performance.now() - t;
+      __PROF.simN++;
+    }
+  };
+}
+typeof window < 'u' && (window.__bpProf = (reset) => (reset ? Object.assign(__PROF, { sim: 0, simN: 0, map: 0, mapN: 0 }) : { simMsPerTick: +(__PROF.sim / Math.max(1, __PROF.simN)).toFixed(3), ticks: __PROF.simN, mapMsPerFrame: +(__PROF.map / Math.max(1, __PROF.mapN)).toFixed(3), frames: __PROF.mapN }));
+// test hook: the current map's named areas (callouts)
+typeof window < 'u' && (window.__bpAreas = () => aw().areas.map((a) => ({ name: a.name, min: a.min, max: a.max })));

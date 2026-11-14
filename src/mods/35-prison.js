@@ -674,6 +674,9 @@ function __prisonBuild() {
   w.static('dumpster', 109, 95.2, 0, [2.2, 1.5, 1.4]);
   for (const [x, zz] of [[24, 96], [25.3, 96], [24.6, 97.2]]) w.crate(x, zz, 1.2, 1.2, 0, '#9a7a52');
   for (const [x, zz] of [[36, 99], [37.2, 99.4]]) w.barrel(x, zz);
+  // the "Crates and barrels" set (drawn by 49-crates.js): crates under a tarp and three drums
+  (A.__crateSets || (A.__crateSets = [])).push({ x: 15, z: 99.4, rotY: 0 });
+  w.box(15 - 1.05, 0, 99.4 - 2.15, 15 + 1.05, 1.05, 99.4 + 2.15, 'crate', { pen: 1.4, mat: 'wood' });
   P('crate', 30, 95.6, 0.4);
   P('crate', 31.1, 96.2, 1.1);
   P('crate', 30.5, 95.9, 0.7, 0.62);

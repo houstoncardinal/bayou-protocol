@@ -1,7 +1,7 @@
 # Bayou Protocol
 
 A browser tactical first-person shooter built on three.js and React Three Fiber.
-Modes: Team Deathmatch, Free-for-All, Capture the Flag, Bomb Defusal, plus a Firing Range.
+Modes: Bomb Defusal (with halftime and overtime), Team Deathmatch, Free-for-All, Capture the Flag.
 Runs on desktop (mouse and keyboard, gamepad) and on phones and tablets (touch, landscape).
 
 ## Quick start
@@ -20,12 +20,15 @@ Requires Node 18 or newer.
 ```
 index.html                 Page shell: meta tags, loading screen, #root
 src/
-  main.js                  Entry point: loads styles, then the engine core
+  main.js                  Entry point: loads styles, the engine core, then the map packages
+  engine/three.js          'three' for code outside the core: the core's own three.js classes (one copy)
+  maps/                    Map packages' own loaders, unchanged (ridgebackPass/: Ridgeback Pass v4)
   styles/
     base.css               The game's original stylesheet (compiled)
     ui.css                 Buy menu, end screen, HUD, mobile layout, rank cards
   mods/                    Game features, one file each, loaded in file-name order
     00-environment-shims.js    Safe loading in sandboxed frames
+    00-three.js                Hands the core's three.js classes to src/engine/three.js
     00b-movement.js            Movement tuning: speeds, sprint, acceleration, backpedal, tagging
     01-mouse-capture.js        Pointer lock handling and free-aim fallback
     02-weapon-models.js        Loader for the GLB weapon models
@@ -37,7 +40,6 @@ src/
     08-fullscreen.js           Full screen and Esc handling
     09-ui-screens.js           Buy menu, end-of-match screen, HUD overlay, colour-blind palettes
     10-weapon-rigs.js          Animated first-person arms (Kodiak, Midas, Sentinel)
-    11-firing-range.js         Firing Range map and mode
     12-hit-audio.js            Hit, headshot and kill sounds
     13-rank-and-season.js      Ranked rating and season track
     14-bomb-online-and-weapon-weight.js   Online Bomb Defusal sync, gun weight and cycling
@@ -57,12 +59,15 @@ src/
     32-ground-combat.js        No scorestreaks (UAV, airstrike, Aegis), no power-up pads, no rocket launcher
     33-knife.js                Animated first-person knife (knife_animated.glb): idle, slashes, stabs
     34-physics.js              Rapier physics: world per map, character controller, grenades, props, rays
-    35-prison.js               Blackwater Penitentiary map
+    35-prison.js               Blackwater Penitentiary map (code-built)
     36-precision-input.js      Mouse: same aim sensitivity on every gun, DPI keeps cm/360, raw-input status
-    37-characters.js           The 8 Mixamo character models, shared animations, locomotion, <GameCharacter>
+    37-characters.js           Character roster (Mixamo models, plus Wraith), shared animations, 8-way rifle
+                               locomotion, turning on the spot, upper-body reload / grenade toss / hit / recoil,
+                               dying fallback, guns held in the animated hands, masks, <GameCharacter>
     38-performance.js          Scenery instancing, shader warm-up, frame statistics
-    39-animated-weapons.js     Hornet .45, Mauler 12, Kestrel 9, Anvil 7.62, Striker 17: animated arms, clips,
-                               shell-by-shell reload, slide lock, physics casings, inspect key (X)
+    39-animated-weapons.js     Hornet .45, Mauler 12, Kestrel 9, Anvil 7.62, Striker 17, Phantom 12.7 (bolt
+                               action), Sentinel M4A1 carbine: animated arms, clips, shell-by-shell reload, slide
+                               lock, physics casings, inspect key (X)
     40-body.js                 Foot IK on stairs and slopes; hitboxes built from each character's skeleton
     41-world-collision.js      Colliders for placed models and cacti that had none
     42-smooth.js               Viewmodel memory leak fix, background shader compile, meshopt decoder,
@@ -72,9 +77,26 @@ src/
     45-weapon-roster.js        Model-based weapons only; removed guns remap to their closest replacement
     46-credits.js              About screen credits (kept in step with CREDITS.md)
     47-pause-menu.js           Esc menu: match card, overview with loadout pictures and quick settings
+    48-retarget.js             Characters on non-Mixamo skeletons (Wraith): bones renamed, Mixamo clips
+                               retargeted, ragdoll spine fallback
+    49-crates.js               Map crates drawn with the crate models (instanced), breakable crates too
+    50-prisoners.js            Inmates (Mixamo Ch08) pacing the Blackwater cells and the dayroom (can be shot)
+    52-fp-arms.js              Arms6 first-person arms on model-only guns: two-bone IK, finger curl, trigger pull
+    53a-ridgeback-data.js      Ridgeback Pass heights, tunnel floors, decks, blocked cells, spawns (generated)
+    53b-ridgeback.js           Ridgeback Pass v4: runs the package's loader (src/maps), adds spawns, sites,
+                               callouts, Rapier meshes and clip walls, bots' walk grid, radar minimap, preload;
+                               retires Dune Market, Dry Gulch, Reactor, Cell Block and the Firing Range
+    54-speed.js                Menus: background match at 30 fps, low resolution, 6 bots, shadows once a second;
+                               shaders of loaded models compiled in the background so matches start fast
+    55-competitive.js          Bomb Defusal halftime side swap and overtime; Blood setting; production builds
+                               drop the debug hooks from window (add ?debug to keep them)
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
+  build-ridgeback.mjs        Copies the Ridgeback Pass package into public/ (clean copy) and derives
+                               53a-ridgeback-data.js (heights, tunnel floors, decks, obstacles, clip walls)
+  build-autorig.mjs          Retired auto-rigger; `--mixamo` still writes a zip for mixamo.com's Auto-Rigger
+  build-assets.mjs           Props, masks, Arms6, the DJMaesen terrorist -> optimised GLBs
   optimize-models.mjs        meshopt-compresses every GLB under public/game (run after adding models)
   inspect-glb.mjs            What takes the space in a GLB (textures, geometry, animation)
   optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
@@ -85,10 +107,14 @@ assets-src/                  Full-size source assets. Not shipped; optimised cop
   characters/<faction>/      Character FBX from Mixamo (kept out of git: several are over GitHub's 100 MB limit)
   animations/                Mixamo animation FBX (without skin), shared by every character
   weapons/                   Animated arms + gun GLBs as downloaded (the G17 source is over 100 MB: kept out of git)
+  _retired/                  Sources no longer used by the game or the tools (see its README; safe to delete)
+  maps/ridgeback_pass/       The Ridgeback Pass v4 package as delivered (source of public/game/maps/ridgeback_pass)
 core/
   game.core.js             The engine core (compiled, see below)
 public/game/               Models (.glb), textures, sky maps and fonts as real files
 docs/ENGINE_API.md         Engine internals the mods rely on
+docs/LAUNCH.md             What a public launch still needs (game server, accounts, legal, analytics)
+docs/maps/ridgeback_pass/  The v4 package's README, install notes, credits and a preview
 vite.config.js             Vite config and the plugin that loads the mods
 ```
 
@@ -109,12 +135,22 @@ call into the mods). Those are already applied in `core/game.core.js`.
 
 ### Common tasks
 
+- **Where the maps are:** most maps are built in code, not loaded from map files: Temple, Piazza and
+  Kindred City are in the core (`XE` in `core/game.core.js`) and Blackwater Penitentiary is
+  `src/mods/35-prison.js`. Ridgeback Pass is a model package: `assets-src/maps/ridgeback_pass/` as delivered,
+  copied to `public/game/maps/ridgeback_pass/` by `node tools/build-ridgeback.mjs` (which also writes
+  `src/mods/53a-ridgeback-data.js`), drawn by the package's own loader
+  (`src/maps/ridgebackPass/`, unchanged from the zip) and given its gameplay and physics by
+  `src/mods/53b-ridgeback.js`. To install a new version: replace `assets-src/maps/ridgeback_pass/` and
+  `src/maps/ridgebackPass/` with the new package's folders, run `node tools/build-ridgeback.mjs`, and check
+  the loader's options in `__rbLoadView` still match.
 - **Add or replace a character:** put the FBX in `assets-src/characters/counter-terrorists/` or
   `terrorists/`, run `node tools/build-characters.mjs --chars`, then list the file in `__CHAR.files` and
   give an operator its `model` in `src/mods/37-characters.js`.
-- **Add an animation:** put the Mixamo FBX (without skin, "In Place" for walks and runs) in
-  `assets-src/animations/` and run `node tools/build-characters.mjs --anims`. The clip is named after the
-  file ("Rifle Walk.fbx" -> `RifleWalk`).
+- **Add an animation:** put the Mixamo FBX (without skin) in `assets-src/animations/` and run
+  `node tools/build-characters.mjs --anims`. The clip is named after the file ("Rifle Walk.fbx" ->
+  `RifleWalk`); root motion is removed and its speed recorded. To use it, map a game name to it in
+  `__CHAR.alias` (locomotion) or `__CHAR.overlay` (upper-body actions) in `37-characters.js`.
 - **Add an animated weapon:** put the GLB in `assets-src/weapons/`, add it to `MAP` in
   `tools/build-weapons.mjs` and run it, then add an entry to `__AW` (model, gun node name, clip time ranges)
   and `__AW_STATS` in `src/mods/39-animated-weapons.js`. To find the clip ranges, chart which gun parts
@@ -144,11 +180,12 @@ Rapier 3D (`@dimforge/rapier3d-compat`) runs the physics; three.js renders. `src
   at a fixed 1/60 s from an accumulator, with interpolation for anything drawn from it.
 - Players and bots move with Rapier's kinematic character controller (capsule, step climbing, slopes,
   snap to ground, walls and ceilings), so the game's own speeds, jump height and air control are kept.
-- Hitscan, line of sight and rockets cast rays through Rapier (verified identical to the old caster on
+- Hitscan, line of sight and explosions cast rays through Rapier (verified identical to the old caster on
   2,000 random rays). Thrown grenades are rigid bodies with CCD; explosions push players and props.
 - Props (`map.physProps`) can be pushed, shot and knocked over; crates break into planks. Online, props
   run on each screen and never block shots, so they cannot desync a match.
-- `window.__phx.stats()` and `window.__perf()` in the browser console show what is running.
+- `window.__phx.stats()` and `window.__perf()` in the browser console show what is running (in development,
+  or with `?debug` in the address on a production build).
 
 ## Asset pipeline
 
@@ -177,6 +214,39 @@ npx @gltf-transform/cli dedup /tmp/b.glb public/game/models/veg/foo.glb
 
 Load big assets lazily (only on maps that use them), as `24-vegetation.js` does, so the first load
 stays small.
+
+## Project size: what ships and what does not
+
+Only `public/` and the built code reach players. Everything else is for building the game.
+
+| Folder | Size | Ships? | What it is |
+|---|---|---|---|
+| `public/game/` | ~135 MB | yes | Optimised models, maps, textures, sounds. A match downloads only what it uses: Ridgeback Pass about 80 MB (70 MB on Low), the built-in maps much less, plus the shared characters, guns and sounds (about 25 MB). Later visits reuse the browser's cache. |
+| `assets-src/` | ~1.3 GB | no | Full-size sources (FBX characters, downloaded GLBs, the map package, sound sources). Needed only to rebuild an asset with `tools/`. |
+| `assets-src/_retired/` | ~0.6 GB | no | Sources nothing uses any more. Safe to delete. |
+| `.git/` | 0.5–0.9 GB | no | Version history. Run `git gc` now and then to keep it packed. |
+| `node_modules/` | ~110 MB | no | Build tools (`npm install` recreates it). |
+| `dist/` | ~140 MB | output | What `npm run build` makes for hosting; delete it any time. |
+
+To keep the project folder small without losing anything:
+
+1. Delete `assets-src/_retired/` and `dist/`.
+2. Move `assets-src/` to an external drive or a cloud folder, and leave a link in its place so the tools still
+   find it:
+
+   ```
+   mv assets-src "/Volumes/MyDrive/bayou-assets-src"
+   ln -s "/Volumes/MyDrive/bayou-assets-src" assets-src
+   ```
+
+   That leaves about 300 MB of project plus its git history.
+
+What players get, on a slow machine or connection:
+- quality picked for the device at start, never changed mid-match;
+- resolution that adapts within 70–100 % of the target;
+- every quality level with the same lighting and colour (Low drops only ambient occlusion and bloom);
+- Ridgeback Pass downloaded in the background during the menus on desktops;
+- with `netlify.toml`'s cache headers, game files reused from the browser's cache on every later visit.
 
 ## Deploying
 

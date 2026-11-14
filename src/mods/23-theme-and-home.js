@@ -161,7 +161,7 @@ function __Home() {
                 M.jsxs('h1', { children: ['Hold the line. ', M.jsx('em', { children: 'Clear the site.' })] }),
                 M.jsx('p', {
                   children:
-                    'Counter-Terrorists against Terrorists on five tight tactical maps. Plant or defuse, hold your angles and call it out on voice.',
+                    'Counter-Terrorists against Terrorists, from the mountain lanes of Ridgeback Pass to the cell blocks of Blackwater. Plant or defuse, hold your angles and call it out on voice.',
                 }),
               ],
             }),
@@ -203,21 +203,8 @@ function __Home() {
               kick: 'Offline',
               title: 'Play vs bots',
               sub: 'Pick a side and operator, any mode and map.',
-              meta: ['4 modes', '5 maps'],
+              meta: ['4 modes', '4 maps'],
               onClick: () => w.setScreen('setup'),
-            }),
-            M.jsx(__HomePlay, {
-              cls: 'hm2-play--range',
-              art: 'texture-20.jpg',
-              icon: 'crosshair',
-              kick: 'Practice',
-              title: 'Firing range',
-              sub: 'Every weapon free, targets from 8 to 55 metres.',
-              meta: ['Unlimited ammo'],
-              onClick: () => {
-                w.setup({ mode: 'range', map: 'range' });
-                w.setScreen('setup');
-              },
             }),
           ],
         }),

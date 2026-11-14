@@ -125,3 +125,18 @@ typeof window < 'u' &&
     }, 700);
   })();
 typeof window < 'u' && (window.__bpRoster = () => ({ shop: fQ.filter((x) => gw[x.id]).map((x) => x.id), primaries: [...OwA], secondaries: [...YwA], ladder: [...uI], botTable: [...J8], tp: Object.keys(__RW).map((id) => [id, !!__XG[id]]) }));
+// the offline menus (and spawning) read the loadout through Xd(), which falls back to the old
+// code-built "rifle" / "pistol" when the saved gun is locked for the player's level: give the model-based
+// replacement instead
+// (qm() is the same for online play)
+{
+  const coreXd = Xd,
+    coreQm = qm,
+    fix = (r) => (r && ((r.loadout = __rmap(r.loadout)), (r.secondary = __rmap(r.secondary))), r);
+  Xd = function () {
+    return fix(coreXd.apply(this, arguments));
+  };
+  qm = function () {
+    return fix(coreQm.apply(this, arguments));
+  };
+}

@@ -14,7 +14,9 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
 
-const SKIP = ['grenade-frag.glb'];
+// grenade: CC BY-ND (may not be modified). Ridgeback's grass placements carry custom per-blade data that
+// quantisation would scramble; its texture-only files have no geometry to compress.
+const SKIP = ['grenade-frag.glb', 'grass_instances.glb', 'terrain_materials_hq.glb', 'terrain_materials_lq.glb', 'sky.glb'];
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 await MeshoptEncoder.ready;
 await MeshoptDecoder.ready;
@@ -29,7 +31,10 @@ for (const f of files) {
   const doc = await io.read(f);
   if (doc.getRoot().listExtensionsUsed().some((e) => e.extensionName === 'EXT_meshopt_compression')) continue;
   const b = fs.statSync(f).size;
-  await doc.transform(dedup(), meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizePosition: 16, quantizeTexcoord: 14, quantizeNormal: 10 }), prune());
+  // skinned models: one quantization volume for the whole scene (per-mesh volumes are folded into the
+  // inverse bind matrices, which breaks when meshes of different sizes share one skin)
+  const scene = doc.getRoot().listSkins().length ? 'scene' : 'mesh';
+  await doc.transform(dedup(), meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizePosition: 16, quantizeTexcoord: 14, quantizeNormal: 10, quantizationVolume: scene }), prune());
   await io.write(f, doc);
   const a = fs.statSync(f).size;
   before += b;

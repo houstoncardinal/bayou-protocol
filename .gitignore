@@ -8,3 +8,10 @@ dist
 assets-src/characters/
 # 128 MB download, over GitHub's 100 MB file limit (the optimised copy in public/ is committed)
 assets-src/weapons/g17_pistol_-_animated.glb
+
+# over GitHub's 100 MB limit (optimised copy in public/game/models/props)
+assets-src/props/secure_box_crates_type_a.glb
+# map packages as delivered (the optimised copies in public/game/maps are committed)
+assets-src/maps/
+# sources no longer used (see assets-src/_retired/README.md)
+assets-src/_retired/

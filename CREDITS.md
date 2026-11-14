@@ -11,7 +11,9 @@ into each downloaded file. The same list is shown in the game under **About**.
 | In game | Original model | Author | Licence | Changes |
 |---|---|---|---|---|
 | Kodiak 7.62 (AK) | [FPS Character Animation Pack Ak-47](https://sketchfab.com/3d-models/fps-character-animation-pack-ak-47-b95778a564094fc3a49d1d6a3b6a30ab) | Cristian David Duque Camacho ([DuqueCD7](https://sketchfab.com/DuqueCD7)) | CC BY 4.0 | Textures resized/WebP, geometry compressed; third-person gun taken from the same file |
-| Sentinel Carbine (first person) | [M4 - FPS Weapon Animations Pack (v.1)](https://sketchfab.com/3d-models/m4-fps-weapon-animations-pack-v1-662fc74dda2646cfb48fc610705768ef) | [BarcodeGames](https://sketchfab.com/barcodegames) | CC BY 4.0 | Textures resized/WebP, geometry compressed |
+| Sentinel M4A1 (arms and carbine) | fps animated carbine | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | Textures resized/WebP, geometry compressed |
+| Phantom 12.7 (arms and rifle) | sniper animated | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
+| First-person arms (Warden, Talon, Rampart, Bastion) | Arms6 | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Hornet .45 | [fps animated smg](https://sketchfab.com/3d-models/fps-animated-smg-ea3dad7478624495a5a46f40127b0579) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | Textures resized/WebP, geometry compressed, animation cut into clips |
 | Mauler 12 | [shotgun animated](https://sketchfab.com/3d-models/shotgun-animated-226237e0f49c4f69a9fc5a78df6a236c) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Kestrel 9 | [fps pistol Animated](https://sketchfab.com/3d-models/fps-pistol-animated-a8cdd6c2e936484aaf67e1786c8320d9) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
@@ -25,9 +27,7 @@ into each downloaded file. The same list is shown in the game under **About**.
 |---|---|---|---|---|
 | Midas 7.62 | [Gold AK-47 - Game Ready Assault Rifle Weapon](https://sketchfab.com/3d-models/gold-ak-47-game-ready-assault-rifle-weapon-1746d7d785e749e1a09a8d6ea4c5684d) | Billy Jackman ([billyjackman3d](https://sketchfab.com/billyjackman3d)) | CC BY 4.0 | Optimised |
 | Bastion 7.62 | [FN SCAR-17](https://sketchfab.com/3d-models/fn-scar-17-0ea3b7e8ae73434fa42e6409d6e072b7) | witt-commando(RC-3106) ([gsilvacordova](https://sketchfab.com/gsilvacordova)) | CC BY 4.0 | Optimised |
-| Sentinel Carbine (third person) | [Low Poly Colt M4A1](https://sketchfab.com/3d-models/low-poly-colt-m4a1-de142447b4d047bbb0311c2974520f1e) | puresaltt ([PureSaltt](https://sketchfab.com/PureSaltt)) | CC BY 4.0 | Optimised |
 | Talon 5.56 | [low-poly G95 A1](https://sketchfab.com/3d-models/low-poly-g95-a1-6e66f2cb28234868b06940669c7d388a) | D_U ([DU1701](https://sketchfab.com/DU1701)) | CC BY 4.0 | Re-finished for the game |
-| Phantom 12.7 | [VSSK Vykhlop](https://sketchfab.com/3d-models/vssk-vykhlop-c97ce9111e4648daa68341abdcab0d3d) | [Diamonddogkz](https://sketchfab.com/Diamonddogkz) | Sketchfab Standard | Optimised |
 | Warden 9 | [Beretta APX A1 Full Size Tactical Green](https://sketchfab.com/3d-models/beretta-apx-a1-full-size-tactical-green-a0a53ee7b4d640818d61a268fbba7618) | [geyges](https://sketchfab.com/geyges) | Sketchfab Standard | Optimised |
 | Rampart 7.62 | A SCAR rifle model (materials `SCAR_Body_Mat`, `SCAR_Buttock_Mat`) | **Not recorded**: the file carries no author or source. Add the credit here and in `src/mods/46-credits.js` | Unknown | Optimised |
 | Frag grenade | [FPS Guns 4K - Frag Granade](https://sketchfab.com/3d-models/fps-guns-4k-frag-granade-5344d03d1fd44aefb317e858f71570e0) | Heart State Games® ([heartstategames](https://sketchfab.com/heartstategames)) | CC BY-ND 4.0 | None (no-derivatives licence: excluded from the model optimiser) |
@@ -36,8 +36,11 @@ into each downloaded file. The same list is shown in the game under **About**.
 
 | In game | Source | Licence |
 |---|---|---|
-| All eight Counter-Terrorist and Terrorist characters (Swat, Ch10, Ch15, Ch35, Ch45, Ch49, Warzombie F Pedroso, Copzombie L Actisdato) | [Mixamo](https://www.mixamo.com) (Adobe) | Mixamo terms of use (royalty-free in games) |
-| All character animations (rifle idle and walk, run, strafe, crouch, kneel, jump, fall, dying, ...) | [Mixamo](https://www.mixamo.com) (Adobe) | Mixamo terms of use |
+| Characters Rook (Ch18), Reyes (Ch15), Hale (Ch35), Kade (Ch36 desert operator), Kastor (Ch10), The Boss, and the Blackwater inmates (Ch08) | [Mixamo](https://www.mixamo.com) (Adobe) | Mixamo terms of use (royalty-free in games) |
+| Ghost | [Gas Mask Guy](https://sketchfab.com/modellerschool) by [modellerschool](https://sketchfab.com/modellerschool), rigged with Mixamo's Auto-Rigger | CC BY 4.0 |
+| Wraith | [terrorist](https://sketchfab.com/bumstrum) by DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)); Mixamo animations retargeted | CC BY 4.0 |
+| Kastor's balaclava | Knitted Ski Mask / Ribbed Knit Balaclava by [SKVORSOW](https://sketchfab.com/SKVORSOW) | CC BY 4.0 |
+| All character animations (rifle idle, aim, walk, run, strafe, backpedal, crouch, kneel, jump, fall, turn, reload, grenade toss, hit reaction, dying, ...) | [Mixamo](https://www.mixamo.com) (Adobe) | Mixamo terms of use |
 
 ### Vegetation
 
@@ -53,6 +56,7 @@ into each downloaded file. The same list is shown in the game under **About**.
 | What | Source | Licence |
 |---|---|---|
 | Cars, dumpster, hydrant, cones and street props | Kenney and Quaternius | CC0 |
+| Crates | Crate box by [KloWorks](https://sketchfab.com/kloworks); Secure Box Crates Type A by [Mad_Lobster_Workshop](https://sketchfab.com/Mad_Lobster_Workshop); TNT crate by [hopefuldesign](https://sketchfab.com/hopefuldesign); Crates And Barrels by Mateusz Woliński ([jeandiz](https://sketchfab.com/jeandiz)) | CC BY 4.0 |
 | Photo textures and HDR skies | three.js examples; Poly Haven | CC0 |
 | Ground and rock textures | Poly Haven (rocky trail, cracked earth, coastal rocks, aerial rocks), via the PlayCanvas examples | CC0 |
 
@@ -76,7 +80,86 @@ into each downloaded file. The same list is shown in the game under **About**.
 - **CC BY 4.0**: free to use and modify, including commercially, as long as the author is credited (this file
   and the in-game About screen).
 - **CC BY-ND 4.0** (frag grenade): credit required and the model may not be modified, so it ships as is.
-- **Sketchfab Standard** (Phantom 12.7, Warden 9, cacti): licensed per download from Sketchfab; it allows use in
+- **Sketchfab Standard** (Warden 9, cacti): licensed per download from Sketchfab; it allows use in
   a game but not redistributing the model files on their own. Because a web game serves its model files to the
-  browser, check the current Sketchfab Standard terms for these three before publishing commercially.
+  browser, check the current Sketchfab Standard terms for these two before publishing commercially.
 - **Rampart 7.62**: author and licence unknown; find the original before publishing, or replace it.
+
+## Ridgeback Pass v4 (Poly Haven scans, CC0)
+
+From the map package (its own credits file and install notes are in docs/maps/ridgeback_pass/).
+
+Every model, texture and the sky come from **Poly Haven** (https://polyhaven.com), licensed **CC0** (public domain):
+free for commercial use, no attribution required. Thank you, Poly Haven.
+
+### 3D models (scans, converted to game-ready LODs)
+Trees: branch-card foliage rasterised from the real needle geometry of each scan + simplified scanned trunks; grass tufts rendered from the real blade scans;
+rocks palette-matched to the terrain granite and decimated with their baked normal maps.
+
+- bark_debris_01 — https://polyhaven.com/a/bark_debris_01
+- boulder_01 — https://polyhaven.com/a/boulder_01
+- coast_rocks_05 — https://polyhaven.com/a/coast_rocks_05
+- dead_tree_trunk — https://polyhaven.com/a/dead_tree_trunk
+- dead_tree_trunk_02 — https://polyhaven.com/a/dead_tree_trunk_02
+- dry_branches_medium_01 — https://polyhaven.com/a/dry_branches_medium_01
+- fern_02 — https://polyhaven.com/a/fern_02
+- fir_sapling — https://polyhaven.com/a/fir_sapling
+- fir_sapling_medium — https://polyhaven.com/a/fir_sapling_medium
+- fir_tree_01 — https://polyhaven.com/a/fir_tree_01
+- grass_medium_01 — https://polyhaven.com/a/grass_medium_01
+- grass_medium_02 — https://polyhaven.com/a/grass_medium_02
+- namaqualand_boulder_03 — https://polyhaven.com/a/namaqualand_boulder_03
+- namaqualand_boulder_04 — https://polyhaven.com/a/namaqualand_boulder_04
+- namaqualand_boulder_05 — https://polyhaven.com/a/namaqualand_boulder_05
+- namaqualand_boulder_06 — https://polyhaven.com/a/namaqualand_boulder_06
+- namaqualand_boulders_01 — https://polyhaven.com/a/namaqualand_boulders_01
+- namaqualand_rocks_01 — https://polyhaven.com/a/namaqualand_rocks_01
+- pine_roots — https://polyhaven.com/a/pine_roots
+- pine_sapling_medium — https://polyhaven.com/a/pine_sapling_medium
+- pine_sapling_small — https://polyhaven.com/a/pine_sapling_small
+- pine_tree_01 — https://polyhaven.com/a/pine_tree_01
+- rock_07 — https://polyhaven.com/a/rock_07
+- rock_09 — https://polyhaven.com/a/rock_09
+- rock_moss_set_01 — https://polyhaven.com/a/rock_moss_set_01
+- rock_moss_set_02 — https://polyhaven.com/a/rock_moss_set_02
+- root_cluster_01 — https://polyhaven.com/a/root_cluster_01
+- root_cluster_02 — https://polyhaven.com/a/root_cluster_02
+- shrub_02 — https://polyhaven.com/a/shrub_02
+- shrub_03 — https://polyhaven.com/a/shrub_03
+- shrub_04 — https://polyhaven.com/a/shrub_04
+- single_root — https://polyhaven.com/a/single_root
+- stone_01 — https://polyhaven.com/a/stone_01
+- tree_stump_01 — https://polyhaven.com/a/tree_stump_01
+- tree_stump_02 — https://polyhaven.com/a/tree_stump_02
+- wooden_axe — https://polyhaven.com/a/wooden_axe
+- wooden_barrels_01 — https://polyhaven.com/a/wooden_barrels_01
+- wooden_bucket_01 — https://polyhaven.com/a/wooden_bucket_01
+- wooden_crate_01 — https://polyhaven.com/a/wooden_crate_01
+- wooden_crate_02 — https://polyhaven.com/a/wooden_crate_02
+- wooden_lantern_01 — https://polyhaven.com/a/wooden_lantern_01
+- wooden_military_crate — https://polyhaven.com/a/wooden_military_crate
+
+### Textures (terrain layers, tunnels, structures)
+
+- aerial_grass_rock — https://polyhaven.com/a/aerial_grass_rock
+- aerial_rocks_02 — https://polyhaven.com/a/aerial_rocks_02
+- brown_mud_leaves_01 — https://polyhaven.com/a/brown_mud_leaves_01
+- forest_ground_04 — https://polyhaven.com/a/forest_ground_04
+- forest_leaves_04 — https://polyhaven.com/a/forest_leaves_04
+- forrest_ground_01 — https://polyhaven.com/a/forrest_ground_01
+- gravel_road — https://polyhaven.com/a/gravel_road
+- mossy_rock — https://polyhaven.com/a/mossy_rock
+- pine_bark — https://polyhaven.com/a/pine_bark
+- river_small_rocks — https://polyhaven.com/a/river_small_rocks
+- rock_face_03 — https://polyhaven.com/a/rock_face_03
+- rock_wall_08 — https://polyhaven.com/a/rock_wall_08
+- rocks_ground_02 — https://polyhaven.com/a/rocks_ground_02
+- rocky_terrain_02 — https://polyhaven.com/a/rocky_terrain_02
+- rocky_trail — https://polyhaven.com/a/rocky_trail
+- rough_wood — https://polyhaven.com/a/rough_wood
+- sparse_grass — https://polyhaven.com/a/sparse_grass
+- weathered_planks — https://polyhaven.com/a/weathered_planks
+
+### Sky
+
+- immenstadter_horn (HDRI) — https://polyhaven.com/a/immenstadter_horn

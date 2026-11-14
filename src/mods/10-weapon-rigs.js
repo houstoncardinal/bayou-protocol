@@ -18,19 +18,7 @@ const __RIG = {
     },
   },
   midas: { alias: 'ak47', gold: !0 },
-  sentinel: {
-    url: './game/models/rig-sentinel-arms.glb',
-    eye: [0.011, 1.539, -0.101],
-    ads: [-0.064, 0.009, -0.03],
-    muzzleBone: /M4_Root|Main/i,
-    clips: {
-      draw: ['Draw', 8.9, 10],
-      idle: ['Fire', 1, 6],
-      fire: ['Fire', 7.45, 8.33],
-      reload: ['Reload', 0, 3.67],
-      reloadEmpty: ['Reload_Empty', 3.6, 7.5],
-    },
-  },
+  // sentinel: see 39-animated-weapons.js (the animated carbine)
 };
 function __rigClip(g, spec) {
   const [name, a, b, exclude] = spec;

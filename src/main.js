@@ -2,3 +2,5 @@
 import './styles/base.css';
 import './styles/ui.css';
 import '../core/game.core.js';
+// map packages (after the core: they use its three.js)
+import './maps/ridgeback.js';

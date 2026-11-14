@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-12T20:12:33.237Z",
+  "built": "2026-11-14T05:04:35.258Z",
   "characters": {
     "counter-terrorists": [
       {
@@ -11,28 +11,20 @@
         "sourceBytes": 115014208
       },
       {
+        "fbx": "Ch18_nonPBR.fbx",
+        "file": "counter-terrorists/Ch18_nonPBR.glb",
+        "tris": 21996,
+        "trisSource": 41526,
+        "bytes": 702684,
+        "sourceBytes": 13815152
+      },
+      {
         "fbx": "Ch35_nonPBR.fbx",
         "file": "counter-terrorists/Ch35_nonPBR.glb",
         "tris": 22131,
         "trisSource": 41171,
         "bytes": 1300752,
         "sourceBytes": 142437824
-      },
-      {
-        "fbx": "Ch49_nonPBR.fbx",
-        "file": "counter-terrorists/Ch49_nonPBR.glb",
-        "tris": 22234,
-        "trisSource": 54662,
-        "bytes": 1101428,
-        "sourceBytes": 117142864
-      },
-      {
-        "fbx": "Swat.fbx",
-        "file": "counter-terrorists/Swat.glb",
-        "tris": 19450,
-        "trisSource": 19450,
-        "bytes": 795328,
-        "sourceBytes": 5674912
       }
     ],
     "terrorists": [
@@ -45,28 +37,30 @@
         "sourceBytes": 110587680
       },
       {
-        "fbx": "Ch45_nonPBR.fbx",
-        "file": "terrorists/Ch45_nonPBR.glb",
+        "fbx": "The Boss.fbx",
+        "file": "terrorists/The_Boss.glb",
+        "tris": 10216,
+        "trisSource": 10216,
+        "bytes": 481560,
+        "sourceBytes": 6242272
+      },
+      {
+        "fbx": "gasmask 2.fbx",
+        "file": "terrorists/gasmask_2.glb",
         "tris": 21999,
-        "trisSource": 29011,
-        "bytes": 789808,
-        "sourceBytes": 16610864
-      },
+        "trisSource": 23999,
+        "bytes": 1513484,
+        "sourceBytes": 28943601
+      }
+    ],
+    "prisoners": [
       {
-        "fbx": "Warzombie F Pedroso.fbx",
-        "file": "terrorists/Warzombie_F_Pedroso.glb",
-        "tris": 14934,
-        "trisSource": 14934,
-        "bytes": 744708,
-        "sourceBytes": 13774720
-      },
-      {
-        "fbx": "copzombie_l_actisdato.fbx",
-        "file": "terrorists/copzombie_l_actisdato.glb",
-        "tris": 9845,
-        "trisSource": 9845,
-        "bytes": 715616,
-        "sourceBytes": 22052544
+        "fbx": "Ch08_nonPBR.fbx",
+        "file": "prisoners/Ch08_nonPBR.glb",
+        "tris": 29806,
+        "trisSource": 56248,
+        "bytes": 1652660,
+        "sourceBytes": 87270112
       }
     ]
   },
@@ -101,16 +95,6 @@
         "drift": {
           "x": -0.075,
           "z": 0.011
-        }
-      },
-      {
-        "name": "FiringRifle",
-        "source": "Firing Rifle.fbx",
-        "duration": 1.333,
-        "speed": 0.005,
-        "drift": {
-          "x": 0.002,
-          "z": 0.005
         }
       },
       {
@@ -214,16 +198,166 @@
         }
       },
       {
+        "name": "FiringRifle",
+        "source": "firing rifle.fbx",
+        "duration": 0.25,
+        "speed": 0.004,
+        "drift": {
+          "x": -0.002,
+          "z": -0.004
+        }
+      },
+      {
+        "name": "HitReaction",
+        "source": "hit reaction.fbx",
+        "duration": 0.417,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "Reloading",
+        "source": "reloading.fbx",
+        "duration": 3.292,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "RifleAimingIdle",
+        "source": "rifle aiming idle.fbx",
+        "duration": 3,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "RifleJump",
+        "source": "rifle jump.fbx",
+        "duration": 0.583,
+        "speed": 0.012,
+        "drift": {
+          "x": 0.005,
+          "z": -0.011
+        }
+      },
+      {
+        "name": "RifleRun",
+        "source": "rifle run.fbx",
+        "duration": 0.708,
+        "speed": 3.14,
+        "drift": {
+          "x": 0.004,
+          "z": 3.14
+        }
+      },
+      {
+        "name": "RunBackwards",
+        "source": "run backwards.fbx",
+        "duration": 0.5,
+        "speed": 2.746,
+        "drift": {
+          "x": -0.01,
+          "z": -2.746
+        }
+      },
+      {
+        "name": "Strafe2",
+        "source": "strafe (2).fbx",
+        "duration": 0.5,
+        "speed": 2.802,
+        "drift": {
+          "x": 2.802,
+          "z": 0.003
+        }
+      },
+      {
+        "name": "StrafeLeft",
+        "source": "strafe left.fbx",
+        "duration": 1,
+        "speed": 1.381,
+        "drift": {
+          "x": 1.381,
+          "z": -0.004
+        }
+      },
+      {
+        "name": "StrafeRight",
+        "source": "strafe right.fbx",
+        "duration": 1.417,
+        "speed": 0.754,
+        "drift": {
+          "x": -0.754,
+          "z": 0.001
+        }
+      },
+      {
+        "name": "Strafe",
+        "source": "strafe.fbx",
+        "duration": 0.667,
+        "speed": 3.286,
+        "drift": {
+          "x": -3.286,
+          "z": 0
+        }
+      },
+      {
+        "name": "TossGrenade",
+        "source": "toss grenade.fbx",
+        "duration": 3.167,
+        "speed": 0.004,
+        "drift": {
+          "x": 0.001,
+          "z": -0.004
+        }
+      },
+      {
         "name": "TurnLeft",
-        "source": "Turn Left.fbx",
+        "source": "turn left.fbx",
         "duration": 1,
         "speed": 0,
         "drift": {
           "x": 0,
           "z": 0
         }
+      },
+      {
+        "name": "TurningRight45Degrees",
+        "source": "turning right 45 degrees.fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "WalkingBackwards",
+        "source": "walking backwards.fbx",
+        "duration": 1.333,
+        "speed": 1.102,
+        "drift": {
+          "x": -0.003,
+          "z": -1.102
+        }
+      },
+      {
+        "name": "Walking",
+        "source": "walking.fbx",
+        "duration": 1.333,
+        "speed": 0.992,
+        "drift": {
+          "x": 0.002,
+          "z": 0.992
+        }
       }
     ],
-    "bytes": 456504
+    "bytes": 825368
   }
 }

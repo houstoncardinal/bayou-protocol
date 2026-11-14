@@ -1,0 +1,42 @@
+/* ===== Bayou Protocol mod: the core's three.js for code outside the core ===== */
+// The engine core bundles its own three.js (r169) under minified names. Map packages in src/maps are
+// written against `import * as THREE from 'three'`; vite.config.js points 'three' at src/engine/three.js,
+// which reads the classes from here, so the whole game uses one copy of three.js (a second copy would
+// double the download and break `instanceof` checks between the two).
+globalThis.__BP_THREE = () => ({
+  Vector2: aA,
+  Vector3: U,
+  Quaternion: Kw,
+  Matrix4: _A,
+  Sphere: DB,
+  Box3: xi,
+  Frustum: EQ,
+  Color: UA,
+  Object3D: Di,
+  Group: ji,
+  LOD: U6,
+  Mesh: Ow,
+  InstancedMesh: QZ,
+  Points: MZ,
+  BufferGeometry: uw,
+  BufferAttribute: gi,
+  Texture: Fi,
+  MeshStandardMaterial: Gw,
+  MeshBasicMaterial: Ni,
+  DirectionalLight: Os,
+  HemisphereLight: dd,
+  PointLight: PD,
+  Fog: nd,
+  PerspectiveCamera: ui,
+  PMREMGenerator: e9,
+  // constants (three.js r169 values)
+  FrontSide: 0,
+  DoubleSide: 2,
+  NoColorSpace: '',
+  SRGBColorSpace: 'srgb',
+  EquirectangularReflectionMapping: 303,
+  ClampToEdgeWrapping: 1001,
+  RepeatWrapping: 1e3,
+  LinearMipmapLinearFilter: 1008,
+  ACESFilmicToneMapping: 4,
+});

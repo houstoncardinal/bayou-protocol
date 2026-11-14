@@ -81,8 +81,37 @@ const __AW = {
     casing: '9mm',
     clips: { fire: [0, 0.43], reload: [0.43, 2.73], fireLast: [2.73, 3.1], reloadEmpty: [3.1, 6.0], inspect: [6.75, 7.8], idle: [7.8, 8.83] },
   },
+  // the main sniper (replaces the old static Phantom model): bolt-action, so after every shot the bolt is
+  // worked (the case comes out when the bolt goes back) and after a magazine change the bolt chambers a round
+  phantom: {
+    url: './game/models/weapons/sniper.glb',
+    gunNode: 'sniper',
+    len: 1.15,
+    muzzle: [0.12, -0.15, -1.25],
+    world: { len: 1.2, grip: 0.3, gripTop: 0.35, gz: 0.06, fore: 0.52, sight: 0.81, fb: 'sniper' },
+    mag: /^clip|^bullet/,
+    casing: '338',
+    pump: !0,
+    eject: 0.42,
+    boltReload: 1.0,
+    clips: { fire: [0, 0.4], pump: [0.4, 1.6], reload: [1.6, 3.1], inspect: [3.1, 4.9], idle: [4.9, 6.0], melee: [6.0, 6.67] },
+  },
+  // the Sentinel M4A1 ("fps animated carbine"): 14.5" 5.56 carbine. Its track: fire (the dust cover pops),
+  // magazine change finished with a slap on the bolt catch, magazine change finished with the charging
+  // handle (used when the gun ran dry), inspect with a press check, idle, buttstroke
+  sentinel: {
+    url: './game/models/weapons/carbine.glb',
+    gunNode: 'carbine',
+    len: 0.84,
+    muzzle: [0.12, -0.13, -0.8],
+    world: { len: 0.84, grip: 0.31, gripTop: 0.46, gz: 0.045, fore: 0.62, sight: 0.9, fb: 'rifle' },
+    mag: /^clip|^bullet/,
+    casing: '556',
+    clips: { fire: [0, 0.25], reload: [0.3, 2.4], reloadEmpty: [2.4, 4.45], inspect: [4.45, 5.95], idle: [5.95, 6.55], melee: [6.6, 7.4] },
+  },
 };
-const __AW_IDS = Object.keys(__AW);
+const __AW_IDS = Object.keys(__AW),
+  __AW_NEW = __AW_IDS.filter((id) => id !== 'phantom' && id !== 'sentinel'); // weapons this mod adds (the others are registered by 04-weapons)
 // ---------------------------------------------------------------- stats, shop, unlocks, sounds, bots
 const __AW_STATS = {
   hornet: {
@@ -105,6 +134,14 @@ const __AW_STATS = {
     spread: 0.0055, moveSpread: 0.1, recoil: 0.009, pellets: 1, range: 125, falloff: 0.018, armorPen: 0.84, headMult: 3.5, speed: 4.6,
     killReward: 300, adsZoom: 1.4, pen: 2.1, unlock: 11,
   },
+  // M4A1: 5.56x45 from a 14.5" barrel, ~800 rpm cyclic, 30-round magazine, ~3.4 kg loaded. Hits about as
+  // hard as the other 5.56 guns, climbs gently and pulls slightly right in long bursts; an empty magazine
+  // costs a charging-handle pull (longer reload)
+  sentinel: {
+    name: 'Sentinel M4A1', slot: 1, price: 3100, damage: 30, rate: 0.075, auto: !0, mag: 30, reserve: 90, reload: 2.2, reloadEmpty: 2.75,
+    spread: 0.0018, moveSpread: 0.04, recoil: 0.0068, pellets: 1, range: 130, falloff: 0.017, armorPen: 0.78, headMult: 4, speed: 5.85,
+    killReward: 300, adsZoom: 1.45, pen: 1.5,
+  },
   striker: {
     name: 'Striker 17', slot: 2, price: 650, damage: 24, rate: 0.055, auto: !1, burst: 3, burstDelay: 0.3, mag: 18, reserve: 54, reload: 2.1,
     reloadEmpty: 2.6, spread: 0.0042, moveSpread: 0.032, recoil: 0.0125, pellets: 1, range: 50, falloff: 0.07, armorPen: 0.5, headMult: 3.8,
@@ -112,13 +149,15 @@ const __AW_STATS = {
   },
 };
 for (const [id, s] of Object.entries(__AW_STATS)) gw[id] = { id, ...s };
-Object.assign(qO, { hornet: 'smg', mauler: 'shotgun', kestrel: 'pistol', anvil: 'heavy', striker: 'pistol' });
+Object.assign(qO, { hornet: 'smg', mauler: 'shotgun', kestrel: 'pistol', anvil: 'heavy', striker: 'pistol', sentinel: 'rifle' });
 Object.assign(iU, {
   hornet: { onset: 3, freq: 0.8, phase: 0.3, amp: 0.55, bias: 0.06, vert: 0.85 },
   mauler: { onset: 1, freq: 1, phase: 0, amp: 0.3, bias: 0, vert: 1.2 },
   kestrel: { onset: 1, freq: 1.3, phase: 0.2, amp: 0.3, bias: 0.02, vert: 0.9 },
   anvil: { onset: 5, freq: 0.32, phase: 0.9, amp: 1.1, bias: 0.14, vert: 1.05 },
   striker: { onset: 1, freq: 1.6, phase: 0.6, amp: 0.55, bias: -0.04, vert: 1.05 },
+  // M4A1: straight up for the first rounds, then a slow drift right
+  sentinel: { onset: 5, freq: 0.5, phase: 0.2, amp: 0.38, bias: 0.05, vert: 0.88 },
 });
 Object.assign(VwA, {
   hornet: [0.02, 0.034, 0.018, 0.034],
@@ -126,6 +165,7 @@ Object.assign(VwA, {
   kestrel: [0.028, 0.11, 0.02, 0.045],
   anvil: [0.032, 0.045, 0.022, 0.04],
   striker: [0.024, 0.09, 0.018, 0.04],
+  sentinel: [0.022, 0.036, 0.012, 0.022],
 });
 Object.assign(z1, {
   hornet: { ...z1.smg, blast: 2100, boomGain: 0.75, vol: 0.95 },
@@ -133,6 +173,8 @@ Object.assign(z1, {
   kestrel: { ...z1.pistol, blast: 3000, vol: 0.8 },
   anvil: { ...z1.lmg, blast: 1400, boomGain: 1.15, vol: 1.15 },
   striker: { ...z1.pistol, blast: 3300, vol: 0.76 },
+  // short barrel: a sharper, louder crack than the rifle-length 5.56 guns, less low-end boom
+  sentinel: { ...z1.hk416, blast: 2700, blastDur: 0.085, boom: [175, 58], boomGain: 0.7, crack: 0.75, tail: 0.72, vol: 1.04, action: 0.55 },
 });
 {
   const ins = (after, item) => {
@@ -144,7 +186,7 @@ Object.assign(z1, {
   ins('pistol', { id: 'kestrel', label: 'Kestrel 9', price: 400, hint: '15-round 9 mm. Quick reload with one in the chamber', cat: 'pistols' });
   ins('kestrel', { id: 'striker', label: 'Striker 17', price: 650, hint: 'Three-round burst pistol. Slide locks on the last round', cat: 'pistols' });
   ins('lmg', { id: 'anvil', label: 'Anvil 7.62', price: 5300, hint: '100-round belt. Crouch to steady it', cat: 'heavy' });
-  Xl.push(...__AW_IDS);
+  Xl.push(...__AW_NEW);
   J8.push('hornet', 'hornet', 'mauler', 'anvil');
   OwA.push('hornet', 'mauler', 'anvil');
   YwA.push('kestrel', 'striker');
@@ -280,7 +322,7 @@ function __awFit(id) {
   if (!gun) throw new Error('gun node ' + c.gunNode + ' not found');
   const gunMeshes = [],
     armMeshes = [];
-  root.traverse((o) => o.isMesh && (o.isSkinnedMesh ? armMeshes : gunMeshes).push(o));
+  root.traverse((o) => o.isMesh && ((c.gunMat ? [].concat(o.material).some((m) => c.gunMat.test(m.name)) : !o.isSkinnedMesh) ? gunMeshes : armMeshes).push(o));
   inner.position.set(0, 0, 0);
   inner.rotation.set(0, 0, 0);
   inner.scale.setScalar(1);
@@ -305,13 +347,49 @@ function __awFit(id) {
   inner.rotation.y = yaw;
   inner.scale.setScalar(c.len / sz[axis]);
   R.wrap.updateMatrixWorld(!0);
+  // `cam`: the model carries its own first-person camera (an eye bone and a bone it looks at): view it from
+  // there, as its animator framed it, at its own scale (metres); `eyeOffset` nudges the model from the eye
+  if (c.cam) {
+    inner.rotation.set(0, 0, 0);
+    inner.scale.setScalar(1);
+    R.wrap.updateMatrixWorld(!0);
+    const h = R.wrap.worldToLocal(root.getObjectByName(c.cam[0]).getWorldPosition(new U())),
+      d = R.wrap.worldToLocal(root.getObjectByName(c.cam[1]).getWorldPosition(new U())).sub(h);
+    inner.rotation.y = Math.PI - Math.atan2(d.x, d.z);
+    inner.rotation.x = -Math.atan2(d.y, Math.hypot(d.x, d.z));
+    R.wrap.updateMatrixWorld(!0);
+    const h2 = R.wrap.worldToLocal(root.getObjectByName(c.cam[0]).getWorldPosition(new U()));
+    inner.position.sub(h2).add(new U(...(c.eyeOffset || [0, 0, 0])));
+    R.wrap.updateMatrixWorld(!0);
+  }
+  // `level`: the model's idle pose holds the gun tilted; turn it so the bore line (centre of the muzzle to the
+  // centre of an in-line buttstock) runs straight along the view
+  if (c.level) {
+    const b = new xi();
+    __awVerts(gunMeshes, (v) => b.expandByPoint(v));
+    const L = b.max.z - b.min.z,
+      mid = (lo, hi) => {
+        let a = 1 / 0,
+          z = -1 / 0;
+        __awVerts(gunMeshes, (v) => {
+          const t = (v.z - b.min.z) / L;
+          t >= lo && t <= hi && ((a = Math.min(a, v.y)), (z = Math.max(z, v.y)));
+        });
+        return (a + z) / 2;
+      };
+    // R_x(t) raises a barrel along -Z by t: level it by the opposite of its elevation
+    inner.rotation.x = -Math.atan2(mid(0, 0.03) - mid(0.97, 1), L) + (c.level === !0 ? 0 : c.level);
+    R.wrap.updateMatrixWorld(!0);
+  }
   // muzzle (frontmost gun point) onto its target
   let mz = null;
   __awVerts(gunMeshes, (v) => (!mz || v.z < mz.z) && (mz = v.clone()));
-  const d = new U(...c.muzzle).sub(mz);
-  inner.position.add(d);
-  R.wrap.updateMatrixWorld(!0);
-  mz.add(d);
+  if (!c.cam) {
+    const d = new U(...c.muzzle).sub(mz);
+    inner.position.add(d);
+    R.wrap.updateMatrixWorld(!0);
+    mz.add(d);
+  }
   // sight line: top of the gun over its rear half; ADS puts it on the centre of the screen
   const gb2 = new xi();
   __awVerts(gunMeshes, (v) => gb2.expandByPoint(v));
@@ -321,11 +399,16 @@ function __awFit(id) {
   __awVerts(gunMeshes, (v) => v.z > gb2.min.z + 0.45 * L && v.z < gb2.min.z + 0.95 * L && Math.abs(v.x - cx) < 0.02 && v.y > top && (top = v.y));
   isFinite(top) || (top = gb2.max.y);
   c.ads = c.adsFix || [-cx, -0.018 - top, c.len < 0.3 ? 0.02 : -0.04];
-  c.fitInfo = { axis, sign, scale: +(c.len / sz[axis]).toFixed(5), top: +top.toFixed(3), cx: +cx.toFixed(3), muzzle: mz.toArray().map((x) => +x.toFixed(3)) };
+  c.fitInfo = { axis, sign, scale: +inner.scale.x.toFixed(5), top: +top.toFixed(3), cx: +cx.toFixed(3), muzzle: mz.toArray().map((x) => +x.toFixed(3)) };
   R.bone = gun;
   R.muzzleWrap = mz.clone();
   R.muzzleLocal = gun.worldToLocal(mz.clone());
   // world / third-person gun: the gun parts in the idle pose, barrel along -Z
+  if (c.keepWorld) {
+    R.mixer.stopAllAction();
+    R.cur = null;
+    return;
+  }
   const tpl = new ji();
   for (const o of gunMeshes) {
     const g = o.geometry.clone().applyMatrix4(o.matrixWorld),
@@ -346,7 +429,8 @@ for (const id of __AW_IDS) {
   c.eye = [0, 0, 0];
   c.ads = [0, 0, 0];
   c.muzzleBone = /^$/;
-  c.clips = Object.fromEntries(Object.entries(c.clips).map(([k, [a, b]]) => [k, ['', a, b]]));
+  // [from, to] = a time range on the model's one track; ['Name', from?, to?] = a named clip (or part of one)
+  c.clips = Object.fromEntries(Object.entries(c.clips).map(([k, v]) => [k, typeof v[0] === 'string' ? v : ['', v[0], v[1]]]));
   __RIG[id] = c;
 }
 typeof window < 'u' &&
@@ -423,7 +507,8 @@ function __awPlay(R, k, o = {}) {
       R.spr = 0;
       R.jab = -9;
       R.shKey = '';
-      __awPlay(R, 'idle', { fade: 0 });
+      if (R.acts.draw && __awPlay(R, 'draw', { loop: !1, fade: 0, restart: !0 })) R.busyUntil = now + R.acts.draw.dur;
+      else __awPlay(R, 'idle', { fade: 0 });
     }
     // sprint: gun lowered and turned in
     R.spr += ((c.sprinting && c.onGround && !_ ? 1 : 0) - R.spr) * Math.min(1, t * 9);
@@ -460,7 +545,8 @@ function __awPlay(R, k, o = {}) {
     if (R.pumpAt && now >= R.pumpAt) {
       R.pumpAt = 0;
       const A = R.acts.pump,
-        sc = Math.max(1, A.dur / Math.max(0.25, f.rate * 0.55));
+        sc = R.boltScale || Math.max(1, A.dur / Math.max(0.25, f.rate * 0.55));
+      R.boltScale = 0;
       __awPlay(R, 'pump', { loop: !1, fade: 0.04, restart: !0, scale: sc });
       R.busyUntil = now + A.dur / sc;
     }
@@ -486,8 +572,12 @@ function __awPlay(R, k, o = {}) {
         R.pumpAt = 0;
         const empty = c.__awEmpty && R.acts.reloadEmpty,
           k = empty ? 'reloadEmpty' : 'reload',
-          A = R.acts[k];
-        A && __awPlay(R, k, { loop: !1, fade: 0.1, restart: !0, scale: A.dur / Math.max(0.5, c.__awReloadTotal || c.reloadLeft || f.reload) });
+          A = R.acts[k],
+          total = Math.max(0.5, c.__awReloadTotal || c.reloadLeft || f.reload),
+          // bolt-action: magazine change, then the bolt chambers a round in the last `boltReload` seconds
+          bolt = C.boltReload && R.acts.pump ? Math.min(C.boltReload, total * 0.4) : 0;
+        A && __awPlay(R, k, { loop: !1, fade: 0.1, restart: !0, scale: A.dur / (total - bolt) });
+        bolt && ((R.pumpAt = now + total - bolt), (R.boltScale = R.acts.pump.dur / bolt));
       }
     } else {
       R.reloading = !1;
@@ -535,6 +625,8 @@ const __BRASS_TYPES = {
   45: { r: 0.006, l: 0.023, col: '#c9a24a', metal: 1 },
   762: { r: 0.0058, l: 0.05, col: '#b8933f', metal: 1 },
   '12ga': { r: 0.0105, l: 0.067, col: '#9b2a22', metal: 0, base: '#c9a24a' },
+  338: { r: 0.0074, l: 0.072, col: '#c9a24a', metal: 1 },
+  556: { r: 0.0048, l: 0.045, col: '#c9a24a', metal: 1 },
   link: { box: [0.012, 0.004, 0.02], col: '#3a3d40', metal: 1 },
 };
 function __brassInit(g) {
@@ -679,7 +771,7 @@ function __brassTick(dt) {
     __brassInit(g);
     if (c.pump) {
       const wp = Z.weapons[Z.active];
-      wp && wp.mag > 0 && __BRASS.queue.push({ at: performance.now() / 1e3 + gw[id].rate * 0.62, who: Z.id, type: c.casing, local });
+      wp && wp.mag > 0 && __BRASS.queue.push({ at: performance.now() / 1e3 + gw[id].rate * (c.eject || 0.62), who: Z.id, type: c.casing, local });
     } else __brassEject(c.casing, Z, local);
   };
 }
@@ -718,24 +810,26 @@ typeof window < 'u' &&
             sc.add(dl);
             sc.add(g.scene);
             const mixer = new TZ(g.scene),
-              clip = g.animations[0],
-              act = mixer.clipAction(clip).play();
+              clip = (opts.clip && g.animations.find((a) => a.name.includes(opts.clip))) || g.animations[0],
+              act = clip && mixer.clipAction(clip).play();
             g.scene.updateMatrixWorld(!0);
             const box = new xi().setFromObject(g.scene),
               c = box.getCenter(new U()),
               sz = box.getSize(new U()).length();
             const cam = new ui(opts.fov || 60, W / H, sz / 500, sz * 10);
-            (opts.view || 'side') === 'side' ? cam.position.set(c.x + sz * 0.9, c.y + sz * 0.15, c.z) : cam.position.set(c.x + sz * 0.5, c.y + sz * 0.3, c.z + sz * 0.8);
+            (opts.view || 'side') === 'side' ? cam.position.set(c.x + sz * 0.9, c.y + sz * 0.15, c.z) : opts.view === 'top' ? cam.position.set(c.x, c.y + sz * 1.1, c.z + 0.001) : cam.position.set(c.x + sz * 0.5, c.y + sz * 0.3, c.z + sz * 0.8);
             cam.lookAt(c);
+            // `shots`: [[camera x, y, z, look-at x, y, z], ...] in the model's own units instead of `times`
             const out = [];
-            for (const t of times) {
-              mixer.setTime(t);
+            for (const t of opts.shots || times) {
+              if (opts.shots) cam.position.set(t[0], t[1], t[2]), cam.lookAt(t[3], t[4], t[5]);
+              else clip && mixer.setTime(t);
               ren.render(sc, cam);
               out.push(ren.domElement.toDataURL('image/jpeg', 0.8));
             }
-            act.stop();
+            act && act.stop();
             ren.dispose();
-            ok({ duration: clip.duration, frames: out, names: g.animations.map((a) => a.name) });
+            ok({ duration: clip ? clip.duration : 0, frames: out, names: g.animations.map((a) => a.name), box: [box.min.toArray(), box.max.toArray()] });
           } catch (e) {
             fail(String(e && e.stack));
           }
@@ -747,3 +841,29 @@ typeof window < 'u' &&
 typeof window < 'u' &&
   ((window.__bpGw = (id) => gw[id]),
   (window.__bpBrass = () => ({ live: __BRASS.pool.filter((c) => c.life > 0).length, resting: __BRASS.pool.filter((c) => c.life > 0 && c.rest).length, types: [...new Set(__BRASS.pool.filter((c) => c.life > 0).map((c) => Object.keys(__BRASS_TYPES).find((k) => __BRASS_TYPES[k] === c.t)))] })));
+typeof window < 'u' && (window.__bpGlb = (url) => new Promise((ok, fail) => __glbParse(url, ok, fail)));
+// test hook: render a model (front faces only or both sides) to a data URL
+typeof window < 'u' &&
+  ((window.__bpWebGL = PZ),
+  (window.__bpRenderModel = (ren, scene, side) => {
+    const sc = new lD();
+    sc.add(new dd('#ffffff', '#445566', 2.2));
+    const dl = new Os('#ffffff', 2.4);
+    dl.position.set(1, 2, 3);
+    sc.add(dl);
+    scene.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => ((m.side = side), (m.needsUpdate = !0))));
+    sc.add(scene);
+    scene.updateMatrixWorld(!0);
+    const b = new xi().setFromObject(scene),
+      c = b.getCenter(new U()),
+      h = b.getSize(new U()).y,
+      cam = new ui(30, 340 / 420, 0.01, 100);
+    const back = window.__bpBack ? -1 : 1;
+    cam.position.set(c.x - h * 0.9 * back, c.y + h * 0.15, c.z - h * 1.9 * back);
+    cam.lookAt(c);
+    ren.setSize(340, 420, !1);
+    ren.render(sc, cam);
+    const u = ren.domElement.toDataURL('image/jpeg', 0.85);
+    ren.dispose();
+    return u;
+  }));

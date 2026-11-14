@@ -404,4 +404,4 @@ typeof window < 'u' && (window.__bpBody = __BODY);
 typeof window < 'u' &&
   ((window.__bpHitNow = (o, d, p, I, B) => NE(o, d, p, I, B)),
   (window.__bpFloorAt = (x, y, z) => __bodyFloor(x, y, z)),
-  (window.__bpThree = { Raycaster: UZ, Vector3: U }));
+  (window.__bpThree = { Raycaster: UZ, Vector3: U, Box3: xi, Quaternion: Kw, Matrix4: _A, Object3D: ji }));

@@ -33,7 +33,7 @@ const WEAPONS = {
   rifle: { cal: '556', pitch: 0, sup: '556' },
   hk416: { cal: '556', pitch: 0.4, sup: '556' },
   m16: { cal: '556', pitch: -0.4, tone: 'bright', sup: '556' },
-  sentinel: { cal: '556', pitch: 0.8, sup: '556' },
+  sentinel: { cal: '556', pitch: 0.5, tone: 'bright', sup: '556' }, // M4A1: short barrel, sharper crack
   ak47: { cal: '76239', pitch: 0, sup: '76239' },
   midas: { cal: '76239', pitch: 0.3, tone: 'bright', sup: '76239' },
   rampart: { cal: '76239', pitch: -0.8, tone: 'body', sup: '76239' },

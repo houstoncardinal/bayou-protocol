@@ -107,7 +107,7 @@
       auto: !1,
       mag: 5,
       reserve: 20,
-      reload: 3.6,
+      reload: 3.1,
       spread: 0.075,
       moveSpread: 0.13,
       recoil: 0.046,
@@ -221,19 +221,6 @@
   set('sniper', { price: 4600, hint: 'Right-click to scope. One shot body kills' });
   set('flamer', { price: 3800, hint: 'Sets people alight. Nine metres of fire. $500 per kill' });
   set('lmg', { price: 5000 });
-  BD.push({
-    id: 'range',
-    name: 'Firing Range',
-    blurb: 'A walled practice range with target dummies from 8 to 55 metres.',
-    size: 'Small',
-    maxPlayers: 6,
-  });
-  {
-    const b = BD.find((x) => x.id === 'sandstorm');
-    b &&
-      (b.blurb =
-        'A walled desert market town. A roofed bazaar hall in the centre, a raised plaza at A to the north, a paved courtyard at B to the south, and side cuts linking every street.');
-  }
   set('rpg', { label: 'Ram-7 Launcher', price: 5400 });
   set('armor', { label: 'Ballistic Vest', price: 600, hint: 'Halves body damage' });
   set('helmet', { label: 'Vest + Helmet', price: 950 });
@@ -266,9 +253,9 @@
   });
   ins('m16', {
     id: 'sentinel',
-    label: 'Sentinel Carbine',
-    price: 3000,
-    hint: 'Compact 5.56 carbine. ~830 rpm, very controllable',
+    label: 'Sentinel M4A1',
+    price: 3100,
+    hint: '5.56 carbine, ~800 rpm. Climbs gently, drifts right in long bursts',
     cat: 'rifles',
   });
   ins('sentinel', {

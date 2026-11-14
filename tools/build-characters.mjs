@@ -78,8 +78,10 @@ try {
 
 // ---------------------------------------------------------------- characters
 if (only !== 'anims') {
-  manifest.characters = {};
-  for (const faction of ['counter-terrorists', 'terrorists']) {
+  // --faction <name> rebuilds one faction and keeps the others' entries
+  process.argv.includes('--faction') || (manifest.characters = {});
+  const FACTIONS = process.argv.includes('--faction') ? [process.argv[process.argv.indexOf('--faction') + 1]] : ['counter-terrorists', 'terrorists', 'prisoners'];
+  for (const faction of FACTIONS) {
     const dir = path.join(SRC, 'characters', faction);
     if (!fs.existsSync(dir)) continue;
     fs.mkdirSync(path.join(OUT, faction), { recursive: !0 });
@@ -105,8 +107,11 @@ if (only !== 'anims') {
         await MeshoptSimplifier.ready;
         await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: MAX_TRIS / tris(doc), error: 0.002, lockBorder: !0 }));
       }
+      // one texture for the whole body (auto-rigged scans and generated models): 2048 px, or the face and gear
+      // would blur; models with separate body / head / gear textures: 1024 px each
+      const px = root.listTextures().length <= 3 ? 2048 : 1024;
       await doc.transform(
-        textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(baseColor|normal|emissive)/, resize: [1024, 1024], quality: 82 }),
+        textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(baseColor|normal|emissive)/, resize: [px, px], quality: 82 }),
         textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(metallicRoughness|occlusion)/, resize: [512, 512], quality: 80 }),
         quantize({ quantizePosition: 14, quantizeNormal: 10, quantizeTexcoord: 12, quantizeWeight: 8 }),
         prune(),

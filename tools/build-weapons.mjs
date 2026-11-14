@@ -25,6 +25,8 @@ const MAP = {
   'fps_pistol_animated.glb': 'kestrel',
   'lmg_animated.glb': 'anvil',
   'g17_pistol_-_animated.glb': 'striker',
+  'sniper_animated.glb': 'sniper',
+  'fps_animated_carbine.glb': 'carbine',
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 fs.mkdirSync(OUT, { recursive: !0 });
