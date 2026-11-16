@@ -15,6 +15,10 @@
 const __LOOK = { raw: null, refAds: 1.5, refScope: 3 };
 {
   const S = eA.settings;
+  // Mouse smoothing trails the view behind the hand (an exponential follow: 0.3 = a 33 ms lag, 1 = 82 ms),
+  // which reads as a dragging, floaty aim. Older versions could leave it on; it is reset to off once.
+  // The setting stays for anyone who wants it back.
+  S.lookV2 || ((S.lookV2 = 1), (S.mouseSmoothing = 0), eA.saveSettings && setTimeout(() => eA.saveSettings(), 0));
   S.aimSensByZoom === void 0 && (S.aimSensByZoom = !1);
   S.ySens === void 0 && (S.ySens = 1);
 }

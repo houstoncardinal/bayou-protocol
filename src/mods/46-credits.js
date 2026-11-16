@@ -21,6 +21,7 @@ wBA.push(
   ['Terrorist “Wraith”', '“terrorist” by DJMaesen (sketchfab.com/bumstrum), Mixamo animations retargeted', 'CC BY 4.0'],
   ['Balaclava (Kastor)', '“Knitted Ski Mask / Ribbed Knit Balaclava” by SKVORSOW (sketchfab.com/SKVORSOW)', 'CC BY 4.0'],
   ['Ridgeback Pass map', 'Ridgeback Pass v4: terrain, textures, trees, rocks, plants, props and sky from Poly Haven (polyhaven.com)', 'CC0'],
+  ['Frostline map', 'Poly Haven (polyhaven.com): snow_02, rock_face, brown_planks_05, blue_metal_plate, weathered_plank_siding, rustic_stone_wall and roof_planks textures; the snowy_hillside sky; rock_face_02, wooden_crate_02, old_military_crate, barrel_03, metal_jerrycan, portable_generator, portable_searchlight, dead_tree_trunk, street_lamp_02, wooden_lantern_01, barrel_stove, stone_fire_pit, wooden_barrels_01, cardboard_box_01, ammo_box, wooden_crate_01, tree_stump_01 and wooden_bucket_01 models', 'CC0'],
   ['Crates', '“Crate box” by KloWorks (sketchfab.com/kloworks); “Secure Box Crates Type A” by Mad_Lobster_Workshop (sketchfab.com/Mad_Lobster_Workshop); “TNT crate” by hopefuldesign (sketchfab.com/hopefuldesign); “Crates And Barrels” by Mateusz Woliński (sketchfab.com/jeandiz)', 'CC BY 4.0'],
   ['Fir trees and daisies', '“Realistic fir trees pack (LODS, gameready)” and “Daisy models pack (realistic, optimized)” by LOLIPOP (sketchfab.com/lolipop_1707)', 'CC BY 4.0'],
   ['Conifers', '“Conifer Tree (high-Poly)” by Sereib (sketchfab.com/Sereib)', 'CC BY 4.0'],

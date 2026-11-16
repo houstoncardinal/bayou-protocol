@@ -14,3 +14,13 @@
   for = "/game/*"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# Security headers for every page. Chosen so nothing the game uses is blocked: the microphone (voice chat,
+# asked for only when you turn it on), fullscreen, gamepads, and being embedded on another site (itch.io).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "microphone=(self), camera=(), geolocation=(), payment=(), usb=(), fullscreen=(self), gamepad=(self)"
+    Strict-Transport-Security = "max-age=31536000"

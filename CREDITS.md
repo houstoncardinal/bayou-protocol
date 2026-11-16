@@ -85,6 +85,16 @@ into each downloaded file. The same list is shown in the game under **About**.
   browser, check the current Sketchfab Standard terms for these two before publishing commercially.
 - **Rampart 7.62**: author and licence unknown; find the original before publishing, or replace it.
 
+## Frostline (Poly Haven, CC0)
+
+Downloaded and optimised by `tools/fetch-polyhaven.mjs`; all CC0 from [Poly Haven](https://polyhaven.com).
+The firs are the fir pack credited above.
+
+- Textures: [snow_02](https://polyhaven.com/a/snow_02), [rock_face](https://polyhaven.com/a/rock_face) (greyed in the shader), [brown_planks_05](https://polyhaven.com/a/brown_planks_05), [blue_metal_plate](https://polyhaven.com/a/blue_metal_plate), [weathered_plank_siding](https://polyhaven.com/a/weathered_plank_siding), [rustic_stone_wall](https://polyhaven.com/a/rustic_stone_wall), [roof_planks](https://polyhaven.com/a/roof_planks)
+- Sky: [snowy_hillside](https://polyhaven.com/a/snowy_hillside) (tonemapped panorama)
+- Models: [rock_face_02](https://polyhaven.com/a/rock_face_02), [wooden_crate_02](https://polyhaven.com/a/wooden_crate_02), [old_military_crate](https://polyhaven.com/a/old_military_crate), [barrel_03](https://polyhaven.com/a/barrel_03), [metal_jerrycan](https://polyhaven.com/a/metal_jerrycan), [portable_generator](https://polyhaven.com/a/portable_generator), [portable_searchlight](https://polyhaven.com/a/portable_searchlight), [dead_tree_trunk](https://polyhaven.com/a/dead_tree_trunk), [street_lamp_02](https://polyhaven.com/a/street_lamp_02), [wooden_lantern_01](https://polyhaven.com/a/wooden_lantern_01), [barrel_stove](https://polyhaven.com/a/barrel_stove), [stone_fire_pit](https://polyhaven.com/a/stone_fire_pit), [wooden_barrels_01](https://polyhaven.com/a/wooden_barrels_01), [cardboard_box_01](https://polyhaven.com/a/cardboard_box_01), [ammo_box](https://polyhaven.com/a/ammo_box), [wooden_crate_01](https://polyhaven.com/a/wooden_crate_01), [tree_stump_01](https://polyhaven.com/a/tree_stump_01), [wooden_bucket_01](https://polyhaven.com/a/wooden_bucket_01)
+- The Christmas decorations (baubles, lights, presents, wreaths, candy canes, snowmen, cabins, flames) are modelled in code in `src/mods/63-frostline-christmas.js` and `64-frostline-rooms.js`.
+
 ## Ridgeback Pass v4 (Poly Haven scans, CC0)
 
 From the map package (its own credits file and install notes are in docs/maps/ridgeback_pass/).

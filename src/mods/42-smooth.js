@@ -150,8 +150,14 @@ function __lodPump() {
   };
   typeof requestIdleCallback == 'function' ? requestIdleCallback(run, { timeout: 500 }) : setTimeout(run, 30);
 }
+// one simplified geometry per (mesh, level), shared by every character wearing that model: building one per
+// character per match left a GPU index buffer behind for each of them
+const __lodGeoMemo = new WeakMap();
 const __lodGeo = (geo, index) => {
+  const m = __lodGeoMemo.get(index);
+  if (m && m.src === geo) return m.g;
   const g = new uw();
+  __lodGeoMemo.set(index, { src: geo, g });
   for (const k in geo.attributes) g.setAttribute(k, geo.attributes[k]);
   g.setIndex(index);
   g.boundingSphere = geo.boundingSphere;

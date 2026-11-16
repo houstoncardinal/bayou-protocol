@@ -90,6 +90,16 @@ src/
                                shaders of loaded models compiled in the background so matches start fast
     55-competitive.js          Bomb Defusal halftime side swap and overtime; Blood setting; production builds
                                drop the debug hooks from window (add ?debug to keep them)
+    56-memory.js               GPU memory stays flat over long sessions: bone textures, canvas textures and
+                               old gun models are released after each match; gun cache capped
+    57-telemetry.js            Optional production error and performance reports (set VITE_REPORT_URL)
+    58-pathfinding.js          Bot pathfinding: unreachable goals refused at once (no full-grid searches)
+    59-lights.js               Light budget: a fixed, small number of point lights drawn (was 17 per pixel)
+    60-long-range.js           Bullets travel 800 m (damage still falls with distance); first-shot accuracy
+    61-frostline.js            Frostline (snow map): layout rules and timings in docs/maps/frostline.md
+    62-frostline-detail.js     Frostline in 3D: cliff faces, cavern vaults and portals, stone arches, pavilion, cover
+    63-frostline-christmas.js  Frostline's Christmas decorations: trees, lights, presents, cabins, snowmen, garlands
+    64-frostline-rooms.js      Frostline's hidden caverns furnished: Santa's Workshop, Crystal Cavern, Fireside Lodge
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
@@ -97,6 +107,7 @@ tools/
                                53a-ridgeback-data.js (heights, tunnel floors, decks, obstacles, clip walls)
   build-autorig.mjs          Retired auto-rigger; `--mixamo` still writes a zip for mixamo.com's Auto-Rigger
   build-assets.mjs           Props, masks, Arms6, the DJMaesen terrorist -> optimised GLBs
+  fetch-polyhaven.mjs        Downloads and optimises Frostline's Poly Haven textures, models and sky
   optimize-models.mjs        meshopt-compresses every GLB under public/game (run after adding models)
   inspect-glb.mjs            What takes the space in a GLB (textures, geometry, animation)
   optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
@@ -115,6 +126,7 @@ public/game/               Models (.glb), textures, sky maps and fonts as real f
 docs/ENGINE_API.md         Engine internals the mods rely on
 docs/LAUNCH.md             What a public launch still needs (game server, accounts, legal, analytics)
 docs/maps/ridgeback_pass/  The v4 package's README, install notes, credits and a preview
+docs/maps/frostline.md     How Frostline was designed (rules from Dust2 / Nuke / Inferno, measured timings)
 vite.config.js             Vite config and the plugin that loads the mods
 ```
 
@@ -136,8 +148,9 @@ call into the mods). Those are already applied in `core/game.core.js`.
 ### Common tasks
 
 - **Where the maps are:** most maps are built in code, not loaded from map files: Temple, Piazza and
-  Kindred City are in the core (`XE` in `core/game.core.js`) and Blackwater Penitentiary is
-  `src/mods/35-prison.js`. Ridgeback Pass is a model package: `assets-src/maps/ridgeback_pass/` as delivered,
+  Kindred City are in the core (`XE` in `core/game.core.js`), Blackwater Penitentiary is
+  `src/mods/35-prison.js` and Frostline is `src/mods/61-frostline.js` (its ground plan is a list of smooth shapes;
+  see `docs/maps/frostline.md`). Ridgeback Pass is a model package: `assets-src/maps/ridgeback_pass/` as delivered,
   copied to `public/game/maps/ridgeback_pass/` by `node tools/build-ridgeback.mjs` (which also writes
   `src/mods/53a-ridgeback-data.js`), drawn by the package's own loader
   (`src/maps/ridgebackPass/`, unchanged from the zip) and given its gameplay and physics by

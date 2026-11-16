@@ -346,7 +346,19 @@ typeof window < 'u' && setTimeout(__rbLoadCollision, 2500);
 // The package is centred on 0 and the game's maps start at 0, so the scenery sits in a group moved by half
 // the map size. The terrain shader places its blend maps in world space: their origin is moved to match.
 // map.update() (level of detail, culling, grass wind) is given a copy of the camera in the package's frame.
-const __rbQuality = (q) => (q === 'high' || q === 'low' ? q : 'medium');
+// The package's "high" preset (trees and rocks casting shadows, full-detail trees to 36 m: about 5 million
+// triangles a frame) needs a discrete or Pro / Max class GPU. On integrated graphics High keeps its sharper
+// resolution and shadows but uses the "medium" scenery, which looks nearly the same and runs twice as fast.
+const __rbStrongGpu = () => {
+  if (__RB.strong === void 0)
+    try {
+      __RB.strong = /nvidia|geforce|rtx|gtx|radeon rx|radeon pro|arc a|apple m[1-9] (pro|max|ultra)/i.test(nz());
+    } catch (e) {
+      __RB.strong = !1;
+    }
+  return __RB.strong;
+};
+const __rbQuality = (q) => (q === 'high' ? (__rbStrongGpu() ? 'high' : 'medium') : q === 'low' ? 'low' : 'medium');
 function __rbGLB(p) {
   const C = __RB.glbs || (__RB.glbs = new Map());
   C.has(p) || C.set(p, new Promise((res, rej) => __glbParse(__RB.base + p, res, rej)));
@@ -381,6 +393,7 @@ function __rbFastTerrain(group) {
       key = m.customProgramCacheKey.bind(m);
     m.onBeforeCompile = function (sh, r) {
       prev.call(this, sh, r);
+      m.userData.u = sh.uniforms;
       let f = sh.fragmentShader;
       const rockA = 'float steep = min(tN.y, mix(tN.y, gN.y, 0.6));\nfloat rockF = smoothstep(0.78, 0.60, steep + (tNoise(tWP * 0.35) - 0.5) * 0.12);',
         ids = 'int ids[10];',
@@ -427,6 +440,27 @@ function __rbTerrainShadows(group) {
     o.parent.add(proxy);
   });
 }
+// Depth pre-pass for the terrain: the terrain's shader is the most expensive in the game, and hills behind
+// hills were shaded in full and then drawn over. Each chunk is first drawn depth-only (almost free), a hair
+// further away, so the real pass then shades only the pixels that end up on screen.
+const __rbDepthMat = typeof window < 'u' ? Object.assign(new Ni({ colorWrite: !1 }), { polygonOffset: !0, polygonOffsetFactor: 1, polygonOffsetUnits: 2 }) : null;
+function __rbTerrainPrepass(group, q) {
+  group.traverse((o) => {
+    if (!o.isLOD || !/^terrain_/.test(o.name) || o.userData.__rbPre) return;
+    o.userData.__rbPre = 1;
+    // the full-detail chunk (about 55,000 triangles) only near the camera: the surface detail is in the
+    // shader, so beyond this the 5,000-triangle chunk looks the same (compared in screenshots) and the frame
+    // has a third fewer triangles
+    o.levels[1] && (o.levels[1].distance = Math.min(o.levels[1].distance, q === 'high' ? 60 : q === 'low' ? 35 : 50));
+    for (const l of o.levels) {
+      const m = new Ow(l.object.geometry, __rbDepthMat);
+      m.name = 'terrain_depth';
+      m.renderOrder = -5;
+      m.matrixAutoUpdate = !1;
+      l.object.add(m);
+    }
+  });
+}
 // the shadow-casting lights look at layer 1 too (checked now and then: lights are re-created with the time of day)
 function __rbShadowLayers(scene) {
   if ((__RB.lyr = (__RB.lyr || 0) + 1) % 60 !== 1) return;
@@ -449,6 +483,7 @@ function __rbLoadView(q, gl) {
       const old = __RB.view;
       __rbFastTerrain(group);
       __rbTerrainShadows(group);
+      __rbTerrainPrepass(group, q);
       __RB.view = { q, map, group };
       let n = 0;
       group.traverse((o) => o.isMesh && n++);
@@ -476,6 +511,30 @@ function __rbUnloadView() {
   __RB.view = null;
   __RB.viewLoading = null;
   v && v.map.dispose();
+  // the downloaded models (about 350 MB of memory, and their textures on the graphics card) are released
+  // too; the browser's cache keeps the files, and on desktops the menus load them again in the background
+  // while Ridgeback is the selected map
+  const C = __RB.glbs;
+  __RB.glbs = new Map();
+  __RB.sky = null;
+  C &&
+    C.forEach((p, path) => {
+      if (/^collision\//.test(path)) return; // their triangles are already baked into __RB.col
+      p.then(
+        (g) =>
+          g.scene.traverse((o) => {
+            if (!o.isMesh) return;
+            o.geometry && o.geometry.dispose();
+            for (const m of [].concat(o.material || [])) {
+              if (!m) continue;
+              for (const k in m) m[k] && m[k].isTexture && m[k].dispose();
+              m.dispose();
+            }
+          }),
+        () => {},
+      );
+    });
+  __RB.preloaded = !1;
 }
 // per frame: detail levels, culling and wind (the package's update), sky and haze
 function __rbFrame(v, s) {
@@ -550,12 +609,12 @@ function __rbFrame(v, s) {
 // Ridgeback is the default map: on desktops its models download and decode in the background while the
 // menus are up (one at a time, so the menus stay smooth), and pressing Play only has to build the scenery.
 // Phones and low-memory devices load it when a match starts instead.
-typeof window < 'u' &&
-  __glbAfter(() => {
+function __rbPreload() {
     try {
       const z = Zw.getState(),
         desk = !(window.matchMedia && matchMedia('(pointer: coarse)').matches) && (navigator.deviceMemory || 8) >= 4;
-      if (!desk || z.map !== 'ridgeback') return;
+      if (!desk || z.map !== 'ridgeback' || __RB.preloaded || __RB.view) return;
+      __RB.preloaded = !0;
       __rbLoadData(() => {
         const D = __RB.data,
           q = __rbQuality(z.quality),
@@ -578,7 +637,12 @@ typeof window < 'u' &&
         next();
       });
     } catch (e) {}
-  }, 1500);
+}
+if (typeof window < 'u') {
+  __glbAfter(__rbPreload, 1500);
+  // back in the menus with Ridgeback selected (after its models were released on leaving it): again
+  Zw.subscribe((s) => s.screen === 'menu' && s.map === 'ridgeback' && !__RB.preloaded && setTimeout(__rbPreload, 3e3));
+}
 // minimap: the package's top-down radar image (data/radar.png: image top = north, the whole 200 m map)
 {
   const coreRadar = hV;
@@ -614,6 +678,7 @@ typeof window < 'u' &&
     return { p: { x: p.x, y: p.y, z: p.z }, n: { x: n.x / l, y: n.y / l, z: n.z / l }, box: null };
   };
 }
+typeof window < 'u' && (window.__bpRbGroup = () => __RB.view && __RB.view.group);
 typeof window < 'u' && (window.__bpRidgeback = () => ({ collision: !!__RB.col, data: !!__RB.data, view: !!__RB.view, stats: __RB.stats, ground: (x, z) => __rbGround(x, z) }));
 // ---------------------------------------------------------------- map list
 // Dune Market, Dry Gulch, Reactor, Cell Block and the Firing Range are retired: off the map list, and a

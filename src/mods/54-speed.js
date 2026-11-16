@@ -21,12 +21,35 @@
 // the match, so the first frames of a match only draw. The same runs for the first 90 s of a match, for
 // models that load after the menus.
 const __SPD = { mode: '', n: 0 };
+// High on a GPU that is not a Pro / Max class or dedicated one (the base Apple M chips, Intel and AMD
+// integrated graphics): High's sharper shadows and extra lights, at Medium's resolution budget (2.6 instead
+// of 3.7 million pixels). Measured on a base M4 at 3840 x 1080: High at the full budget held about 30-40 fps
+// on the outdoor maps; capped, it plays like Medium.
+function __strongGpu() {
+  if (__SPD.strong === void 0)
+    try {
+      __SPD.strong = /nvidia|geforce|rtx|gtx|radeon rx|radeon pro|arc a|apple m[1-9] (pro|max|ultra)/i.test(nz());
+    } catch (e) {
+      __SPD.strong = !1;
+    }
+  return __SPD.strong;
+}
 {
   const corePt = Pt;
-  Pt = function () {
-    const v = corePt.apply(this, arguments);
+  Pt = function (q) {
+    let v = corePt.apply(this, arguments);
+    q === 'high' && !__strongGpu() && (v = Math.min(v, corePt.call(this, 'medium')));
     return eA.attract ? Math.min(v, 0.6) : v;
   };
+}
+function __spdLearn() {
+  if (!__SPD.learn)
+    try {
+      __SPD.learn = JSON.parse(localStorage.getItem('bp-dyn-v1') || '{}') || {};
+    } catch (e) {
+      __SPD.learn = {};
+    }
+  return __SPD.learn;
 }
 const __SWARM = { done: new WeakSet(), t: 0, n: 0 };
 function __spdWarm(st) {
@@ -73,8 +96,27 @@ function __spdTick() {
     st.setFrameloop(want ? 'demand' : 'always');
     st.gl.shadowMap.autoUpdate = want !== 'menu';
     st.gl.shadowMap.needsUpdate = !0;
-    // into a match: full resolution straight away (dynamic resolution takes over from there)
-    want || st.setDpr(Pt(Zw.getState().quality));
+    // into a match: the resolution this machine settled on the last time it played this map at this quality
+    // (full resolution the first time); dynamic resolution takes over from there. Leaving a match: remember
+    // where it settled.
+    const z = Zw.getState(),
+      full = Pt(z.quality),
+      D = eA.__dyn;
+    if (!want) {
+      __SPD.dynKey = z.map + ':' + z.quality + ':' + Math.round(full * 100);
+      const start = eA.settings.dynamicRes ? Math.min(full, Math.max(full * 0.65, __spdLearn()[__SPD.dynKey] || full)) : full;
+      eA.__dynStart = start;
+      D && ((D.dpr = start), (D.lo = D.hi = 0), (D.wait = 1e4), (D.dropAt = performance.now()));
+      st.setDpr(start);
+    } else if (__SPD.dynKey && D && D.dpr > 0) {
+      const L = __spdLearn();
+      L[__SPD.dynKey] = D.dpr;
+      try {
+        localStorage.setItem('bp-dyn-v1', JSON.stringify(L));
+      } catch (e) {}
+      __SPD.dynKey = '';
+      want === 'menu' && (eA.__dynStart = 0);
+    }
   }
   if (!want) {
     // the first minute and a half of a match: anything that loaded since the menus (other characters, the
@@ -82,7 +124,10 @@ function __spdTick() {
     // comes into view (a hitch in the middle of a fight)
     const m = eA.state;
     m !== __SPD.match && ((__SPD.match = m), (__SPD.matchAt = performance.now()));
-    if (m && performance.now() - __SPD.matchAt < 9e4)
+    // only where the browser compiles shaders in the background (KHR_parallel_shader_compile); elsewhere a
+    // compile blocks the frame, so it is better left to the moment it is actually needed
+    __SPD.kpc === void 0 && (__SPD.kpc = !!st.gl.extensions.has('KHR_parallel_shader_compile'));
+    if (m && __SPD.kpc && performance.now() - __SPD.matchAt < 9e4)
       try {
         __spdWarm(st);
       } catch (e) {}

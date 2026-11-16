@@ -77,6 +77,16 @@ Postgres database.
 
 ## 5. Error tracking and analytics
 
+**Built in, no account needed to start:** `src/mods/57-telemetry.js` sends uncaught errors and one
+performance summary per play session (fps, slowest 1 % of frames, stalls, quality, graphics card, map) to any
+URL you give it.
+1. Set `VITE_REPORT_URL` in Netlify (Site configuration > Environment variables) to an endpoint that accepts
+   a JSON POST, for example a Netlify Function that writes to a database or a log service's HTTP intake.
+2. Redeploy.
+
+Without the variable it sends nothing.
+
+
 - **Sentry** (free tier):
   - `npm i @sentry/browser`, then `Sentry.init({ dsn, tracesSampleRate: 0.1 })` in `src/main.js`.
   - Upload source maps in the build (`@sentry/vite-plugin`). Stack traces from the minified core are
