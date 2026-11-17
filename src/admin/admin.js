@@ -8,7 +8,7 @@ const PIN_KEY = 'bp-admin-pin';
 const DEFAULT_EPOCH = Date.UTC(2026, 0, 1); // start time of the built-in programme (server/showings-core.mjs)
 const CINEMA = ['t1', 't2', 't3', 't4', 't5', 'lounge'];
 const GROUPS = [
-  { title: 'Bayou Palace Cinemas', sub: 'Six theaters: Palace XL 1-4, the Velvet Room, the Starlight', ids: CINEMA },
+  { title: 'Bayou Palace Cinemas', sub: 'Six theaters: Palace XL 1-4, the Velvet Room, and the Starlight, a 360° dome', ids: CINEMA },
   { title: 'Other maps', sub: 'Screens elsewhere in Bayou Protocol', ids: ['prison'] },
 ];
 const META = {
@@ -17,7 +17,7 @@ const META = {
   t3: { no: '3', where: 'Auditorium 3' },
   t4: { no: '4', where: 'Auditorium 4' },
   t5: { no: '5', where: 'Premium · Auditorium 5' },
-  lounge: { no: '★', where: 'Lobby lounge' },
+  lounge: { no: '360°', where: '360° dome · 360 & VR video' },
   prison: { no: 'TV', where: 'Blackwater Prison' },
 };
 
@@ -84,7 +84,15 @@ async function post(action, data = {}, pin = state.pin) {
 
 // Serialised writes: each save lands on top of the previous one's result.
 let saveChain = Promise.resolve();
+// the Starlight is a 360° dome: whatever goes on it keeps the format it had (360° unless set otherwise)
+const DOME = 'lounge';
+function withFormat(t) {
+  if (t.id !== DOME || !t.showing) return t;
+  const cur = byId(DOME)?.showing;
+  return { ...t, showing: { ...t.showing, projection: t.showing.projection || cur?.projection || '360', stereo: 'stereo' in t.showing ? t.showing.stereo : cur?.stereo } };
+}
 function save(theaters, { quiet } = {}) {
+  theaters = theaters.map(withFormat);
   const run = async () => {
     state.saving++;
     setStatus();
@@ -434,6 +442,18 @@ function buildCard(id) {
         <input type="range" min="0" max="100" step="1" class="vol-range">
         <output class="vol-out"></output>
       </div>
+      ${id !== DOME && CINEMA.includes(id) ? `<div class="fmt fmt--flat">
+        <div class="fmt-row"><span class="fmt-l">Picture</span>
+          <div class="seg" role="group" aria-label="Film shape"><button type="button" data-asp="0">Full 16:9</button><button type="button" data-asp="1.85">Widescreen 1.85</button><button type="button" data-asp="2.39">Scope 2.39</button></div></div>
+        <p class="fmt-note">If a YouTube film has black bars above and below its picture, pick its shape and the screen fills edge to edge (video files are trimmed automatically).</p>
+      </div>` : ''}
+      ${id === DOME ? `<div class="fmt">
+        <div class="fmt-row"><span class="fmt-l">Format</span>
+          <div class="seg" role="group" aria-label="Dome format"><button type="button" data-proj="360">360°</button><button type="button" data-proj="180">180° VR</button></div></div>
+        <div class="fmt-row"><span class="fmt-l">VR file</span>
+          <div class="seg" role="group" aria-label="Stereo layout of a VR video file"><button type="button" data-st="mono">Mono</button><button type="button" data-st="tb">Top / bottom</button><button type="button" data-st="sbs">Side by side</button></div></div>
+        <p class="fmt-note">Paste any 360° or VR YouTube link (it turns with the viewer's head), or a link to a 360° / 180° video file. Format and VR layout apply to video files; YouTube knows its own. A video that isn't 360° plays on a flat screen at the dome's front.</p>
+      </div>` : ''}
       <div class="actions">
         <button class="act primary" type="button" data-act="replace">${ICON.replace}<span>Replace</span></button>
         <button class="act" type="button" data-act="restart">${ICON.restart}<span>Restart</span></button>
@@ -483,6 +503,24 @@ function buildCard(id) {
     if (+range.value) el._lastVol = +range.value;
     paintVol(v);
     commitVol(v);
+  });
+
+  // the dome's format
+  el.addEventListener('click', async (e) => {
+    const f = e.target.closest('[data-proj], [data-st], [data-asp]');
+    if (!f) return;
+    const t = byId(id);
+    if (!t?.showing) return;
+    const showing = { ...t.showing };
+    if (f.dataset.asp) {
+      showing.aspect = +f.dataset.asp || null;
+      try { await save([{ id, showing }]); toast(`${t.name}: ${showing.aspect ? `${showing.aspect}:1 picture, filled edge to edge` : 'full 16:9 picture'}.`, { ms: 2500 }); } catch { /* shown */ }
+      return;
+    }
+    if (f.dataset.proj) showing.projection = f.dataset.proj;
+    if (f.dataset.st) showing.stereo = f.dataset.st === 'mono' ? null : f.dataset.st;
+    const label = (showing.projection === '180' ? '180° VR' : '360°') + (showing.stereo ? (showing.stereo === 'tb' ? ', VR top / bottom' : ', VR side by side') : '');
+    try { await save([{ id, showing }]); toast(`${t.name}: ${label}.`, { ms: 2500 }); } catch { /* shown */ }
   });
 
   // actions
@@ -553,6 +591,9 @@ function updateCard(id) {
     b.setAttribute('aria-label', `${a === 'clear' ? 'Turn off' : a[0].toUpperCase() + a.slice(1)} · ${t.name}`);
   }
   $('[data-act="replace"] span', el).textContent = s ? 'Replace' : 'Add showing';
+  for (const b of $$('[data-asp]', el)) { b.setAttribute('aria-pressed', String(String(s?.aspect || 0) === b.dataset.asp)); b.disabled = !s; }
+  for (const b of $$('[data-proj]', el)) { b.setAttribute('aria-pressed', String((s?.projection || '360') === b.dataset.proj)); b.disabled = !s; }
+  for (const b of $$('[data-st]', el)) { b.setAttribute('aria-pressed', String((s?.stereo || 'mono') === b.dataset.st)); b.disabled = !s; }
 }
 
 function updateTimes(only) {

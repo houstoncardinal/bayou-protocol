@@ -1,8 +1,8 @@
 /* ===== Bayou Protocol mod: Theater Mode (watch films together, no weapons) ===== */
 // Bayou Palace Cinemas as a place to go to the movies: no bots, no guns, no damage, no clock. Walk the lobby,
 // pick a theater, take a seat (Use) and watch; online, everyone in the lobby is there together with voice chat
-// (the game's own, K to talk). Start it from "Theater Mode" in the menu's side rail (offline, straight in) or
-// pick it as the mode of an online lobby.
+// (the game's own, K to talk). Start it from "Theater Mode" in the menu's side rail or its card on Home (it is
+// not one of the game modes in Play offline: those all have guns, and the cinema is a map in every one of them).
 // It runs as the engine's team deathmatch with `st.theater` set: the core's match flow, spawns and online
 // sync, with the fighting taken out.
 const __TH = { lobby: [[60, 34.5], [57, 35.5], [63, 35.5], [54, 33.5], [66, 33.5], [60, 37.5], [51, 36], [69, 36]] };
@@ -76,8 +76,8 @@ function __thPlace(st) {
   Object.assign(oU, { theater: 1 });
   Object.assign(sBA, { theater: ['Movies', 'No weapons', 'Voice'] });
   Object.assign(CBA, { theater: ['#7a1f2a', '#120a0c'] });
-  gF.some(([k]) => k === 'theater') || gF.push(['theater', 'Bayou Palace Cinemas with no guns: walk in, take a seat and watch the films together. Online, talk with voice chat.']);
-  CN.includes('theater') || CN.push('theater');
+  // (not in the mode lists of Play offline or Play online: those are the game's modes, with guns, and the cinema
+  // is a map in all of them. Theater Mode starts from its Home card and the side rail)
   // Theater Mode is the cinema's: choosing it picks the map; another map turns it back into team deathmatch
   try {
     const orig = Zw.getState().setup;
@@ -93,9 +93,16 @@ function __thPlace(st) {
     });
   } catch (e) {}
 })();
+// opening Play offline (or online) after the theater: back to a game mode
+try {
+  Zw.subscribe((st) => st.screen !== 'playing' && st.mode === 'theater' && !__thGoing && st.setup({ mode: 'tdm' }));
+} catch (e) {}
 // "Theater Mode" in the menu's side rail, under Play offline: straight into the cinema
+let __thGoing = 0;
 function __thGo() {
   const s = Zw.getState();
+  __thGoing = 1;
+  setTimeout(() => (__thGoing = 0), 3000);
   s.setup({ mode: 'theater', map: 'cinema' });
   s.setScreen('setup');
   // deploy from the setup screen (the normal path: loading screen, operator, settings)

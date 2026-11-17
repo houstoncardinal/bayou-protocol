@@ -95,3 +95,19 @@ The screens' lineups on your computer and on the live site are kept separately.
 | `netlify/functions/showings.mjs` | The Netlify Function (v2) that serves `/api/showings`, with Netlify Blobs storage |
 | `vite.config.js` (`bayouShowings`) | The same API for the dev and preview servers, with file storage, plus the `/admin` rewrite |
 | `admin.html`, `src/admin/` | The dashboard: a separate page that never loads the game |
+
+## The Starlight: 360° and VR
+
+The Starlight is a 360° dome. Paste any 360° or VR YouTube link onto its card and it plays all round the
+audience: the film turns as each viewer looks about. You can also use a link to a 360° or 180° video file.
+
+- **Format** (for video files): 360° (all round), or 180° VR (the front half).
+- **VR file**: Mono, Top / bottom, or Side by side, for stereo VR files (the left eye is shown).
+
+YouTube 360° and VR videos don't need either setting. A YouTube video that isn't 360° plays on a flat screen at
+the front of the dome.
+
+## Picture shape (black bars)
+
+If a YouTube film has black bars above and below its picture, set **Picture** on its screen's card to its shape
+(Widescreen 1.85 or Scope 2.39). The screen then fills edge to edge. Video files are trimmed automatically.

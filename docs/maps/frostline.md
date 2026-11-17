@@ -1,7 +1,7 @@
 # Frostline: how the map was designed
 
 An alpine outpost in deep snow, at Christmas. The map is 128 x 128 m, built for 5 v 5 Bomb Defusal, and it
-also works for Team Deathmatch, Capture the Flag and Domination.
+also works for Team Deathmatch and Free-for-All.
 
 - Code:
   - `src/mods/61-frostline.js`: ground plan, collision, spawns, terrain, materials.

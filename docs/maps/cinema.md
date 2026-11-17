@@ -1,7 +1,7 @@
 # Bayou Palace Cinemas: how the map is built, and how its screens work
 
 A 1930s art-deco movie palace grown into a six-screen multiplex, on a 120 x 108 m city block. It plays Bomb
-Defusal, Team Deathmatch, Capture the Flag and Domination. Every screen plays its own film, chosen in the
+Defusal, Team Deathmatch and Free-for-All, and Theater Mode (no guns: from its Home card and the side rail). Every screen plays its own film, chosen in the
 `/admin` dashboard (see `docs/admin.md`).
 
 - Code:
@@ -20,22 +20,20 @@ Defusal, Team Deathmatch, Capture the Flag and Domination. Every screen plays it
 
 | Area | Where | What is there |
 |---|---|---|
-| Street, parking lot, plaza | north, z 0-26 | Terrorist spawn (the bus). Parked cars, palms in planters, the box office kiosk with velvet-rope queues |
+| Street, plaza, parking lot | north, z 0-26 (the lot x 116-165, to z 46) | Terrorist spawn. Parked cars along the far kerb, palms in planters, gardens, the box office kiosk with velvet-rope queues. East of the gardens the palace's own parking lot behind wrought-iron railings: seen from the street, not reached |
 | Facade | z 26 | Stucco and granite. The marquee: letter boards listing the films and chaser bulbs. BAYOU PALACE in lit letters, the PALACE blade sign, poster cases |
 | Grand Lobby | x 40-80 | Marble floor with a brass compass star, a coffered ceiling, three chandeliers, deco columns. The concession stand (candy cases, popcorn machines, soda fountain, menu boards). A mezzanine reached by two carpeted stairs |
 | West Hall | x 30-40 | Arcade cabinets, a claw machine, a photo booth |
-| The Velvet Room (theater 5) | x 4-30 | A luxury theater: leather recliners on five tiers, a 17.4 x 9.8 m screen over the front entrance, deep red velvet drapes down both walls, brass sconces, a 13.2 m ceiling |
+| The Velvet Room (theater 5) | x 4-30 | A luxury theater round an ultra-wide curved screen (a 19 m chord bowed 4 m, 7.95 m high: 2.39:1) on its east wall, wrapping round the audience; 80 leather recliners in five curved rows on tiers, each seat square to the screen; black velour round the screen, deep red drapes, a 12.1 m ceiling. Its entrance is on the Promenade, beside the screen's south end |
 | East Hall | x 80-90 | Coat check |
-| The Starlight (theater 6) | x 90-116 | The Velvet Room's mirror image, in navy, under a star-field ceiling. Its neon sign is over its Promenade entrance |
-| Promenade | z 46-53 | A carpeted hall along the theaters' fronts. Four arched screens cross it, so there is no 110 m sightline |
-| Theaters 1-4 (Palace XL) | z 53-85 | A curved screen fills the whole front wall: 22.4 x 12.6 m (16:9), 2.8 m up to the 16 m ceiling, bowed 1.1 m towards the audience, all black velour round it, a blue light line under its curve. 14 rows of wide rocker seats (408 per theater) rising 5.9 m, lit row letters at the aisle ends, step lights. Ribbed timber walls under jacquard fabric panels with brass sconces, a ceiling of small recessed lights. You enter under the screen's corners from the Promenade, through the fire exits from the side corridors, or at the top from the projection level |
-| Corridors | between the theaters | Promenade to yard, with a jog halfway. Fire exits into the theaters' fronts |
-| Projection level | z 85-90, 6.3 m up | A projector at each port, with its beam and dust in the beam. Steel stairs down to the yard |
+| The Starlight (theater 6) | x 90-116 | A 360° sphere round the eye (24 x 14.4 m across, 23 m from its foot below the floor to its crown), the film all round you, above and below. From the Promenade a short hallway (marble, rosewood, brass, a coved ceiling) leads straight through a gilt portal into the film; nothing else of the room is seen. No seats, no film controls, no floor to be seen (you stand on an invisible floor) |
+| Promenade | z 46.4-54.2, x 4-165 | A carpeted hall along the theaters' fronts, 7.8 m wide under a 4.8 m ceiling. Six arched screens cross it |
+| Theaters 1-4 (Palace XL) | z 54.2-101.8, each 36.75 m wide | The screen is the front wall: flat, 35.95 x 20.2 m (16:9), wall to wall, 1 m off the floor to near the 22.2 m ceiling; nothing frames it. 18 rows of premium rockers (about 750 per theater) rising 8.1 m, lit row letters at the aisle ends, step lights. Ribbed timber walls under jacquard fabric panels with brass sconces, a ceiling of small recessed lights. You enter through the fire exits from the side corridors, or at the top from the projection level |
+| Corridors | between the theaters (x 40.75-44.75, 81.5-87.5, 124.25-128.25) | Promenade to yard, with a jog at z 72.2. Fire exits (2.0 x 3.24 m) into the theaters' fronts |
+| Projection level | z 102.2-106.8, 8.22 m up | A projector at each port, with its beam and dust in the beam. Steel stairs down to the yard |
 | Loading dock, staff lot | south | Counter-Terrorist spawn |
 
 **Bomb sites:** A is Theater 2's stage and pit, B is Theater 3's (see "The round" below).
-
-**Domination points:** the lobby, and the pits of Theaters 2 and 3.
 
 ## Sitting down (`73-cinema-seats.js`)
 
@@ -81,8 +79,11 @@ loop, using the server's clock. So everyone in a room sees and hears the same mo
   start or seek, the film's still stays up for 1.3 s while YouTube's play icon shows.
 - Inside a theater only its own player runs, at 1080p (1440p on a large high-density display). In the halls,
   at most two run. Other screens show the film's still.
-- A curved screen (`curve` on the screen) is drawn curved. The player is mapped onto its chord, 7 % larger than
-  the screen, so YouTube's title and logo along the edges fall behind the masking.
+- The cinema's screens are flat (`curve: 0`): YouTube's player is a flat rectangle warped onto the screen, and on
+  the old curved screens the two parted towards the edges, so the player's own edges showed as glowing borders
+  round the picture. The player is 16:9 and covers the screen at one scale (6 % over, so YouTube's title and logo
+  fall outside the picture); a video file is cropped to cover it too, with any black bars baked into the file
+  found by sampling the frame (`__scrFit`) and cropped away.
 - Sound stays in its theater. From inside one theater no other theater's film reaches you, even through a shared
   wall. In the halls you hear a film only through an open doorway with its screen in view.
 
@@ -135,9 +136,12 @@ switching are ignored, damage is off, the gun HUD, health and score are hidden.
 
 ## Screens and the film clock (November 2026, second pass)
 
-- **Wall to wall, floor to ceiling.** The Palace XL screens are 23.5 x 13.2 m (16:9), from just above the stage to
-  the 14.5 m ceiling, curved 0.9 m. The Velvet Room's and the Starlight's are 19 x 10.7 m under an 11.9 m ceiling,
-  curved 0.5 m. Nothing is cut into the screen wall: the XL theaters are entered through their side walls from
+- **Wall to wall, IMAX-wide, a subtle curve.** The Palace XL screens are 23.5 m wide, 12.6 m high at the walls
+  and 12.0 m in the middle; the Velvet Room's 19.4 m wide, 10.4 m and 9.9 m. On a large high-density display the
+  YouTube player is 4K (YouTube picks its quality by the player's size). Their top and bottom edges bow out
+  towards the sides (`bow` on the screen), the look of a giant curved screen from the seats. The screen itself
+  stays flat, so YouTube's flat player stays locked to it (a truly curved screen and the flat player parted at the
+  edges, which showed as glowing borders). No frame, no light lines round them: the picture is the wall. Nothing is cut into the screen wall: the XL theaters are entered through their side walls from
   the side corridors (by the front rows, the theater's number lit over each doorway in the corridor), or at the
   top from the projection level; the luxury rooms through their side wall from the Promenade.
 - **How YouTube is placed.** The player is positioned in 3D with CSS transforms from the game camera (as three.js's
@@ -158,9 +162,9 @@ switching are ignored, damage is off, the gun HUD, health and score are hidden.
 
 ## Screen edges, doorway curtains, side passages (November 2026, third pass)
 
-- **Feathered screen edges.** The canvas draws without anti-aliasing, so the gently curved top edge of a 23 m screen
-  showed as stair-steps. Each cinema screen has a strip round the picture (`sc.edge` in `70-screens.js`) that
-  writes alpha from clear to the black masking over 28 cm: a soft, clean edge.
+- **Screen edges.** The canvas draws without anti-aliasing, so a screen's edge can stair-step. A 5 cm strip round the
+  picture (`sc.edge` in `70-screens.js`) fades it into the black: a pixel or two from the seats, a clean edge
+  without a visible border (it was 28 cm, which read as a dark frame).
 - **Doorway curtains.** Every theater doorway (side passages, the rear doors to the projection level, the luxury
   rooms' Promenade entrances) has two velvet curtain halves on a brass rod, in the room's colour
   (`N.exitDrapes`, drawn in `72-cinema-view.js`). They gather towards the jambs while anyone, player or bot, is
@@ -203,3 +207,120 @@ In bot tests, rounds went both ways.
 marble_mosaic_tiles (the lobby's floor bands); CoffeeCart_01 (lobby), ArmChair_01 and side_table_01 (the halls),
 potted_plant_04 (the Promenade), industrial_storage_cart, steel_frame_shelves_02 and cardboard_box_01 (the
 projection level). The cinema's assets are now 7.2 MB.
+
+## The Starlight: the 360° dome (November 2026)
+
+- **What it plays.** Any 360° or VR YouTube video, or a 360° / 180° video file, set in `/admin` (the Starlight's
+  card has the format: 360° or 180° VR, and for VR files their stereo layout: mono, top / bottom, side by side; the
+  left eye is shown). A YouTube video that turns out not to be 360° plays on a flat screen at the dome's front.
+- **How YouTube 360° works.** YouTube's player can't be drawn on a 3D surface, but its own 360° viewer can be
+  turned from the page (`setSphericalProperties`). The dome is drawn as a hole in the canvas; the player behind it
+  fills the window (10 % over, so its corner badges fall outside), and every frame its view is turned to the
+  camera's yaw and pitch with the camera's field of view (across the window's longer side). Both count up turning
+  left and looking up, as the game's do. So the film is all round you and stays put as you look about.
+- **How a file works.** The dome (`def.dome` in `70-screens.js`) is a grid of directions from an eye point in the
+  middle of the room; each vertex is where that direction meets the dome, so an equirectangular film mapped by
+  direction is right from the seats. 180° films fill the front half (black behind).
+- **The building.** A full ellipsoid round the eye point (1.6 m over the floor), 24.4 x 18.8 m across, 11.7 m up to
+  its crown and 11.7 m down below the floor: the film is under your feet too. The floor is collision only inside it
+  (the carpet is drawn only in the vestibule and the corners; the site's ground is open under the room). Solid to
+  4 m (a ring of collision columns), open at a 2.8 m doorway facing the vestibule. Seen from outside it is a dark
+  shell. The room's control desk is in the vestibule.
+- **Learned the hard way.** Right after a 360° film starts YouTube reports no view for a moment; switching the
+  player between the dome and the flat fallback on that every frame stalled the page. The choice is made once per
+  player: 360° as soon as a view is reported, flat only after 5 s of playing without one.
+
+## YouTube films with black bars
+
+A widescreen film uploaded inside a 16:9 video has black bars baked in, and a YouTube player can't be inspected
+to find them. Each flat screen's card in `/admin` has **Picture: Full 16:9 / Widescreen 1.85 / Scope 2.39**: with
+a shape set, the player is scaled so the film's picture covers the screen and the bars fall outside it. Video files
+are trimmed automatically (`__scrFit`).
+
+## Sacred geometry and the finish (November 2026)
+
+The palace's ornament is drawn by `72b-cinema-sacred.js` from records `71-cinema.js` keeps in `A.__cn.sacred`
+(`sg(kind, {...})`). All of it is visual: nothing has collision, and the bomb sites, doorways, stairs and spawns are
+as they were. The figures are drawn procedurally on canvases (no image files): crisp anti-aliased lines with a dark
+groove edge and a highlight so they read as inlaid or gilt metal, or as light, or as leaded glass.
+
+- **The figures.** Flower of Life (the 19 circles and the arcs of the next ring, inside a band of interlaced
+  circles), Seed of Life (in a ring of twelve lotus petals), Metatron's Cube (the 13 circles of the Fruit of Life and
+  the 78 lines between their centres), the Sri Yantra (four triangles up, five down, the lotuses of 8 and 16 petals,
+  the square enclosure with its gates), the golden spiral through its Fibonacci squares (a 1.618 : 1 panel), the
+  Vesica Piscis, and a running frieze of circles each through its neighbours' centres.
+- **Grand Lobby.** A 7.8 m Flower of Life of brass in dark marble under the middle chandelier, a Seed of Life under
+  each side one; every coffer (now over the mezzanine too) lacquered deep blue with a gilt Metatron's Cube or Seed of
+  Life in a stepped moulding; over the doors a rose window of Metatron's Cube lit from behind, a roundel either
+  side, four fluted pilasters with stepped gilt capitals; a frieze under a moulded cornice round all four walls;
+  on the stair walls framed bays (the picture, the golden spiral, a Seed of Life over the mezzanine); a rosewood
+  wainscot with raised panels; the mezzanine's moulded fascia; the concession counter's black marble plinth, bullnose,
+  fillets and medallion; carved consoles with marble busts under the windows.
+- **Promenade.** A Seed of Life (Metatron's Cube in the middle) in brass and marble in front of each theater; a
+  rosette over each pendant and beams with corbels between them; a crown moulding and a rosewood wainscot along both
+  walls; tall backlit stained-glass panels (Seed of Life, Vesica Piscis, hexagram) either side of every entrance (the
+  Velvet Room's in rose glass, the Starlight's in teal); roundels on the arched screens.
+- **Auditoriums.** No ornament on the ceilings: they stay plain black with their small lights (a Sri Yantra and a
+  Flower of Life were tried there and taken out). The Starlight is untouched.
+- **Street front.** Seed of Life roundels either side of the blade sign, friezes along each step of the parapet,
+  moulded cornices on every parapet, the fins ribbed in gilt on granite bases, a roundel over each fluted relief on
+  the luxury rooms' blank walls, a Seed of Life in the plaza's terrazzo, the box office's corners rounded and its
+  canopy edged with a gilt roll.
+- **Cars.** The parked cars (the staff lot's four, nose in to the bays as painted, and four new ones along the far
+  kerb of the street, clear of the Terrorists' spawn) are Poly Haven's `covered_car`, a scan of a saloon under a
+  fitted cover, instanced with each cover tinted its own colour, solid (4.4 x 1.8 x 1.38 m). Poly Haven has no bare
+  cars, and no realistic car model under a licence that allows redistribution in a game could be fetched without an
+  account (Sketchfab's CC0 cars need a login; Khronos's CarConcept is a logo-branded concept car). The two vans at the
+  dock are still the core's low-poly vans: their 2.1 m collision is cover the round is balanced round.
+- **Assets added (Poly Haven, CC0).** rosewood_veneer1 (wainscots, frames); covered_car, marble_bust_01,
+  ClassicConsole_01. The cinema's assets are now 8.5 MB.
+- **Cost.** About 65k triangles more (detail 138k -> 203k), about fifteen draw calls, eleven canvas textures (the
+  floor's Flower of Life at 2048 px, the rest 1536 px or smaller: about 80 MB of video memory with mipmaps), made
+  when the map is built and released with it.
+
+## Palace XL at 1.5 x, the Velvet's curved screen, the Starlight's hallway, the golden ratio (November 2026, fourth pass)
+
+- **Map size.** 169 x 126 m (was 120 x 108). The street front (street, plaza, gardens, facade, marquee, lobby, halls,
+  the Velvet Room, the Starlight) is where it was, x 4-116; the auditorium block behind it runs on to x 165, with the
+  palace's parking lot in front of that part (fenced: the street's pavement runs past it). The building is closed on
+  every side: the block's own stucco walls rise above the Promenade's roof with a cornice, the alleys are walled, the
+  yard has its back fence.
+- **The theaters** are laid out from one list (`__CN_XL` and `__CN` in `71-cinema.js`): four auditoriums 36.75 m wide
+  from x 4, corridors of 4, 6 and 4 m between them; T1 x 4-40.75, T2 44.75-81.5, T3 87.5-124.25, T4 128.25-165. The
+  section: screen wall at z 54.2, stage to 58.1, pit to 66.2, 18 rows of 1.8 m rising 0.45 m to 98.6, cross-aisle,
+  rear wall 101.8, projection level 102.2-106.8 at 8.22 m (its roof 12.6 m), yard to 126. Screens: flat (`curve: 0`, no
+  bow), 35.95 x 20.2 m, centred 11.1 m up. Projectors' ports at 10.87 m; beams follow the screen's size.
+- **Round.** Sites: A = Theater 2's stage and pit (x 49-77, z 54.6-65.8), B = Theater 3's (x 92-120). T spawn on the
+  street (unchanged); CT spawn on the projection level round the Mid Corridor (x 73-96, z 104.4-106.8). T gather in the
+  West / Mid / East corridors past the fire exits; CTs watch from the cross-aisle and the side aisles. Stairs from the
+  yard to the projection level at x 14, 96 and 140.
+- **Seats.** One soft-box builder (`__cnSoft` in `72-cinema-view.js`): each part a face grid with rounded edges and
+  analytic normals, bent (a dished cushion, a backrest wrapping round you with a lumbar roll and three stitched
+  channels) with its normals carried through the bend. The rocker is about 790 triangles (velour seat and backrest,
+  piping, headrest pad, moulded shell, brass seat plate), each arm standard about 150 (side panel, padded armrest, cup
+  holder with a brass rim); the Velvet recliner about 1,000 (leather seat, two pillow-top bolsters, headrest pillow,
+  wide padded arms with cup holders, the footrest stowed). Instanced per room; a room's seats are drawn only while
+  the camera is in it or at its doors (about 0.7 M triangles in an XL theater). `73-cinema-seats.js` reads the same
+  rows; the Velvet's curved rows are listed seat by seat (`list: [{ x, z, yaw }]`).
+- **Velvet Room.** Screen def `{ id: 't5', x: 29.65, z: 36.2, w: 19, h: 7.95, curve: 4, ry: -π/2 }`: the arc's middle
+  0.35 m off the east wall, its ends 4 m nearer the seats. Collision fills the space behind the arc. Black velour
+  follows the curve (a lip at its foot with a warm LED line, the masking above it to the ceiling, returns at its
+  ends). Five rows of 16 recliners on 2.9 m tiers rising 0.42 m, bowed 1.2 m towards the screen, each seat turned
+  square to the arc: from the middle rows the screen fills about 110-125° of the view.
+- **The Starlight.** Promenade entrance at x 101.9-104.1 (2.2 x 3.56 m) -> hallway x 101.5-104.5, z 41.15-46 -> a gilt
+  portal (opening 2.0 x 3.24 m) -> the sphere (`cx 103, cz 33.98, rx 12, rz 7.18`, eye 1.72 m; door due south: yaw π,
+  half-angle atan(1.4 / rz), up to 3.9 m). The hole in the sphere is wider than the portal's opening and narrower
+  than its velour panel, so from the hallway you see only the film and from the sphere only the portal. The film's
+  front is straight ahead as you step in (`front: 0`). The vestibule, its carpet ring and the control desk are gone.
+- **The golden ratio (φ = 1.618) by design.**
+  - the Promenade: 7.8 m wide under its 4.8 m ceiling (width = height x φ)
+  - Palace XL auditoriums: ceiling 22.2 m = their 35.95 m width / φ
+  - the Velvet Room: ceiling 12.1 m = its 19.6 m depth / φ
+  - the Starlight's hallway: 3 m wide, 4.85 m high and 4.85 m long (1 : φ : φ); its runner 1.85 m (width / φ); its
+    wainscot 1.15 m (height / φ³); its framed bays 1.4 x 2.27 m (1 : φ)
+  - doorways at 1 : φ: the theaters' fire exits and the Velvet Room's entrance 2.0 x 3.24 m, the rear doors to the
+    projection level 1.8 x 2.91 m, the Starlight's entrance 2.2 x 3.56 m and its portal 2.0 x 3.24 m
+  - the golden-spiral bays on the lobby's stair walls 6.0 x 3.71 m; the backlit glass panels 0.8 x 2.4 m carry the
+    Vesica Piscis, whose own proportion is 1 : √3
+- **Cars.** Poly Haven's covered car now at 3,000 triangles (its hidden wheels were most of the 6,000); 40 cars:
+  seven along the street, four in the staff lot, the rest in the parking lot.

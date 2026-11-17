@@ -138,7 +138,7 @@ function __prLightVolume(m) {
         sky[c] = 1;
       }
   // lamps: brightness by fixture
-  const LI = { tube: 1, pend: 1.05, pend2: 1, cell: 0.55, cage: 0.75, strip: 0.75, flood: 1.0, wall: 0.7, picket: 0.8, lantern: 0.6, chand: 1.2, can: 0.8, sconce: 0.62, cove: 0.7, aisle: 0.45, neon: 0.6, marquee: 1.1, booth: 0.7, bar: 0.85, street: 0.9, fill: 0.9, house: 0.62, spill: 0.6 };
+  const LI = { tube: 1, pend: 1.05, pend2: 1, cell: 0.55, cage: 0.75, strip: 0.75, flood: 1.0, wall: 0.7, picket: 0.8, lantern: 0.6, chand: 1.2, can: 0.8, sconce: 0.62, cove: 0.7, aisle: 0.45, neon: 0.6, marquee: 1.1, booth: 0.7, bar: 0.85, street: 0.9, fill: 0.9, house: 0.62, spill: 0.6, heli: 0.5, beacon: 1.1 };
   for (const L of (m.__pr && m.__pr.lamps) || []) {
     const i = clampI(Math.floor((L.x - X0) / cs), nx),
       j = clampI(Math.floor((L.y - 0.3 - Y0) / ch), ny),

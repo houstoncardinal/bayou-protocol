@@ -3,7 +3,7 @@
 // looks. Every customisation path is removed:
 //   - the Operators "studio" screen (body/colour/camo/gear editor, Shuffle, Default look, photo-to-avatar)
 //     is replaced by a Profile screen that only holds your callsign
-//   - the operator step in Play offline is a plain picker: choose one of the five, see them, done
+//   - the Team step in Play offline: pick your side and one of its five operators, see them, done
 //     (no Customise button, no editor panel, no "Custom" tags)
 //   - saved custom looks are ignored and deleted; your free-for-all and online look is the operator you
 //     picked for the Counter-Terrorists
@@ -24,8 +24,71 @@ X$ = () => !1;
 P9 = () => {};
 N$ = () => {};
 FQ = () => Is(is('CT'));
-// ---------- operator step in Play offline ----------
-kIA = function ({ team: w }) {
+// ---------- Team step in Play offline: your side and your operator, in one ----------
+// The side was a step of its own and the operator the next; now the two sides sit at the top of the
+// operator list: tap one and its operators fill the list below, the stage shows the one you have.
+function __poTeam() {
+  const w = Zw(),
+    desc = (a) =>
+      w.mode === 'jb'
+        ? a === 'CT'
+          ? 'Guard the inmates: keep every cell shut till time runs out.'
+          : 'Cut the cell locks and lead two inmates out to the van.'
+        : w.mode === 'bomb'
+          ? a === 'CT'
+            ? 'Hold both sites. Retake and defuse if they plant.'
+            : 'Get the bomb to A or B, plant it and protect it.'
+          : a === 'CT'
+            ? 'Disciplined, armoured and coordinated.'
+            : 'Fast and aggressive. Hit hard, keep moving.';
+  const side = (a) => {
+    const J = ii[a],
+      on = w.team === a;
+    return M.jsxs(
+      'button',
+      {
+        className: 'pt-side',
+        'aria-pressed': on,
+        style: { '--team': J.main, '--teamhi': J.light },
+        onClick: () => on || w.setup({ team: a, operatorId: is(a) }),
+        children: [
+          M.jsx('span', { className: 'pt-emb', children: a === 'CT' ? M.jsx(yQ, { size: 34 }) : M.jsx(Pw, { name: 'bomb', size: 28, sw: 1.4 }) }),
+          M.jsx('small', { children: a === 'CT' ? 'Counter-Terrorist unit' : 'The crew' }),
+          M.jsx('b', { children: J.name }),
+          on && M.jsx('span', { className: 'pt-check', children: M.jsx(Pw, { name: 'check', size: 13, sw: 2.6 }) }),
+        ],
+      },
+      a,
+    );
+  };
+  return M.jsx(kIA, {
+    team: w.team,
+    top: M.jsxs(M.Fragment, {
+      children: [
+        M.jsx('div', { className: 'pt-sides', role: 'group', 'aria-label': 'Team', children: ['CT', 'T'].map(side) }),
+        M.jsx('p', { className: 'pt-desc', children: desc(w.team) }),
+      ],
+    }),
+  });
+}
+if (typeof document < 'u') {
+  const st = document.createElement('style');
+  st.textContent = [
+    '.pt-sides{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}',
+    '.pt-side{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:11px 12px 12px;border-radius:12px;border:1px solid var(--lx-line);background:linear-gradient(160deg,color-mix(in srgb,var(--team) 14%,#141a22),#0e1319);color:var(--lx-bone);text-align:left;cursor:pointer;transition:border-color .2s,box-shadow .2s,background .2s,transform .15s}',
+    '.pt-side:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--teamhi) 55%,transparent)}',
+    '.pt-side[aria-pressed=true]{border-color:var(--teamhi);background:linear-gradient(160deg,color-mix(in srgb,var(--team) 40%,#141a22),#0e1319);box-shadow:inset 0 0 0 1px var(--teamhi),0 10px 28px -12px var(--team)}',
+    '.pt-emb{height:34px;display:grid;place-items:center;color:var(--teamhi);margin-bottom:2px}',
+    '.pt-side small{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.72}',
+    '.pt-side b{font-family:var(--lx-display);font-size:21px;font-weight:800;text-transform:uppercase;line-height:.95;color:var(--teamhi);word-break:break-word}',
+    '.pt-check{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--teamhi);color:#0d1117}',
+    '.pt-desc{margin:0 2px 2px;font-size:12.5px;line-height:1.4;color:color-mix(in srgb,var(--lx-bone) 62%,transparent)}',
+    '@media (max-width:899px){.pt-side b{font-size:18px}.pt-side{padding:10px}}',
+  ].join('');
+  document.head.appendChild(st);
+}
+// (the operator picker; `top` goes above its list: the Team step puts the two sides there)
+kIA = function ({ team: w, top }) {
   const A = Zw(),
     [i, I] = S.useState(() => is(w));
   S.useEffect(() => I(is(w)), [w]);
@@ -43,6 +106,7 @@ kIA = function ({ team: w }) {
       M.jsxs('div', {
         className: 'op-col',
         children: [
+          top || null,
           M.jsxs('div', { className: 'po-kick', children: [ii[w].name, ' · choose your operator'] }),
           M.jsx(iF, { team: w, value: op.id, onPick: pick }),
         ],

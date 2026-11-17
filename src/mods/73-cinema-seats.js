@@ -11,6 +11,16 @@ function __seatList(m) {
   __SEAT.map = m;
   const out = [];
   for (const b of (m.__cn && m.__cn.seats) || []) {
+    // a row given seat by seat (the Velvet Room's curved rows): each seat's front edge and the way it faces;
+    // you sit 0.38 m back from the front edge and stand up 0.55 m in front of it
+    if (b.list) {
+      for (const s of b.list) {
+        const fx = -Math.sin(s.yaw),
+          fz = -Math.cos(s.yaw);
+        out.push({ x: s.x - fx * 0.38, y: b.y, z: s.z - fz * 0.38, yaw: s.yaw, ux: s.x + fx * 0.55, uz: s.z + fz * 0.55, th: b.th });
+      }
+      continue;
+    }
     const sp = (b.a1 - b.a0) / b.n;
     for (let i = 0; i < b.n; i++) {
       const a = b.a0 + sp * (i + 0.5);

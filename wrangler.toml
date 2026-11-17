@@ -1,0 +1,14 @@
+# Bayou Protocol's online hub (Cloudflare Workers + one Durable Object, free plan). Deploy: `npx wrangler deploy`.
+# See docs/online.md.
+name = "bayou-net"
+main = "server/net-worker.mjs"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "BayouHub"
+
+# SQLite-backed Durable Objects are on the free plan
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BayouHub"]

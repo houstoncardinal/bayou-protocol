@@ -1,7 +1,7 @@
 # Blackwater Penitentiary: how the map is built, and the Jailbreak mode
 
 An 1898 penitentiary on the bayou, in the middle of a jailbreak. The map is 128 x 104 m. It plays Bomb
-Defusal, Team Deathmatch, Capture the Flag and Domination, and the **Jailbreak** mode, which only runs on this
+Defusal, Team Deathmatch and Free-for-All, and the **Jailbreak** mode, which only runs on this
 map.
 
 - Code:

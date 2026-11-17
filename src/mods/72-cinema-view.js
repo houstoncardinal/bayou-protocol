@@ -2,8 +2,9 @@
 // The cinema (71-cinema.js) is drawn by the prison's pipeline (65-prison-view.js) with this kit: its own Poly
 // Haven textures (carpet, velvet, marble, parquet, panelling, stucco, leather, terrazzo; the prison's asphalt,
 // concrete, plaster, brick and steel are shared), its models, and the detail built here inside the collision:
-//   - seats: about 1,800 upholstered stadium seats (instanced: seat, back, shell, arm standards with cup
-//     holders), the Velvet Room's leather recliners with side tables; step lights on every aisle step
+//   - seats: about 3,000 premium stadium rockers and the Velvet Room's 80 leather recliners, modelled in detail
+//     (sculpted, stitched, piped; arm standards with cup holders) and instanced per room, far rows plainer;
+//     step lights on every aisle step
 //   - each auditorium's front: velvet curtains in folds, a scalloped valance, black masking round the screen,
 //     a gold proscenium, the stage's edge and footlights; acoustic wall panels between gold fillets, sconces
 //     that wash the wall with light, the projector's beam from the port to the screen with dust in it
@@ -27,6 +28,8 @@ Object.assign(__PR_SURF, {
   mosaic: { side: 'marble_mosaic_tiles', top: 'marble_mosaic_tiles', tile: 1.2, tint: 0, rough: 0.4, rmin: 0.12 },
   jacquard: { side: 'quatrefoil_jacquard_fabric', top: 'quatrefoil_jacquard_fabric', tile: 0.9, tint: 1, rough: 1, nrm: 0.8 },
   slat: { side: 'wood_plank_wall', top: 'dark_wooden_planks', tile: 1.6, tint: 0.35, rough: 0.6, rmin: 0.2, nrm: 1.2 },
+  // polished rosewood: wainscots, frames, mouldings (72b-cinema-sacred.js)
+  rosewood: { side: 'rosewood_veneer1', top: 'rosewood_veneer1', tile: 1.2, tint: 0, rough: 0.42, rmin: 0.1, nrm: 0.5, env: 0.9 },
   gold: { plain: 1, rough: 0.28, metal: 1, env: 1.3 },
   black: { plain: 1, rough: 0.95, metal: 0, cloth: 1 },
 });
@@ -35,13 +38,13 @@ const __CN_PRISON = './game/maps/prison/';
 __PR_KITS.cinema = {
   id: 'cinema',
   base: './game/maps/cinema/',
-  tex: ['poly_wool_herringbone', 'velour_velvet', 'marble_01', 'herringbone_parquet', 'dark_wooden_planks', 'white_stucco', 'leather_red_02', 'terrazzo_tiles', 'quatrefoil_jacquard_fabric', 'wood_plank_wall', 'marble_mosaic_tiles'],
+  tex: ['poly_wool_herringbone', 'velour_velvet', 'marble_01', 'herringbone_parquet', 'dark_wooden_planks', 'white_stucco', 'leather_red_02', 'terrazzo_tiles', 'quatrefoil_jacquard_fabric', 'wood_plank_wall', 'marble_mosaic_tiles', 'rosewood_veneer1'],
   shared: ['sparse_grass', 'painted_plaster_wall', 'garage_floor', 'concrete_wall_008', 'concrete_floor_worn_001', 'asphalt_02', 'red_brick_03', 'granite_wall', 'green_metal_rust', 'metal_plate', 'tarred_gravel', 'large_grey_tiles'].map((n) => [n, __CN_PRISON]),
-  models: ['Chandelier_02', 'CashRegister_01', 'bar_chair_round_01', 'Sofa_01', 'coffee_table_round_01', 'potted_plant_02', 'street_lamp_01', 'metal_trash_can', 'ornate_mirror_01', 'mid_century_lounge_chair', 'fancy_picture_frame_01', 'brass_vase_01', 'modern_ceiling_lamp_01', 'CoffeeCart_01', 'ArmChair_01', 'potted_plant_04', 'side_table_01', 'industrial_storage_cart', 'steel_frame_shelves_02', 'cardboard_box_01', 'painted_wooden_bench', 'outdoor_table_chair_set_01', 'planter_box_01', ['fire_hydrant', __CN_PRISON]],
+  models: ['Chandelier_02', 'CashRegister_01', 'bar_chair_round_01', 'Sofa_01', 'coffee_table_round_01', 'potted_plant_02', 'street_lamp_01', 'metal_trash_can', 'ornate_mirror_01', 'mid_century_lounge_chair', 'fancy_picture_frame_01', 'brass_vase_01', 'modern_ceiling_lamp_01', 'CoffeeCart_01', 'ArmChair_01', 'potted_plant_04', 'side_table_01', 'industrial_storage_cart', 'steel_frame_shelves_02', 'cardboard_box_01', 'painted_wooden_bench', 'outdoor_table_chair_set_01', 'planter_box_01', 'covered_car', 'marble_bust_01', 'ClassicConsole_01', ['fire_hydrant', __CN_PRISON]],
   sky: [__CN_PRISON + 'sky.webp', __CN_PRISON + 'sky_dusk.webp'],
   // indoors: less of the sky's blue, more of the lamps' warm light
   skyK: 0.28,
-  lvNy: 23,
+  lvNy: 32,
   lampK: 1.7,
   lampColor: '#ffd9ae',
   detail: (root, m, models, ticks) => __cnDetail(root, m, models, ticks),
@@ -399,102 +402,271 @@ const __cnWashTex = () =>
     c.fillRect(0, 0, w, h);
   }));
 // ---------------------------------------------------------------- seats (instanced)
-// One seat as a template (facing -z, its front edge at z = 0, standing on y = 0): velvet parts and dark parts
+// A soft box: a grid on each face (xs, ys, zs: the sample coordinates along each axis, its ends included), its
+// edges rounded to r (each vertex pushed out from the box shrunk by r, with analytic normals, so even a few
+// vertices shade as a smooth roll), then bent by def (a position -> position map: the wrap of a backrest, the
+// dish of a cushion, channel stitching), the normals carried through the bend (by its Jacobian). skip: faces
+// left out ('+z -y': never seen)
+const __cnRamp = (h, r, inner = []) => [-h, -h + r, ...inner, h - r, h];
+function __cnSoft(xs, ys, zs, r, def, skip = '') {
+  const P = [],
+    Nn = [],
+    I = [],
+    S = [xs, ys, zs],
+    lo = S.map((a) => a[0] + r),
+    hi = S.map((a) => a[a.length - 1] - r),
+    e = 1e-3,
+    F = def || ((p) => p);
+  for (const [ax, sg, key] of [[0, 1, '+x'], [0, -1, '-x'], [1, 1, '+y'], [1, -1, '-y'], [2, 1, '+z'], [2, -1, '-z']]) {
+    if (skip.includes(key)) continue;
+    const u = (ax + 1) % 3,
+      v = (ax + 2) % 3,
+      Uu = S[u],
+      Vv = S[v],
+      base = P.length / 3;
+    for (let j = 0; j < Vv.length; j++)
+      for (let i = 0; i < Uu.length; i++) {
+        const p = [0, 0, 0];
+        p[ax] = sg > 0 ? S[ax][S[ax].length - 1] : S[ax][0];
+        p[u] = Uu[i];
+        p[v] = Vv[j];
+        // round: out from the shrunk box
+        const c = p.map((q, k) => Math.max(lo[k], Math.min(hi[k], q))),
+          d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]],
+          L = Math.hypot(d[0], d[1], d[2]);
+        let n = [0, 0, 0];
+        if (L > 1e-7) (n = d.map((q) => q / L)), (p[0] = c[0] + n[0] * r), (p[1] = c[1] + n[1] * r), (p[2] = c[2] + n[2] * r);
+        else n[ax] = sg;
+        // bend: the position, and the normal through the inverse transpose of the bend's Jacobian
+        const q = F(p),
+          col = [0, 1, 2].map((k) => {
+            const a = [...p],
+              b = [...p];
+            a[k] += e;
+            b[k] -= e;
+            const fa = F(a),
+              fb = F(b);
+            return [(fa[0] - fb[0]) / (2 * e), (fa[1] - fb[1]) / (2 * e), (fa[2] - fb[2]) / (2 * e)];
+          }),
+          cr = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+          k0 = cr(col[1], col[2]),
+          k1 = cr(col[2], col[0]),
+          k2 = cr(col[0], col[1]),
+          m = [0, 1, 2].map((k) => n[0] * k0[k] + n[1] * k1[k] + n[2] * k2[k]),
+          ml = Math.hypot(m[0], m[1], m[2]) || 1;
+        P.push(q[0], q[1], q[2]);
+        Nn.push(m[0] / ml, m[1] / ml, m[2] / ml);
+      }
+    const W = Uu.length;
+    for (let j = 0; j < Vv.length - 1; j++)
+      for (let i = 0; i < W - 1; i++) {
+        const a = base + j * W + i,
+          b = a + 1,
+          c = a + W + 1,
+          d = a + W;
+        sg > 0 ? I.push(a, b, c, a, c, d) : I.push(a, c, b, a, d, c);
+      }
+  }
+  const g = new uw();
+  g.setAttribute('position', new gi(new Float32Array(P), 3));
+  g.setAttribute('normal', new gi(new Float32Array(Nn), 3));
+  g.setAttribute('color', new gi(new Float32Array(P.length).fill(1), 3));
+  g.setIndex(I);
+  return g;
+}
+// The seats as templates (facing -z, the front edge at z = 0, standing on y = 0), in three materials:
+// upholstery (velour on the rockers, leather on the recliners; tinted per instance), dark (shells, frames,
+// standards, cup holders) and brass (cup-holder rims, seat plates)
+//   - the Palace XL rocker (about 630 triangles): a dished seat cushion with piping along its front, a
+//     sculpted backrest wrapping round you with a lumbar roll and three stitched vertical channels, a headrest
+//     pad, a moulded back shell with a brass seat plate
+//   - its arm standard (shared by neighbours, about 150): a side panel, a padded armrest, a cup holder
+//   - the Velvet Room's recliner (about 1,000): a chassis, a deep seat, two pillow-top bolsters and a headrest
+//     pillow, a padded shell, two wide padded arms with cup holders, the footrest stowed under the seat front
 function __cnSeatGeo(kind) {
+  if (kind === 'stdLo') {
+    // the far rows' rocker (about 150 triangles): the same shapes as plain rounded boxes
+    const V = __flMB(),
+      Dk = __flMB(),
+      G = __flMB();
+    V.add(__prRBox(0.54, 0.15, 0.54, 0.05, 1), __cnM(0, 0.455, 0.29, 1, 1, 1, 0, 0.08), 1);
+    V.add(__prRBox(0.54, 0.74, 0.13, 0.05, 1), __cnM(0, 0.93, 0.66, 1, 1, 1, 0, 0.24), 1);
+    Dk.add(__prRBox(0.58, 0.86, 0.05, 0.02, 1), __cnM(0, 0.98, 0.765, 1, 1, 1, 0, 0.24), 1);
+    return [V.build(), Dk.build(), G.build()];
+  }
   const V = __flMB(),
     Dk = __flMB(),
-    add = (B, w, h, d, r, x, y, zz, tilt = 0) => B.add(__prRBox(w, h, d, r, 1), __cnM(x, y, zz, 1, 1, 1, 0, tilt), 1);
+    G = __flMB(),
+    put = (B, g, x, y, zz, rx = 0) => B.add(g, __cnM(x, y, zz, 1, 1, 1, 0, rx), 1),
+    dish = (hx, hy, hz, k) => (p) => [p[0], p[1] - k * (1 - (p[0] / hx) ** 2) * (1 - (p[2] / hz) ** 2) * ((p[1] + hy) / (2 * hy)), p[2]],
+    wrap = (hx, k) => (p) => [p[0], p[1], p[2] - k * (p[0] / hx) ** 2];
   if (kind === 'recliner') {
-    add(Dk, 0.84, 0.26, 0.92, 0.04, 0, 0.13, 0.48);
-    add(V, 0.66, 0.2, 0.66, 0.08, 0, 0.36, 0.4);
-    add(V, 0.68, 0.72, 0.24, 0.1, 0, 0.82, 0.86, 0.22);
-    add(V, 0.5, 0.2, 0.16, 0.07, 0, 1.18, 0.95, 0.22);
-    for (const sx of [-1, 1]) add(V, 0.13, 0.3, 0.9, 0.06, sx * 0.39, 0.46, 0.47);
-    add(V, 0.62, 0.12, 0.34, 0.05, 0, 0.3, -0.06);
-  } else {
-    // a wide rocker: a moulded shell, a deep back cushion and a headrest pad, a thick seat
-    add(Dk, 0.58, 0.84, 0.08, 0.035, 0, 0.74, 0.6, 0.24);
-    add(V, 0.54, 0.74, 0.13, 0.055, 0, 0.75, 0.52, 0.24);
-    add(V, 0.46, 0.2, 0.15, 0.07, 0, 1.13, 0.6, 0.24);
-    add(V, 0.54, 0.14, 0.5, 0.06, 0, 0.46, 0.25);
-    add(Dk, 0.52, 0.06, 0.48, 0.02, 0, 0.37, 0.26);
+    put(Dk, __prRBox(0.86, 0.3, 0.95, 0.04, 1), 0, 0.15, 0.5);
+    put(V, __cnSoft(__cnRamp(0.3, 0.05, [-0.12, 0, 0.12]), __cnRamp(0.09, 0.05), __cnRamp(0.32, 0.05, [-0.12, 0, 0.12]), 0.05, dish(0.3, 0.09, 0.32, 0.025), '-y'), 0, 0.39, 0.44, 0.04);
+    const bol = (hx, hy, hz) => __cnSoft(__cnRamp(hx, 0.07, [-0.12, 0, 0.12]), __cnRamp(hy, 0.07, [0]), __cnRamp(hz, 0.07), 0.07, wrap(hx, 0.05), '+z');
+    put(V, bol(0.3, 0.17, 0.11), 0, 0.66, 0.84, 0.28);
+    put(V, bol(0.29, 0.15, 0.1), 0, 0.98, 0.93, 0.28);
+    put(V, __cnSoft(__cnRamp(0.25, 0.06, [0]), __cnRamp(0.09, 0.05), __cnRamp(0.08, 0.05), 0.05, wrap(0.25, 0.04), '+z'), 0, 1.22, 1.0, 0.28);
+    put(V, __prRBox(0.72, 0.92, 0.14, 0.05, 1), 0, 0.82, 1.03, 0.28);
+    for (const sx of [-1, 1]) {
+      put(V, __cnSoft([-0.07, -0.01, 0.01, 0.07], [-0.16, -0.1, 0.1, 0.16], [-0.46, -0.4, 0.4, 0.46], 0.06), sx * 0.4, 0.5, 0.52);
+      Dk.add(__prUnit('cyl8'), __cnM(sx * 0.4, 0.63, 0.13, 0.045, 0.08, 0.045), 1);
+      G.add(__prUnit('cyl8'), __cnM(sx * 0.4, 0.665, 0.13, 0.05, 0.012, 0.05), 1);
+    }
+    put(V, __prRBox(0.58, 0.22, 0.08, 0.03, 1), 0, 0.2, 0.01);
+    return [V.build(), Dk.build(), G.build()];
   }
-  return [V.build(), Dk.build()];
+  // the rocker: a dished cushion, sloping back a little
+  put(V, __cnSoft(__cnRamp(0.27, 0.04, [0]), __cnRamp(0.075, 0.035), __cnRamp(0.27, 0.04, [0.05]), 0.035, dish(0.27, 0.075, 0.27, 0.02), '-y'), 0, 0.455, 0.29, 0.08);
+  put(Dk, __prRBox(0.5, 0.08, 0.5, 0.02, 1), 0, 0.36, 0.3);
+  // piping along the cushion's front edge
+  Dk.add(__prUnit('cyl8'), __cnM(0, 0.522, 0.045, 0.012, 0.5, 0.012, 0, 0, Math.PI / 2), 1);
+  // the backrest: wrapping round you, a lumbar roll, three stitched channels and a seam across the top
+  const back = (p) => {
+    const wf = Math.max(0, Math.min(1, -p[2] / 0.065)),
+      g = Math.exp(-(((Math.abs(p[0]) - 0.1) / 0.03) ** 2)) * 0.012 + Math.exp(-(((p[1] - 0.12) / 0.06) ** 2)) * 0.008;
+    return [p[0], p[1], p[2] - 0.06 * (p[0] / 0.27) ** 2 - 0.025 * Math.exp(-(((p[1] + 0.13) / 0.12) ** 2)) + g * wf];
+  };
+  put(V, __cnSoft(__cnRamp(0.27, 0.045, [-0.14, -0.1, -0.06, 0, 0.06, 0.1, 0.14]), __cnRamp(0.36, 0.045, [-0.15, 0.12]), __cnRamp(0.065, 0.045), 0.045, back, '+z -y'), 0, 0.9, 0.66, 0.24);
+  put(V, __cnSoft(__cnRamp(0.22, 0.04, [0]), __cnRamp(0.09, 0.04), __cnRamp(0.06, 0.04), 0.04, wrap(0.22, 0.04), '+z'), 0, 1.34, 0.78, 0.24);
+  // the moulded shell behind, a brass seat plate on its top
+  put(Dk, __cnSoft(__cnRamp(0.29, 0.02, [0]), __cnRamp(0.43, 0.02, [0]), [-0.025, 0.025], 0.02, wrap(0.27, 0.06)), 0, 0.98, 0.765, 0.24);
+  G.add(__prUnit('box'), __cnM(0, 1.36, 0.92, 0.09, 0.035, 0.008, 0, 0.24), 1);
+  return [V.build(), Dk.build(), G.build()];
 }
-// arm standards between seats: a dark panel, the armrest, a cup holder
-function __cnArmGeo(kind) {
-  const B = __flMB();
-  if (kind === 'recliner') {
-    B.add(__prRBox(0.24, 0.56, 0.6, 0.04, 1), __cnM(0, 0.28, 0.45, 1, 1, 1), 1);
-    B.add(__prUnit('cyl8'), __cnM(0, 0.56, 0.3, 0.07, 0.04, 0.07), 1);
-  } else {
-    B.add(__prRBox(0.06, 0.62, 0.5, 0.02, 1), __cnM(0, 0.31, 0.32, 1, 1, 1), 1);
-    B.add(__prRBox(0.1, 0.06, 0.6, 0.03, 1), __cnM(0, 0.65, 0.27, 1, 1, 1), 1);
-    // the cup holder: an open cylinder (a torus here was 336 triangles a seat)
-    B.add(__prUnit('cyl8'), __cnM(0, 0.63, 0.0, 0.05, 0.08, 0.05), 1);
+// arm standards between seats: a side panel, a padded armrest, a cup holder with a brass rim (the recliners
+// carry their own arms)
+function __cnArmGeo(lo) {
+  const B = __flMB(),
+    G = __flMB();
+  if (lo) {
+    B.add(__prRBox(0.08, 0.68, 0.62, 0.025, 1), __cnM(0, 0.34, 0.36, 1, 1, 1), 1);
+    return [B.build(), G.build()];
   }
-  return B.build();
+  B.add(__prRBox(0.06, 0.6, 0.62, 0.02, 1), __cnM(0, 0.3, 0.38, 1, 1, 1), 1);
+  B.add(__prRBox(0.1, 0.055, 0.6, 0.025, 1), __cnM(0, 0.66, 0.33, 1, 1, 1), 1);
+  B.add(__prUnit('cyl8'), __cnM(0, 0.63, 0.0, 0.042, 0.09, 0.042), 1);
+  G.add(__prUnit('cyl8'), __cnM(0, 0.68, 0.0, 0.047, 0.012, 0.047), 1);
+  return [B.build(), G.build()];
 }
-function __cnSeats(root, N) {
-  const kinds = {};
-  for (const b of N.seats) (kinds[b.kind] || (kinds[b.kind] = [])).push(b);
-  const M = new _A(),
+// every seat of the map (the same list 73-cinema-seats.js sits people in): position, yaw, colour
+function __cnSeatList(N) {
+  const out = [];
+  for (const b of N.seats) {
+    if (b.list) {
+      b.list.forEach((s, i) => out.push({ kind: b.kind, th: b.th, x: s.x, y: b.y, z: s.z, ry: s.yaw, color: b.color, dim: (i * 7 + (b.row || 0) * 3) % 11 === 0 }));
+      continue;
+    }
+    const len = b.a1 - b.a0,
+      cnt = b.n,
+      sp = len / cnt,
+      ew = b.face === 'E' || b.face === 'W',
+      ry = b.face === 'E' ? -Math.PI / 2 : b.face === 'W' ? Math.PI / 2 : 0,
+      front = b.face === 'E' ? b.f + b.d / 2 : b.face === 'W' ? b.f - b.d / 2 : b.f,
+      arc = b.arc,
+      off = (x) => (arc ? -arc.sag * Math.pow((x - arc.cx) / arc.hw, 2) : 0),
+      turn = (x) => (arc ? Math.atan((2 * arc.sag * (x - arc.cx)) / (arc.hw * arc.hw)) : 0);
+    for (let i = 0; i <= cnt; i++) {
+      const a = b.a0 + sp * i,
+        am = a + sp / 2;
+      i < cnt && out.push({ kind: b.kind, th: b.th, row: b.row || 0, x: ew ? front : am, y: b.y, z: ew ? am : front + off(am), ry: ry + turn(am), color: b.color, dim: (i * 7 + (b.row || 0) * 3) % 11 === 0 });
+      b.kind === 'std' && out.push({ arm: 1, th: b.th, row: b.row || 0, x: ew ? front : a, y: b.y, z: ew ? a : front + off(a), ry: ry + turn(a) });
+    }
+  }
+  return out;
+}
+// instanced, one set per room: only the rooms the camera is in or at the door of are drawn (four auditoriums of
+// 750 seats each would otherwise all be drawn from anywhere). In the auditoriums the rows go in pairs, each drawn
+// in full detail within 6.5 m of the camera and as the plain far-row rocker beyond
+function __cnSeats(root, N, ticks) {
+  const all = __cnSeatList(N),
+    M = new _A(),
     Q = new Kw(),
     P = new U(),
     Sc = new U(1, 1, 1),
     Y = new U(0, 1, 0),
-    col = new UA();
-  let n = 0;
-  for (const kind in kinds) {
-    const blocks = kinds[kind],
-      [gV, gD] = __cnSeatGeo(kind),
-      gA = __cnArmGeo(kind),
-      seats = [],
-      arms = [];
-    for (const b of blocks) {
-      const len = b.a1 - b.a0,
-        cnt = b.n,
-        sp = len / cnt,
-        // seats facing east or west stand in rows along z
-        ew = b.face === 'E' || b.face === 'W',
-        ry = b.face === 'E' ? -Math.PI / 2 : b.face === 'W' ? Math.PI / 2 : 0,
-        front = b.face === 'E' ? b.f + b.d / 2 : b.face === 'W' ? b.f - b.d / 2 : b.f;
-      // a curved row: each seat moved towards the screen by the arc and turned to face its middle
-      const arc = b.arc,
-        off = (x) => (arc ? -arc.sag * Math.pow((x - arc.cx) / arc.hw, 2) : 0),
-        turn = (x) => (arc ? Math.atan((2 * arc.sag * (x - arc.cx)) / (arc.hw * arc.hw)) : 0);
-      for (let i = 0; i <= cnt; i++) {
-        const a = b.a0 + sp * i,
-          am = a + sp / 2;
-        i < cnt && seats.push([ew ? front : am, b.y, ew ? am : front + off(am), ry + turn(am), b.color, (i * 7 + (b.row || 0) * 3) % 11 === 0]);
-        arms.push([ew ? front : a, b.y, ew ? a : front + off(a), ry + turn(a)]);
-      }
-    }
-    const mV = __prMatFor(kind === 'recliner' ? 'leather' : 'velvet'),
-      mD = __prMats('darkM');
-    for (const [g, mat, list, tinted] of [
-      [gV, mV, seats, !0],
-      [gD, mD, seats, !1],
-      [gA, mD, arms, !1],
-    ]) {
+    col = new UA(),
+    geo = { std: __cnSeatGeo('std'), stdLo: __cnSeatGeo('stdLo'), recliner: __cnSeatGeo('recliner'), arm: __cnArmGeo(), armLo: __cnArmGeo(!0) },
+    mD = __prMats('darkM'),
+    mG = __prMats('gold'),
+    rooms = [],
+    bands = [];
+  for (const k in geo) for (const g of geo[k]) (g.__cnOwn = 1), g.computeBoundingSphere();
+  let n = 0,
+    tris = 0;
+  // one instanced set (upholstery, dark, brass) of a template for a list of seats
+  const set = (parent, list, gk, upKey, name) => {
+    const parts = gk === 'arm' || gk === 'armLo' ? [[geo[gk][0], mD, !1], [geo[gk][1], mG, !1]] : [[geo[gk][0], __prMatFor(upKey), !0], [geo[gk][1], mD, !1], [geo[gk][2], mG, !1]];
+    let t = 0;
+    for (const [g, mat, tinted] of parts) {
+      if (!g.index.count) continue;
       const im = new QZ(g, mat, list.length);
       list.forEach((s, k) => {
-        Q.setFromAxisAngle(Y, s[3]);
-        im.setMatrixAt(k, M.compose(P.set(s[0], s[1], s[2]), Q, Sc));
-        tinted && im.setColorAt(k, col.set(s[4]).multiplyScalar(s[5] ? 0.82 : 1));
+        Q.setFromAxisAngle(Y, s.ry);
+        im.setMatrixAt(k, M.compose(P.set(s.x, s.y, s.z), Q, Sc));
+        tinted && im.setColorAt(k, col.set(s.color).multiplyScalar(s.dim ? 0.82 : 1));
       });
       im.instanceMatrix.needsUpdate = !0;
       im.instanceColor && (im.instanceColor.needsUpdate = !0);
       im.computeBoundingSphere();
-      im.castShadow = kind === 'recliner';
+      im.castShadow = gk === 'recliner';
       im.receiveShadow = !0;
-      im.name = 'cinema_seats_' + kind;
-      g.__cnOwn = 1;
-      root.add(im);
+      im.name = name;
+      parent.add(im);
+      t += (g.index.count / 3) * list.length;
     }
-    n += seats.length;
+    return t;
+  };
+  for (const T of N.th) {
+    const mine = all.filter((s) => s.th === T.id);
+    if (!mine.length) continue;
+    const grp = new ji();
+    grp.name = 'cinema_seats_' + T.id;
+    grp.userData.dyn = 1;
+    const rec = mine.filter((s) => !s.arm && s.kind === 'recliner');
+    rec.length && ((tris += set(grp, rec, 'recliner', 'leather', 'cinema_seats_recliner')), (n += rec.length));
+    const std = mine.filter((s) => s.kind === 'std' || s.arm);
+    for (let b0 = 0; std.length && b0 <= 18; b0 += 2) {
+      const band = std.filter((s) => s.row >= b0 && s.row < b0 + 2);
+      if (!band.length) continue;
+      const hi = new ji(),
+        lo = new ji(),
+        seats = band.filter((s) => !s.arm),
+        arms = band.filter((s) => s.arm);
+      hi.userData.dyn = lo.userData.dyn = 1;
+      tris += set(hi, seats, 'std', 'velvet', 'cinema_seats_std') + set(hi, arms, 'arm', '', 'cinema_seats_arm');
+      set(lo, seats, 'stdLo', 'velvet', 'cinema_seats_far');
+      set(lo, arms, 'armLo', '', 'cinema_seats_armfar');
+      grp.add(hi, lo);
+      n += seats.length;
+      let x0 = 1e9,
+        x1 = -1e9,
+        z0 = 1e9,
+        z1 = -1e9;
+      for (const s of band) (x0 = Math.min(x0, s.x)), (x1 = Math.max(x1, s.x)), (z0 = Math.min(z0, s.z)), (z1 = Math.max(z1, s.z));
+      bands.push({ hi, lo, x0, x1, z0, z1, y: band[0].y });
+    }
+    root.add(grp);
+    // (an auditorium is seen into from its side corridors' doorways and from the projection level behind; the
+    // Velvet Room from its Promenade entrance)
+    rooms.push(T.lux ? { grp, x0: T.x0 - 0.5, x1: T.x1 + 0.5, z0: T.z0 - 0.5, z1: T.z1 + 4 } : { grp, x0: T.x0 - 6, x1: T.x1 + 6, z0: T.z0 - 0.3, z1: T.z1 + 6 });
   }
-  return n;
+  ticks.push((dt, s) => {
+    const c = s && s.camera;
+    if (!c) return;
+    const p = c.position;
+    // (window.__cnNoSeats: a dev switch, to measure what the seats cost)
+    const off = typeof window < 'u' && window.__cnNoSeats;
+    for (const r of rooms) r.grp.visible = !off && p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1;
+    for (const B of bands) {
+      const dx = Math.max(B.x0 - p.x, 0, p.x - B.x1),
+        dz = Math.max(B.z0 - p.z, 0, p.z - B.z1),
+        near = Math.hypot(dx, dz) < 6.5;
+      B.hi.visible = near;
+      B.lo.visible = !near;
+    }
+  });
+  return { n, tris: Math.round(tris) };
 }
 // ---------------------------------------------------------------- drapes
 // velvet in folds: a sheet along a wall (ax 'x' or 'z' at f, standing out towards s), its depth a wave
@@ -567,19 +739,9 @@ function __cnDetail(root, m, models, ticks) {
   // ------------------------------------------------ painted lines (parking bays, the road)
   __prLines(S, R);
   // ------------------------------------------------ seats and step lights
-  const nSeats = __cnSeats(root, N);
+  const seatInfo = __cnSeats(root, N, ticks),
+    nSeats = seatInfo.n;
   for (const st of N.steps) S.box('glow', st.x0 + 0.12, st.y - 0.035, st.z - 0.012, st.x1 - 0.12, st.y - 0.012, st.z + 0.004, K('#ffb054'));
-  // Velvet Room: side tables between recliner pairs with a lit cup-holder
-  for (const b of N.seats)
-    if (b.kind === 'recliner') {
-      const sp = (b.a1 - b.a0) / b.n,
-        x = b.f + 0.05;
-      for (let i = 0; i < b.n - 1; i += 2) {
-        const zz = b.a0 + sp * (i + 1);
-        S.box('woodp', x - 0.3, b.y, zz - 0.1, x + 0.3, b.y + 0.6, zz + 0.1, K('#ffffff'));
-        S.box('glow', x - 0.06, b.y + 0.6, zz - 0.06, x + 0.06, b.y + 0.605, zz + 0.06, K('#7fd0ff'));
-      }
-    }
   // ------------------------------------------------ the auditoriums' fronts
   const curtainB = { P: [], C: [], I: [] };
   for (const c of N.curtains) __cnDrape(curtainB, c, !1);
@@ -587,38 +749,18 @@ function __cnDetail(root, m, models, ticks) {
     const sc = T.screen,
       hw = sc.w / 2,
       hh = sc.h / 2;
+    // the Starlight's sphere is drawn by 70-screens.js, its hallway and portal by 72b-cinema-sacred.js
+    if (T.dome) continue;
     if (T.face === 'N' && T.xl) {
-      // Palace XL: the curved screen fills the wall; everything round it is black velour, so the picture
-      // is all you see. A thin blue light runs under its curve; the stage's edge is lit
+      // Palace XL: the screen is the front wall (flat, wall to wall, stage to ceiling): nothing frames it, so
+      // the picture is all you see. Only black velour where the wall shows past it
       const zf = P1 + 0.4,
         c = T.c,
-        sag = sc.curve || 0,
-        Rr = (hw * hw + sag * sag) / (2 * sag),
-        tm = Math.asin(hw / Rr),
-        arc = (t, ahead = 0) => [c + Rr * Math.sin(t), sc.z + Rr * (1 - Math.cos(t)) + ahead],
-        n = 32,
-        MB = S.b('black'),
-        MG = S.b('glow'),
-        black = K('#0b0b0e'),
-        blue = K('#4f7dff');
-      for (let i = 0; i < n; i++) {
-        const t0 = -tm + (2 * tm * i) / n,
-          t1 = -tm + (2 * tm * (i + 1)) / n,
-          [ax, az] = arc(t0, -0.02),
-          [bx, bz] = arc(t1, -0.02),
-          [gx, gz] = arc(t0, 0.06),
-          [hx, hz] = arc(t1, 0.06);
-        // the band over the screen to the ceiling, and under it to the stage
-        __prQuadRaw(MB, [ax, sc.y + hh, az], [bx, sc.y + hh, bz], [bx, T.h, bz], [ax, T.h, az], black);
-        __prQuadRaw(MB, [ax, 0.45, az], [bx, 0.45, bz], [bx, sc.y - hh, bz], [ax, sc.y - hh, az], black);
-        // the light line under the screen's curve
-        __prQuadRaw(MG, [gx, sc.y - hh - 0.09, gz], [hx, sc.y - hh - 0.09, hz], [hx, sc.y - hh - 0.05, hz], [gx, sc.y - hh - 0.05, gz], blue);
-      }
-      // the velour either side of the screen down to the entrances, and over them
-      for (const [x0, x1] of [[T.ix0, c - hw], [c + hw, T.ix1]]) x1 - x0 > 0.01 && S.box('black', x0, 0.45, zf, x1, T.h, zf + sag + 0.25, black);
-      // the stage's edge: a light strip and a row of floor lights
-      S.box('glow', T.a + 3.2, 0.42, STAGE - 0.01, T.b - 3.2, 0.44, STAGE + 0.02, K('#3a5bd8'));
-      for (let x = T.a + 3.7; x < T.b - 3.4; x += 1.2) S.box('glow', x - 0.05, 0.08, STAGE + 0.005, x + 0.05, 0.14, STAGE + 0.02, K('#ffd9a0'));
+        black = K('#0b0b0e');
+      sc.y + hh < T.h - 0.005 && S.box('black', T.ix0, sc.y + hh, zf, T.ix1, T.h, zf + 0.01, black);
+      for (const [x0, x1] of [[T.ix0, c - hw], [c + hw, T.ix1]]) x1 - x0 > 0.01 && S.box('black', x0, 0.45, zf, x1, T.h, zf + 0.01, black);
+      // the stage's edge: a row of small warm floor lights (no strip: it read as a lit border under the picture)
+      for (let x = T.a + 4.5; x < T.b - 4.2; x += 1.2) S.box('glow', x - 0.05, 0.08, STAGE + 0.005, x + 0.05, 0.14, STAGE + 0.02, K('#ffd9a0'));
       // a warm cove light along the top of both side walls, hidden behind a black fascia
       for (const [x, sd] of [[T.ix0, 1], [T.ix1, -1]]) {
         S.box('glow', Math.min(x, x + sd * 0.04), T.h - 0.62, P1 + 1.2, Math.max(x, x + sd * 0.04), T.h - 0.58, BACK - 0.5, K('#ffb066').map((v) => v * 0.9));
@@ -627,7 +769,7 @@ function __cnDetail(root, m, models, ticks) {
       // the ceiling: black, with small recessed lights in rows
       for (let zz = P1 + 4; zz < BACK - 1; zz += 3.2) for (let x = T.ix0 + 1.5; x < T.ix1 - 1; x += 3.0) S.add('glow', __prUnit('cyl16'), __cnM(x, T.h - 0.02, zz, 0.06, 0.01, 0.06), K('#ffd7a0').map((v) => v * 0.7));
       // surround speakers on the side walls
-      for (let zz = 60; zz < 84; zz += 5)
+      for (let zz = R0 - 4; zz < BACK - 3; zz += 5)
         for (const [x, s1] of [[T.ix0, 1], [T.ix1, -1]]) {
           const y = floorAt(zz) + 4.2;
           S.box('darkM', Math.min(x, x + s1 * 0.32), y, zz - 0.3, Math.max(x, x + s1 * 0.32), y + 0.7, zz + 0.3, K('#141417'));
@@ -667,23 +809,33 @@ function __cnDetail(root, m, models, ticks) {
           const y = floorAt(zz) + 3.6;
           S.box('darkM', Math.min(x, x + s * 0.32), y, zz - 0.28, Math.max(x, x + s * 0.32), y + 0.62, zz + 0.28, K('#1b1c1f'));
         }
-    } else {
-      // the luxury rooms (screen on the east or west wall): black masking round the screen, a slim gold frame,
-      // black velour over the rest of the front wall, a light line under the screen, footlights
-      const sd = T.face === 'E' ? -1 : 1,
-        x = sc.x + sd * 0.02,
-        X = (a, b) => [Math.min(x + sd * a, x + sd * b), Math.max(x + sd * a, x + sd * b)],
-        [m0, m1] = X(0, 0.25),
-        [g0, g1] = X(0, 0.32);
-      // the screen runs wall to wall: a slim black border top and bottom, the velour above it to the ceiling
-      S.box('black', m0, sc.y + hh, T.z0, m1, T.h, T.z1, blk);
-      S.box('black', m0, 0.12, T.z0, m1, sc.y - hh, T.z1, blk);
-      S.box('gold', g0, sc.y - hh - 0.04, T.z0, g1, sc.y - hh, T.z1, gold);
-      const [l0, l1] = X(0.07, 0.1);
-      S.box('glow', l0, sc.y - hh - 0.62, sc.z - hw, l1, sc.y - hh - 0.58, sc.z + hw, K(T.stars ? '#4f7dff' : '#ff6a4a'));
-      for (let zz = T.z0 + 1.0; zz < T.z1 - 0.8; zz += 1.1) {
-        const [f0, f1] = X(0.05, 0.08);
-        S.box('glow', f0, 0.14, zz - 0.05, f1, 0.2, zz + 0.05, K('#ffd9a0'));
+    } else if (T.arc) {
+      // the Velvet Room's curved screen: black velour round it, following the curve: a lip in front of its foot
+      // with a warm LED line along the floor, the masking above it up to the ceiling, returns at its ends back to
+      // the wall (what is behind the screen never shows)
+      const Ar = T.arc,
+        n = 64,
+        te = Math.asin(Ar.chord / 2 / Ar.R),
+        pt = (r, t, y) => [Ar.xc + r * Math.cos(t), y, Ar.zc + r * Math.sin(t)],
+        MB = S.b('black'),
+        MG = S.b('glow'),
+        bk = K('#0a0a0d'),
+        led = K('#ff9a50').map((v) => v * 0.55);
+      for (let i = 0; i < n; i++) {
+        const t0 = -te + (2 * te * i) / n,
+          t1 = -te + (2 * te * (i + 1)) / n,
+          tm = (t0 + t1) / 2,
+          nIn = [-Math.cos(tm), 0, -Math.sin(tm)];
+        __prQuad(MB, pt(Ar.R - 0.18, t0, 0.12), pt(Ar.R - 0.18, t1, 0.12), pt(Ar.R - 0.18, t1, Ar.y0 - 0.02), pt(Ar.R - 0.18, t0, Ar.y0 - 0.02), nIn, bk);
+        __prQuad(MB, pt(Ar.R - 0.18, t0, Ar.y0 - 0.02), pt(Ar.R - 0.18, t1, Ar.y0 - 0.02), pt(Ar.R + 0.05, t1, Ar.y0 - 0.02), pt(Ar.R + 0.05, t0, Ar.y0 - 0.02), [0, 1, 0], bk);
+        __prQuad(MB, pt(Ar.R + 0.03, t0, Ar.y0 + Ar.h), pt(Ar.R + 0.03, t1, Ar.y0 + Ar.h), pt(Ar.R + 0.03, t1, T.h), pt(Ar.R + 0.03, t0, T.h), nIn, bk);
+        __prQuad(MG, pt(Ar.R - 0.19, t0, 0.15), pt(Ar.R - 0.19, t1, 0.15), pt(Ar.R - 0.19, t1, 0.18), pt(Ar.R - 0.19, t0, 0.18), nIn, led);
+      }
+      for (const sd of [-1, 1]) {
+        const [ex, , ez] = pt(Ar.R, sd * te, 0),
+          wz = sd < 0 ? T.z0 : T.z1;
+        __prQuad(MB, [ex - 0.2, 0.12, ez], [T.x1, 0.12, ez], [T.x1, T.h, ez], [ex - 0.2, T.h, ez], [0, 0, -sd], bk);
+        __prQuad(MB, [ex - 0.2, 0.12, wz], [ex - 0.2, 0.12, ez], [ex - 0.2, T.h, ez], [ex - 0.2, T.h, wz], [-1, 0, 0], bk);
       }
     }
   }
@@ -767,7 +919,22 @@ function __cnDetail(root, m, models, ticks) {
         if (a1 - a0 < 0.2) continue;
         const f0 = p.f,
           f1 = p.f + p.s * 0.04;
-        along ? S.box('woodp', a0, p.y0, Math.min(f0, f1), a1, p.y1, Math.max(f0, f1), K('#ffffff')) : S.box('woodp', Math.min(f0, f1), p.y0, a0, Math.max(f0, f1), p.y1, a1, K('#ffffff'));
+        const wk = p.wood || 'woodp';
+        along ? S.box(wk, a0, p.y0, Math.min(f0, f1), a1, p.y1, Math.max(f0, f1), K('#ffffff')) : S.box(wk, Math.min(f0, f1), p.y0, a0, Math.max(f0, f1), p.y1, a1, K('#ffffff'));
+        // raised panels with a gilt bead (the rosewood wainscots)
+        if (p.wood) {
+          const n = Math.max(1, Math.round((a1 - a0) / 1.2)),
+            sp = (a1 - a0) / n,
+            r0 = p.f + p.s * 0.04,
+            r1 = p.f + p.s * 0.055;
+          for (let i = 0; i < n; i++) {
+            const q0 = a0 + sp * i + 0.09,
+              q1 = a0 + sp * (i + 1) - 0.09;
+            if (q1 - q0 < 0.15) continue;
+            along ? S.box(wk, q0, p.y0 + 0.2, Math.min(r0, r1), q1, p.y1 - 0.1, Math.max(r0, r1), K('#e6d2bc')) : S.box(wk, Math.min(r0, r1), p.y0 + 0.2, q0, Math.max(r0, r1), p.y1 - 0.1, q1, K('#e6d2bc'));
+          }
+          along ? S.box('marble', a0, p.y0, Math.min(p.f, p.f + p.s * 0.05), a1, p.y0 + 0.12, Math.max(p.f, p.f + p.s * 0.05), K('#2a2624')) : S.box('marble', Math.min(p.f, p.f + p.s * 0.05), p.y0, a0, Math.max(p.f, p.f + p.s * 0.05), p.y0 + 0.12, a1, K('#2a2624'));
+        }
         const g0 = p.f,
           g1 = p.f + p.s * 0.065;
         along ? S.box('gold', a0, p.y1, Math.min(g0, g1), a1, p.y1 + 0.05, Math.max(g0, g1), gold) : S.box('gold', Math.min(g0, g1), p.y1, a0, Math.max(g0, g1), p.y1 + 0.05, a1, gold);
@@ -1042,6 +1209,13 @@ function __cnDetail(root, m, models, ticks) {
     S.box('gold', Q.x0 - 0.06, Q.y0, Q.z - 0.02, Q.x1 + 0.06, Q.y0 + 0.08, Q.z + 0.27, gold);
     S.box('gold', Q.x0 - 0.06, Q.y1 - 0.08, Q.z - 0.02, Q.x1 + 0.06, Q.y1, Q.z + 0.27, gold);
   }
+  // ------------------------------------------------ the sacred geometry and the finish (72b-cinema-sacred.js)
+  try {
+    __cnSacred(root, S, m, ticks);
+  } catch (e) {
+    console.warn('[cinema] sacred', e);
+  }
+  const nCars = __cnCars(root, N, models, ticks);
   // ------------------------------------------------ build the merged meshes
   const glassM = Object.assign(new Gw({ color: '#dfeef2', roughness: 0.04, metalness: 0.1, transparent: !0, opacity: 0.16, depthWrite: !1, envMapIntensity: 1.2, vertexColors: !0 }), { __prOwn: 1 });
   // window glass of the buildings round the site: dark, smooth, metallic enough to mirror the sky
@@ -1333,13 +1507,14 @@ function __cnDetail(root, m, models, ticks) {
   });
   // the canvas textures are released with the view
   root.userData.cnTex = __CN_V.dyn;
-  return { tris: Math.round(tris), seats: nSeats, doors, ms: Math.round(performance.now() - t0) };
+  return { tris: Math.round(tris), seats: nSeats, seatTris: seatInfo.tris, cars: nCars, doors, ms: Math.round(performance.now() - t0) };
 }
 // ---------------------------------------------------------------- arched openings
 // The opening stays a rectangle for collision; drawn, its top is a round arch: the corners above the arch are
 // filled with the wall's own surfaces (both faces and the soffit), and a gold architrave follows the curve, with
 // a keystone. A tall opening gets a semicircle; a wide, low one a segmental arch.
 function __cnArch(S, o, gold, K) {
+  const TK = o.trim || 'gold'; // the architrave's surface (stone on the Fortress)
   const t = o.t || 0.4,
     W = o.w,
     hw = W / 2,
@@ -1389,16 +1564,16 @@ function __cnArch(S, o, gold, K) {
         L = Math.hypot(a1 - a0, y1 - y0),
         ang = Math.atan2(y1 - y0, a1 - a0),
         p = P(m[0], m[1], (d0 + d1) / 2);
-      S.add('gold', __prUnit('box'), o.alongX ? __cnM(p[0], p[1], p[2], L + 0.02, 0.1, 0.045, 0, 0, ang) : __cnM(p[0], p[1], p[2], 0.045, 0.1, L + 0.02, 0, -ang, 0), gold);
+      S.add(TK, __prUnit('box'), o.alongX ? __cnM(p[0], p[1], p[2], L + 0.02, 0.1, 0.045, 0, 0, ang) : __cnM(p[0], p[1], p[2], 0.045, 0.1, L + 0.02, 0, -ang, 0), gold);
     }
     for (const aa of [o.a - 0.05, o.a + W + 0.05]) {
       const a = P(aa - 0.05, o.y0, d0),
         b = P(aa + 0.05, cy + R * Math.cos(th0), d1);
-      S.box('gold', Math.min(a[0], b[0]), o.y0, Math.min(a[2], b[2]), Math.max(a[0], b[0]), b[1], Math.max(a[2], b[2]), gold);
+      S.box(TK, Math.min(a[0], b[0]), o.y0, Math.min(a[2], b[2]), Math.max(a[0], b[0]), b[1], Math.max(a[2], b[2]), gold);
     }
     const k0 = P(ca - 0.16, o.y1 - 0.06, d0),
       k1 = P(ca + 0.16, o.y1 + 0.24, d1 + sd * 0.02);
-    S.box('gold', Math.min(k0[0], k1[0]), k0[1], Math.min(k0[2], k1[2]), Math.max(k0[0], k1[0]), k1[1], Math.max(k0[2], k1[2]), gold);
+    S.box(TK, Math.min(k0[0], k1[0]), k0[1], Math.min(k0[2], k1[2]), Math.max(k0[0], k1[0]), k1[1], Math.max(k0[2], k1[2]), gold);
   }
 }
 // ---------------------------------------------------------------- furniture and fittings
@@ -1527,11 +1702,11 @@ function __cnItem(S, it, rnd, root, ticks) {
       break;
     }
     case 'relief': {
-      // the Velvet Room's blank facade: stucco relief panels (fluted, with a frieze of chevrons)
+      // the Velvet Room's blank facade: stucco relief panels (fluted, a roundel over the flutes)
       for (let x = it.x0; x < it.x1 - 1; x += 4.4) {
         S.box('stucco', x, it.y0, it.z - 0.16, x + 3.4, it.y1, it.z, K('#d9c8a8'));
         for (let k = 0; k < 6; k++) S.box('stucco', x + 0.35 + k * 0.5, it.y0 + 0.4, it.z - 0.22, x + 0.55 + k * 0.5, it.y1 - 1.2, it.z - 0.16, K('#e9dcc4'));
-        for (let k = 0; k < 4; k++) S.add('gold', __prUnit('box'), __cnM(x + 0.6 + k * 0.75, it.y1 - 0.55, it.z - 0.19, 0.5, 0.06, 0.04, 0, 0, k % 2 ? 0.6 : -0.6), gold);
+        // (over the flutes: a brass Seed of Life roundel, recorded in 71-cinema.js, drawn by 72b-cinema-sacred.js)
       }
       break;
     }
@@ -1726,4 +1901,25 @@ function __cnItem(S, it, rnd, root, ticks) {
     return M.jsx(prevTrees, {});
   };
 }
-typeof window < 'u' && (window.__bpCinema = () => ({ stats: __PR.stats, dyn: __CN_V.dyn.length, thumbs: Object.keys(__CN_V.thumbs) }));
+typeof window < 'u' &&
+  (window.__bpCinema = () => ({
+    stats: __PR.stats,
+    dyn: __CN_V.dyn.length,
+    thumbs: Object.keys(__CN_V.thumbs),
+    // the scenery's heaviest drawn parts (triangles, instances included), for profiling
+    heavy: () => {
+      const t = {},
+        sc = __PR.scene;
+      sc &&
+        sc.traverseVisible((o) => {
+          if (!o.isMesh || !o.geometry) return;
+          const g = o.geometry,
+            n = ((g.index ? g.index.count : g.attributes.position.count) / 3) * (o.isInstancedMesh ? o.count : 1);
+          t[o.name || o.type] = (t[o.name || o.type] || 0) + n;
+        });
+      return Object.entries(t)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 25)
+        .map(([k, v]) => k + ' ' + Math.round(v / 1000) + 'k');
+    },
+  }));

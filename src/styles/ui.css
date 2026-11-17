@@ -1045,51 +1045,6 @@ html.swat-aim * {
   pointer-events: none;
   font-family: var(--lx-body, system-ui);
 }
-.h2-flag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 8px;
-  border-radius: 999px;
-  background: rgba(10, 13, 19, 0.78);
-  border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  color: #eef0f3;
-  backdrop-filter: blur(8px);
-}
-.h2-flag i {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--tc);
-  box-shadow: 0 0 12px var(--tc);
-}
-.h2-flag b {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.h2-flag span {
-  font-size: 11px;
-  font-weight: 800;
-  color: #aab3c2;
-}
-.h2-flag em {
-  font-style: normal;
-  font-weight: 900;
-  font-size: 16px;
-  color: var(--tc);
-  margin-left: 4px;
-}
-.h2-carried {
-  animation: sw-pulse 1s ease-in-out infinite;
-}
-.h2-carried span {
-  color: #ffd27a;
-}
-.h2-dropped span {
-  color: #ff9a8a;
-}
 @keyframes sw-pulse {
   50% {
     box-shadow:
@@ -1457,9 +1412,6 @@ html.swat-aim * {
     transform: translateX(-50%) scale(0.66);
     transform-origin: top center;
   }
-  .h2-flag span {
-    display: none;
-  }
 }
 @media (pointer: coarse) {
   .sb2-card:hover {
@@ -1639,9 +1591,6 @@ html.swat-touch body {
 .hud-alerts .fps-alert:nth-child(n + 3) {
   display: none;
 }
-html.swat-ctf .hud-alerts {
-  top: 124px !important;
-}
 .fps-padmark,
 .fps-flagmark {
   font-size: 11px !important;
@@ -1659,18 +1608,6 @@ html.swat-ctf .hud-alerts {
 #swat-hud2 {
   top: calc(74px + env(safe-area-inset-top, 0px));
 }
-.h2-flag {
-  padding: 4px 10px 4px 7px;
-}
-.h2-flag b {
-  font-size: 10px;
-}
-.h2-flag span {
-  font-size: 10px;
-}
-.h2-flag em {
-  font-size: 14px;
-}
 @media (pointer: coarse) and (max-height: 520px) {
   .fps-banner {
     top: 17% !important;
@@ -1686,9 +1623,6 @@ html.swat-ctf .hud-alerts {
   }
   .hud-alerts {
     top: 70px !important;
-  }
-  html.swat-ctf .hud-alerts {
-    top: 106px !important;
   }
   .hud-alerts .fps-alert {
     font-size: 9px !important;
@@ -1834,10 +1768,6 @@ html.swat-touch #swat-hud2 {
   transform: translateX(-50%) scale(0.6) !important;
   transform-origin: top center;
 }
-html.swat-touch .h2-flag {
-  background: rgba(8, 10, 14, 0.45);
-  box-shadow: none;
-}
 /* health + weapon dock: flat, low-contrast until it matters */
 .fps-root--touch .hud-vitals .fps-panel,
 .fps-root--touch .hud-weapon .fps-panel {
@@ -1859,9 +1789,6 @@ html.swat-touch .h2-flag {
 .fps-root--touch .hud-alerts {
   top: 70px !important;
   opacity: 0.9;
-}
-html.swat-ctf .fps-root--touch .hud-alerts {
-  top: 84px !important;
 }
 .fps-root--touch .hud-medals {
   bottom: 34% !important;
@@ -1924,17 +1851,11 @@ html.swat-ctf .fps-root--touch .hud-alerts {
   scale: var(--hud-s);
   transform-origin: 0 0;
 }
-html.swat-ctf .fps-root:not(.fps-root--touch) .hud-alerts {
-  top: calc(12px + 112px * var(--hud-s)) !important;
-}
 /* mode banner sits below the alert pills instead of on top of them */
 .fps-root:not(.fps-root--touch) .fps-banner {
   top: max(12%, calc(12px + 142px * var(--hud-s))) !important;
   scale: var(--hud-s);
   transform-origin: 0 0;
-}
-html.swat-ctf .fps-root:not(.fps-root--touch) .fps-banner {
-  top: max(12%, calc(12px + 170px * var(--hud-s))) !important;
 }
 /* radio chatter and spectator label stack above the health panel at any scale */
 .fps-root:not(.fps-root--touch) .fps-hud > .absolute.bottom-24.left-4 {

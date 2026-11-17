@@ -36,7 +36,8 @@ export const SCREENS = [
   { id: 't3', name: 'Theater 3', group: 'cinema', showing: () => yt('eRsGyueVLvQ', 'Sintel', 'Blender') },
   { id: 't4', name: 'Theater 4', group: 'cinema', showing: () => yt('R6MlUcmOul8', 'Tears of Steel', 'Blender') },
   { id: 't5', name: 'The Velvet Room', group: 'cinema', showing: () => yt('WhWc3b3KhnY', 'Spring', 'Blender Studio') },
-  { id: 'lounge', name: 'The Starlight', group: 'cinema', showing: () => yt('mN0zPOpADL4', 'Agent 327: Operation Barbershop', 'Blender Studio') },
+  // the Starlight is a 360° dome: it plays 360° and VR video (YouTube's, or 360°/180° files)
+  { id: 'lounge', name: 'The Starlight', group: 'cinema', dome: true, showing: () => ({ ...yt('7AkbUfZjS5k', 'Virtual Nature 360° · Nature Meditation', 'ECOVR'), projection: '360' }) },
   { id: 'prison', name: 'Blackwater Dayroom TV', group: 'other', showing: mv },
 ];
 const SCREEN_BY_ID = new Map(SCREENS.map((s) => [s.id, s]));
@@ -59,6 +60,8 @@ export function mergeDocument(stored) {
   const theaters = def.theaters.map((d) => {
     const s = byId.get(d.id);
     if (!s) return d;
+    // the Starlight's old (flat) default, from before it was a 360° dome: the new default
+    if (d.id === 'lounge' && s.showing && s.showing.videoId === 'mN0zPOpADL4') return { id: d.id, name: cleanName(s.name) || d.name, showing: d.showing };
     const name = cleanName(s.name) || d.name;
     if (!('showing' in s)) return { id: d.id, name, showing: d.showing };
     if (s.showing === null) return { id: d.id, name, showing: null };
@@ -142,6 +145,21 @@ export function validateShowing(s, { now = Date.now(), stored = false } = {}) {
   if (s.loop !== undefined && typeof s.loop !== 'boolean') bad('loop must be true or false.');
   out.loop = s.loop === undefined ? true : s.loop;
   out.volume = Math.round(num(s.volume, 'volume', { min: 0, max: 1, def: 1 }) * 1000) / 1000;
+  // 360° dome films (the Starlight): '360' all round, '180' a VR180 film's front half; a VR file's stereo
+  // layout ('tb' top/bottom, 'sbs' side by side: the left eye is shown). YouTube works out its own.
+  if (s.projection !== undefined && s.projection !== null) {
+    if (!['360', '180'].includes(s.projection)) bad("projection must be '360' or '180'.");
+    out.projection = s.projection;
+  }
+  // a widescreen film inside a 16:9 video (black bars baked in): its picture's shape, so the screen can fill
+  if (s.aspect !== undefined && s.aspect !== null) {
+    if (![1.85, 2, 2.39].includes(s.aspect)) bad('aspect must be 1.85, 2 or 2.39.');
+    out.aspect = s.aspect;
+  }
+  if (s.stereo !== undefined && s.stereo !== null && s.stereo !== 'mono') {
+    if (!['tb', 'sbs'].includes(s.stereo)) bad("stereo must be 'mono', 'tb' or 'sbs'.");
+    out.stereo = s.stereo;
+  }
   return out;
 }
 

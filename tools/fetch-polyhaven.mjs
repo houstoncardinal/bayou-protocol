@@ -1,6 +1,6 @@
 // Download a map's Poly Haven assets (all CC0) and build game-ready copies.
 //
-//   node tools/fetch-polyhaven.mjs [frostline|prison|cinema]   (default frostline; skips files already downloaded)
+//   node tools/fetch-polyhaven.mjs [frostline|prison|cinema|fortress]   (default frostline; skips files already downloaded)
 //
 // Sources (as downloaded, not shipped): assets-src/maps/<map>/
 // Output (shipped):                     public/game/maps/<map>/
@@ -91,6 +91,33 @@ const MAPS = {
     },
     skies: { sky: 'kloofendal_48d_partly_cloudy_puresky', sky_dusk: 'industrial_sunset_02_puresky' },
   },
+  // Fortress (77-fortress.js): its crates, barrels and lanterns come from the Frostline and prison folders
+  fortress: {
+    textures: {
+      medieval_blocks_05: 1024, // the fortress's cut-stone walls and buildings
+      castle_wall_varriation: 1024, // the outer ramparts and retaining walls (rough stone)
+      plaster_stone_wall_01: 1024, // rendered house fronts (tinted)
+      cobblestone_square: 1024, // courtyards and lanes
+      red_sandstone_pavement: 1024, // the bomb sites and terraces (flagstones)
+      grassy_cobblestone: 1024, // gardens and the lower level
+      clay_roof_tiles_02: 1024, // pitched roofs
+    },
+    models: {
+      island_tree_01: 6000, // the jungle on the island and the gardens
+      island_tree_02: 6000,
+      island_tree_03: 6000,
+      pachira_aquatica_01: 4000, // tropical trees and undergrowth round the rim
+      shrub_02: 3000,
+      shrub_04: 3000,
+      coastal_cliff_02: [12000, 1024], // the island's cliffs
+      coastal_cliff_04: [12000, 1024],
+      coast_rocks_05: [4000, 1024], // rocks at the waterline
+      fern_02: 3000,
+      Lantern_01: [1500, 512], // wall lanterns
+      planter_pot_clay: [800, 512],
+    },
+    skies: {},
+  },
   // the cinema also uses the prison's asphalt, concrete, plaster, steel plate, brick, gravel roofs and skies
   // (72-cinema-view.js loads those from public/game/maps/prison/)
   cinema: {
@@ -106,6 +133,7 @@ const MAPS = {
       quatrefoil_jacquard_fabric: 1024, // the auditoriums' acoustic panels (tinted per theater)
       wood_plank_wall: 1024, // ribbed timber lining the auditoriums' lower walls
       marble_mosaic_tiles: 1024, // the lobby's border bands
+      rosewood_veneer1: 1024, // polished rosewood: the lobby's and the Promenade's wainscot, mouldings, the counter
     },
     models: {
       Chandelier_02: [4000, 512],
@@ -131,6 +159,9 @@ const MAPS = {
       painted_wooden_bench: [1200, 512], // the street
       outdoor_table_chair_set_01: [2500, 512], // the café across the street
       planter_box_01: [1200, 512],
+      covered_car: [3000, 1024], // the parked cars (a scanned car under a fitted cover: Poly Haven has no bare cars)
+      marble_bust_01: [3000, 512], // busts on plinths in the Grand Lobby
+      ClassicConsole_01: [2500, 512], // carved console tables along the lobby walls
     },
     skies: {},
   },

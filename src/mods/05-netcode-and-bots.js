@@ -66,3 +66,32 @@ function __tRotate(w, C, g) {
     C.executeAt = Math.max(C.executeAt, w.t + 5);
   }
 }
+// Room for the bomb carrier on a site: the escorts head for the same spot as the carrier, and on a crowded
+// site one ended up standing on the carrier (or the carrier on one), so the carrier was never on the ground
+// and the plant never started (Fortress's B site, November 2026). While the carrier is inside a site, any
+// teammate within 1.6 m is eased out of its way (at most 3 m/s).
+{
+  const coreStep = Y8;
+  Y8 = function (w, A, i, I) {
+    const r = coreStep.apply(this, arguments);
+    try {
+      if (w && w.mode === 'bomb' && A && A.isBot && A.alive && A.team === 'T' && !A.hasBomb && w.bomb && w.bomb.state === 'carried') {
+        const c = w.players.find((p) => p.hasBomb && p.alive);
+        if (c && c !== A) {
+          const dx = A.pos.x - c.pos.x,
+            dz = A.pos.z - c.pos.z,
+            d = Math.hypot(dx, dz);
+          if (d < 1.6 && QQ(aw(), c.pos)) {
+            const k = w.players.indexOf(A),
+              nx = d > 0.02 ? dx / d : Math.cos(k * 2.4),
+              nz = d > 0.02 ? dz / d : Math.sin(k * 2.4),
+              s = Math.min(1.6 - d, 3 * (I || 1 / 60));
+            A.pos.x += nx * s;
+            A.pos.z += nz * s;
+          }
+        }
+      }
+    } catch (e) {}
+    return r;
+  };
+}

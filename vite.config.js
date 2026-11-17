@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { handleShowings, fileStore, MAX_BODY } from './server/showings-core.mjs';
+import { NetHub, fileStore as netFileStore } from './server/net-core.mjs';
+import { WebSocketServer } from 'ws';
 
 // The engine core is a compiled module. Everything in src/mods runs inside the
 // core's module scope, so mods can use engine internals directly (see docs/ENGINE_API.md).
@@ -52,9 +54,42 @@ function bayouShowings() {
   };
 }
 
+// The online hub (server/net-core.mjs) on the dev and preview servers, at /net: LAN parties and local testing.
+// Everyone on the same network opens http://<this machine's address>:5173 and plays through this machine; the
+// accounts, friends and leaderboard are kept in .data/net.json. Online play uses the Cloudflare hub instead.
+function netConfigURL() {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'net.config.json'), 'utf8')).url || '';
+  } catch {
+    return '';
+  }
+}
+function bayouNet() {
+  let hub = null;
+  const attach = (server) => {
+    if (!server.httpServer) return;
+    hub || (hub = new NetHub(netFileStore(fs, path.resolve(process.cwd(), '.data/net.json'))));
+    const wss = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
+    server.httpServer.on('upgrade', (req, sock, head) => {
+      if ((req.url || '').split('?')[0] !== '/net') return;
+      wss.handleUpgrade(req, sock, head, (ws) => {
+        const c = hub.open(ws);
+        ws.on('message', (d) => hub.message(c, d.toString()));
+        ws.on('close', () => hub.close(c));
+        ws.on('error', () => hub.close(c));
+      });
+    });
+  };
+  return { name: 'bayou-net', configureServer: attach, configurePreviewServer: attach };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [bayouMods(), bayouShowings()],
+  plugins: [bayouMods(), bayouShowings(), bayouNet()],
+  // the online hub's address (set BAYOU_NET_URL when building for the web, e.g. wss://bayou-net.<you>.workers.dev);
+  // empty: the game uses the server it was loaded from (/net: the dev/preview server, LAN parties)
+  // (or net.config.json's "url": written when the hub is deployed, so every build finds it)
+  define: { __BAYOU_NET__: JSON.stringify(process.env.BAYOU_NET_URL || netConfigURL()) },
   // map packages import 'three': give them the core's copy (src/engine/three.js), never a second one
   resolve: { alias: [{ find: /^three$/, replacement: path.resolve(process.cwd(), 'src/engine/three.js') }] },
   server: { host: true, port: 5173 },

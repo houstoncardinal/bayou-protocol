@@ -362,7 +362,6 @@ function __EndScreen() {
           M.jsx('span', { children: p.deaths }),
           M.jsx('span', { children: p.assists }),
           M.jsx('span', { children: (p.kills / Math.max(1, p.deaths)).toFixed(2) }),
-          A.mode === 'ctf' && M.jsx('span', { children: p.captures || 0 }),
           M.jsx('span', { className: 'es-score', children: Math.round(p.score) }),
         ],
       },
@@ -377,7 +376,6 @@ function __EndScreen() {
       M.jsx('span', { children: 'D' }),
       M.jsx('span', { children: 'A' }),
       M.jsx('span', { children: 'K/D' }),
-      A.mode === 'ctf' && M.jsx('span', { children: 'CAP' }),
       M.jsx('span', { children: 'Score' }),
     ],
   });
@@ -460,7 +458,6 @@ function __EndScreen() {
                         ' kills · ',
                         mvp.deaths,
                         ' deaths',
-                        A.mode === 'ctf' ? ` · ${mvp.captures || 0} captures` : '',
                       ],
                     }),
                   ],
@@ -471,7 +468,6 @@ function __EndScreen() {
               const kd = me
                   ? (me.kills +
                       0.5 * me.assists +
-                      2 * (me.captures || 0) +
                       2 * ((rep && rep.stats && rep.stats.plants) || 0)) /
                       (me.deaths + 1) +
                     (acc >= 30 ? 0.3 : 0)
@@ -486,10 +482,6 @@ function __EndScreen() {
               tf && acs.push(['Top Fragger', tf.name]);
               const tp = best((p) => p.assists, 2);
               tp && acs.push(['Team Player', tp.name]);
-              if (A.mode === 'ctf') {
-                const fr = best((p) => p.captures || 0, 1);
-                fr && acs.push(['Flag Runner', fr.name]);
-              }
               const un = [...A.players].filter((p) => p.kills >= 2).sort((a, b) => a.deaths - b.deaths)[0];
               un && acs.push(['Hardest to Kill', un.name]);
               if (me) {
@@ -643,7 +635,7 @@ function __EndScreen() {
     }),
   });
 }
-// ---------- HUD overlay: CTF status + ping ----------
+// ---------- HUD overlay: ping ----------
 (function () {
   if (typeof document > 'u') return;
   let el = null;
@@ -661,24 +653,11 @@ function __EndScreen() {
     }
     el.style.display = '';
     let h = '';
-    if (A.mode === 'ctf' && A.ctf) {
-      for (const X of ['CT', 'T']) {
-        const f = A.ctf[X],
-          s =
-            f.state === 'home'
-              ? 'AT BASE'
-              : f.state === 'carried'
-                ? 'TAKEN — ' + (_u(f.carrier) || 'enemy')
-                : 'DROPPED · ' + Math.max(0, Math.ceil(20 - (A.t - f.dropAt))) + 's';
-        h += `<div class="h2-flag h2-${f.state}" style="--tc:${ii[X].main}"><i></i><b>${ii[X].name} flag</b><span>${s}</span><em>${Math.floor(A.score[X])}</em></div>`;
-      }
-    }
     const net = eA.net && eA.online;
     if (net && eA.net.role) {
       const p = eA.net.role === 'host' ? 'HOST' : eA.net.ping ? eA.net.ping + ' ms' : '— ms';
       h += `<div class="h2-ping ${eA.net.ping > 140 ? 'bad' : eA.net.ping > 80 ? 'mid' : ''}">${p}</div>`;
     }
-    document.documentElement.classList.toggle('swat-ctf', A.mode === 'ctf');
     el.innerHTML !== h && (el.innerHTML = h);
   }, 150);
 })();

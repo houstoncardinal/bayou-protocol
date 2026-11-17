@@ -38,7 +38,7 @@ const __SCR_DEF = {
   t3: { name: 'Theater 3', showing: { kind: 'youtube', videoId: 'eRsGyueVLvQ', title: 'Sintel', channel: 'Blender' } },
   t4: { name: 'Theater 4', showing: { kind: 'youtube', videoId: 'R6MlUcmOul8', title: 'Tears of Steel', channel: 'Blender' } },
   t5: { name: 'The Velvet Room', showing: { kind: 'youtube', videoId: 'WhWc3b3KhnY', title: 'Spring', channel: 'Blender Studio' } },
-  lounge: { name: 'The Starlight', showing: { kind: 'youtube', videoId: 'mN0zPOpADL4', title: 'Agent 327: Operation Barbershop', channel: 'Blender Studio' } },
+  lounge: { name: 'The Starlight', showing: { kind: 'youtube', videoId: '7AkbUfZjS5k', title: 'Virtual Nature 360° · Nature Meditation', channel: 'ECOVR', projection: '360' } },
   prison: { name: 'Blackwater Dayroom TV', showing: { kind: 'file', url: __SCR_OGSB, title: 'OGSB Young — Only Thing That Matters To You', channel: 'OGSB Young' } },
 };
 const __scrNow = () => Date.now() + __SCR.skew;
@@ -233,6 +233,154 @@ function __scrStill(sc, s, cb) {
     );
   tryLoad('maxresdefault', () => tryLoad('hqdefault', null));
 }
+// ---------------------------------------------------------------- the Starlight's dome
+// def.dome: { cx, cz, base, eye, rx, rz, top, front, door: { yaw, half, h } }: half an ellipsoid over the floor
+// (rx, rz across, top high), seen from the eye point (cx, base + eye, cz). Built as a grid of directions from
+// that eye point (yaw across, elevation up): each vertex is where that direction meets the dome, so a 360° film
+// mapped by direction (equirectangular) is right from the middle of the room. The doorway is left open.
+//   - a YouTube 360°/VR video: the dome is a hole (as the flat screens are) and the player behind the canvas
+//     fills the window, YouTube's own 360° view turned every frame to where the camera looks
+//   - a 360°/180° video file (mono, or stereo top/bottom or side by side): drawn on the dome as its texture
+const __scrYaw = (y) => Math.atan2(Math.sin(y), Math.cos(y));
+function __scrDomeGeo(sc, g) {
+  const D = sc.def.dome,
+    NA = 128,
+    NE = D.sphere ? 72 : 40,
+    E0 = D.sphere ? -Math.PI / 2 : (-14 * Math.PI) / 180,
+    ex = D.cx,
+    ey = D.base + D.eye,
+    ez = D.cz,
+    P = [],
+    UV = [],
+    A = [],
+    EL = [],
+    Cc = [],
+    I = [];
+  for (let j = 0; j <= NE; j++) {
+    const e = E0 + ((Math.PI / 2 - E0) * j) / NE;
+    for (let i = 0; i <= NA; i++) {
+      const a = -Math.PI + (2 * Math.PI * i) / NA,
+        yaw = D.front + a,
+        dx = -Math.sin(yaw) * Math.cos(e),
+        dy = Math.sin(e),
+        dz = -Math.cos(yaw) * Math.cos(e),
+        // where the ray from the eye meets the ellipsoid ((x-cx)/rx)^2 + ((y-base)/top)^2 + ((z-cz)/rz)^2 = 1
+        ox = 0,
+        oy = D.eye / D.top,
+        oz = 0,
+        Dx = dx / D.rx,
+        Dy = dy / D.top,
+        Dz = dz / D.rz,
+        qa = Dx * Dx + Dy * Dy + Dz * Dz,
+        qb = 2 * (ox * Dx + oy * Dy + oz * Dz),
+        qc = ox * ox + oy * oy + oz * oz - 1;
+      let t = (-qb + Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc))) / (2 * qa),
+        y = ey + dy * t;
+      // a sphere: an ellipsoid centred on the eye (its own height above and below); a dome: down to the
+      // floor's edge (under the floor, out of sight)
+      if (D.sphere) (t = 1 / Math.sqrt((dx / D.rx) ** 2 + (dy / (dy >= 0 ? D.top : D.bottom)) ** 2 + (dz / D.rz) ** 2)), (y = ey + dy * t);
+      else if (y < D.base) (t = (D.base - ey) / dy), (y = D.base);
+      P.push(ex + dx * t, y, ez + dz * t);
+      UV.push(0.5 - a / (2 * Math.PI), 0.5 + e / Math.PI);
+      A.push(a);
+      EL.push(e);
+      Cc.push(1, 1, 1);
+    }
+  }
+  const W = NA + 1,
+    door = D.door;
+  for (let j = 0; j < NE; j++)
+    for (let i = 0; i < NA; i++) {
+      const k = j * W + i;
+      if (door) {
+        const am = D.front + (A[k] + A[k + 1]) / 2,
+          yMin = Math.min(P[k * 3 + 1], P[(k + W) * 3 + 1]),
+          yMax = Math.max(P[k * 3 + 1], P[(k + W) * 3 + 1]);
+        // (the doorway runs from the floor up: a sphere's surface below the floor stays closed)
+        if (Math.abs(__scrYaw(am - door.yaw)) < door.half && yMin < door.h && yMax > D.base - 0.25) continue;
+      }
+      I.push(k, k + W, k + 1, k + 1, k + W, k + W + 1);
+    }
+  g.setAttribute('position', new gi(new Float32Array(P), 3));
+  g.setAttribute('uv', new gi(new Float32Array(UV), 2));
+  g.setAttribute('color', new gi(new Float32Array(Cc), 3));
+  g.setIndex(I);
+  sc.domeA = A;
+  sc.domeE = EL;
+}
+// a dome's mapping for a film: 360° (all round) or 180° (VR180: the front half, black behind)
+function __scrDomeMap(sc, s) {
+  const g = sc.mesh.geometry,
+    uv = g.attributes.uv,
+    col = g.attributes.color,
+    half = s && s.kind === 'file' && s.projection === '180';
+  for (let k = 0; k < sc.domeA.length; k++) {
+    const a = sc.domeA[k],
+      e = sc.domeE[k];
+    uv.setXY(k, half ? Math.min(1, Math.max(0, 0.5 - a / Math.PI)) : 0.5 - a / (2 * Math.PI), 0.5 + e / Math.PI);
+    const f = half ? Math.min(1, Math.max(0, (Math.PI / 2 + 0.08 - Math.abs(a)) / 0.16)) : 1;
+    col.setXYZ(k, f, f, f);
+  }
+  uv.needsUpdate = col.needsUpdate = !0;
+}
+// a stereo VR file: one eye's half of each frame (the left: the top, or the left side)
+function __scrDomeEye(sc, t, s) {
+  const st = s && s.stereo;
+  t.repeat.set(st === 'sbs' ? 0.5 : 1, st === 'tb' ? 0.5 : 1);
+  t.offset.set(0, st === 'tb' ? 0.5 : 0);
+}
+// the dome when no film is up: a night sky (equirectangular), the film's title at the front
+function __scrDomeSky(title, sub) {
+  const cv = document.createElement('canvas');
+  cv.width = 2048;
+  cv.height = 1024;
+  const c = cv.getContext('2d'),
+    W = cv.width,
+    H = cv.height;
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#02030a');
+  g.addColorStop(0.42, '#0a1230');
+  g.addColorStop(0.5, '#1a2550');
+  g.addColorStop(0.56, '#0b1128');
+  g.addColorStop(1, '#03040a');
+  c.fillStyle = g;
+  c.fillRect(0, 0, W, H);
+  // the Milky Way: a soft band across the sky
+  for (let i = 0; i < 900; i++) {
+    const u = Math.random(),
+      v = 0.22 + 0.16 * Math.sin(u * Math.PI * 2) + (Math.random() - 0.5) * 0.12,
+      r = 8 + Math.random() * 40,
+      gr = c.createRadialGradient(u * W, v * H, 0, u * W, v * H, r);
+    gr.addColorStop(0, `rgba(${150 + Math.random() * 60},${150 + Math.random() * 50},255,0.035)`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = gr;
+    c.fillRect(u * W - r, v * H - r, r * 2, r * 2);
+  }
+  // stars, thinning towards the horizon (the poles' rows are wide on the canvas: fewer there)
+  for (let i = 0; i < 5200; i++) {
+    const v = Math.random() * 0.56,
+      u = Math.random(),
+      lat = (0.5 - v) * Math.PI;
+    if (Math.random() > Math.cos(lat) + 0.05) continue;
+    const b = Math.random(),
+      r = b > 0.985 ? 2.2 : b > 0.9 ? 1.4 : 0.8;
+    c.fillStyle = `rgba(${220 + Math.random() * 35},${225 + Math.random() * 30},255,${0.35 + Math.random() * 0.65})`;
+    c.beginPath();
+    c.arc(u * W, v * H, r, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.textAlign = 'center';
+  // (the canvas wraps 360°: 30 px of it is about 5° of sky; the title sits 30° up, over the seats' view ahead)
+  c.fillStyle = '#9fb6ff';
+  c.font = '600 15px "Barlow Condensed", "Oswald", sans-serif';
+  c.fillText(String(sub || '').toUpperCase(), W / 2, H * 0.305);
+  c.fillStyle = '#f2ead8';
+  c.font = '700 30px "Barlow Condensed", "Oswald", sans-serif';
+  c.fillText(String(title || '').slice(0, 60), W / 2, H * 0.335);
+  const t = new LI(cv);
+  t.colorSpace = 'srgb';
+  return t;
+}
 // ---------------------------------------------------------------- one screen
 function __scrMake(def, root) {
   const sc = { def, id: def.id, w: def.w, h: def.h, key: null, s: null, tex: null, still: null, video: null, audio: null, yt: null, ytEl: null, active: !1, seen: 0, vol: 0, hear: def.hear ?? 24, rendered: -1, msg: 0 };
@@ -242,15 +390,36 @@ function __scrMake(def, root) {
   sc.n = new U(nx, 0, nz);
   sc.c = new U(def.x, def.y, def.z);
   // the picture, a hair in front of the wall: flat, or curved round the audience (def.curve: how far its
-  // edges come forward of its middle, metres)
+  // edges come forward of its middle, metres), or bowed (def.bow), or a dome round you (def.dome)
   const g = new uw(),
     hw = def.w / 2,
     hh = def.h / 2,
-    sag = def.curve || 0;
-  if (sag > 0.01) {
+    sag = def.curve || 0,
+    // a bowed screen: flat (so YouTube's flat player stays locked to it), its top and bottom edges curving out
+    // towards the sides, the way a huge curved screen looks from the seats: the picture's half-height at x
+    bow = def.bow || 0,
+    yT = (x) => hh - bow * (1 - (x / hw) ** 2);
+  sag > 0.01 && (sc.arcW = 2 * ((hw * hw + sag * sag) / (2 * sag)) * Math.asin(Math.min(1, hw / ((hw * hw + sag * sag) / (2 * sag)))));
+  if (def.dome) __scrDomeGeo(sc, g);
+  else if (bow > 0.01) {
+    const n = 64,
+      P = [],
+      UV = [],
+      I = [];
+    for (let i = 0; i <= n; i++) {
+      const x = -hw + (2 * hw * i) / n,
+        t = yT(x);
+      P.push(x, -t, 0, x, t, 0);
+      UV.push(i / n, (hh - t) / def.h, i / n, (hh + t) / def.h);
+      i < n && I.push(i * 2, i * 2 + 2, i * 2 + 3, i * 2, i * 2 + 3, i * 2 + 1);
+    }
+    g.setAttribute('position', new gi(new Float32Array(P), 3));
+    g.setAttribute('uv', new gi(new Float32Array(UV), 2));
+    g.setIndex(I);
+  } else if (sag > 0.01) {
     const Rr = (hw * hw + sag * sag) / (2 * sag),
       tm = Math.asin(hw / Rr),
-      n = 48,
+      n = 128, // (a deep curve: smooth from the front rows)
       P = [],
       UV = [],
       I = [];
@@ -271,46 +440,83 @@ function __scrMake(def, root) {
     g.setIndex([0, 1, 2, 0, 2, 3]);
   }
   g.computeBoundingSphere();
-  sc.mat = new Ni({ color: '#ffffff', toneMapped: !1, fog: !1 });
+  sc.mat = new Ni({ color: '#ffffff', toneMapped: !1, fog: !1, vertexColors: !!def.dome });
   sc.matOff = new Ni({ color: '#07080b', toneMapped: !1, fog: !1 });
   // the hole the YouTube player shows through: writes alpha 0 (no blending), so the page behind shows
   sc.matHole = new Ni({ color: '#000000', opacity: 0, transparent: !1, toneMapped: !1, fog: !1 });
   sc.matHole.blending = 0;
+  // (a dome is seen from inside only: from the vestibule outside it is the dark wall it should be)
+  def.dome && (sc.mat.side = sc.matOff.side = sc.matHole.side = 0);
   const mesh = (sc.mesh = new Ow(g, sc.matOff));
+  // the dome's outside: the same shell, dark, seen only from outside (from the vestibule it is a wall)
+  if (def.dome) {
+    const shell = new Ow(g, new Ni({ color: '#06070c', side: 1, fog: !1 }));
+    shell.name = 'screen_dome_shell';
+    root.add(shell);
+  }
+  // a dome's fallback for a film that isn't 360°: a flat screen at the dome's front, where the YouTube player is
+  // placed as on the flat screens (hidden unless needed)
+  if (def.dome) {
+    const D = def.dome,
+      fw = D.flatW || 11,
+      fh = (fw * 9) / 16,
+      fg = new uw();
+    fg.setAttribute('position', new gi(new Float32Array([-fw / 2, -fh / 2, 0, fw / 2, -fh / 2, 0, fw / 2, fh / 2, 0, -fw / 2, fh / 2, 0]), 3));
+    fg.setAttribute('uv', new gi(new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]), 2));
+    fg.setIndex([0, 1, 2, 0, 2, 3]);
+    fg.computeBoundingSphere();
+    const fm = (sc.flatMesh = new Ow(fg, sc.matHole)),
+      fd = D.flatAt || 6.7;
+    fm.position.set(D.cx - Math.sin(D.front) * fd, D.base + (D.flatY || 5), D.cz - Math.cos(D.front) * fd);
+    fm.rotation.y = D.front;
+    fm.visible = !1;
+    fm.userData.dyn = 1;
+    fm.renderOrder = 2;
+    root.add(fm);
+    sc.flatW = fw;
+    sc.flatH = fh;
+  }
   mesh.name = 'screen_' + def.id;
   const off = def.frame === 'tv' || def.frame === 'flat' ? 0.07 : 0.012;
-  mesh.position.set(def.x + nx * off, def.y, def.z + nz * off);
-  mesh.rotation.y = ry;
+  // (a dome's geometry is built in world space)
+  def.dome || (mesh.position.set(def.x + nx * off, def.y, def.z + nz * off), (mesh.rotation.y = ry));
   mesh.userData.dyn = 1;
   mesh.onBeforeRender = (r, s, cam) => __scrPlace(sc, cam, r);
   root.add(mesh);
-  // a cinema screen's edges are feathered: a strip round the picture fading from clear to the black masking
-  // (the canvas draws without anti-aliasing, so the curved top edge of a huge screen showed as stair-steps)
-  if (def.room) {
-    const fw = Math.min(0.32, def.w * 0.012),
-      Rr = sag > 0.01 ? (hw * hw + sag * sag) / (2 * sag) : 0,
-      tm = Rr ? Math.asin(hw / Rr) : 0,
-      n = 48,
+  // no frame: the picture runs to the screen's edge, which is the wall's. Only a hairline there (5 cm, a pixel or
+  // two from the seats) fades the picture into the black, so the edge is smooth instead of stair-stepped (the
+  // canvas draws without anti-aliasing)
+  if (def.room && !def.dome) {
+    const fw = 0.09,
       P = [],
       Cc = [],
       I = [],
-      at = (x) => (Rr ? Rr - Math.sqrt(Math.max(0, Rr * Rr - x * x)) : 0) + 0.015,
       quad = (a, b, c, d, ia, ib, ic, id) => {
         const k = P.length / 3;
         for (const [q, al] of [[a, ia], [b, ib], [c, ic], [d, id]]) P.push(...q), Cc.push(0, 0, 0, al);
         I.push(k, k + 1, k + 2, k, k + 2, k + 3);
-      };
-    for (let i = 0; i < n; i++) {
-      const x0 = -hw + (2 * hw * i) / n,
-        x1 = -hw + (2 * hw * (i + 1)) / n;
-      // top and bottom: opaque at the edge, clear fw inside it
-      quad([x0, hh - fw, at(x0)], [x1, hh - fw, at(x1)], [x1, hh + 0.02, at(x1)], [x0, hh + 0.02, at(x0)], 0, 0, 1, 1);
-      quad([x0, -hh - 0.02, at(x0)], [x1, -hh - 0.02, at(x1)], [x1, -hh + fw, at(x1)], [x0, -hh + fw, at(x0)], 1, 1, 0, 0);
+      },
+      // (on a curved screen the strip follows the arc: its depth at x, a hair in front of the picture)
+      Rc = sag > 0.01 ? (hw * hw + sag * sag) / (2 * sag) : 0,
+      zAt = (x) => (Rc ? Rc - Math.sqrt(Math.max(0, Rc * Rc - Math.min(hw, Math.abs(x)) ** 2)) : 0) + 0.004;
+    // (along the top and bottom edges, following the bow or the curve)
+    for (let i = 0, n = bow > 0.01 || Rc ? 96 : 1; i < n; i++) {
+      const xa = -hw + (2 * hw * i) / n,
+        xb = -hw + (2 * hw * (i + 1)) / n,
+        ta = yT(xa),
+        tb = yT(xb),
+        za = zAt(xa),
+        zb = zAt(xb);
+      quad([xa, ta - fw, za], [xb, tb - fw, zb], [xb, tb + 0.01, zb], [xa, ta + 0.01, za], 0, 0, 1, 1);
+      quad([xa, -ta - 0.01, za], [xb, -tb - 0.01, zb], [xb, -tb + fw, zb], [xa, -ta + fw, za], 1, 1, 0, 0);
     }
     for (const sd of [-1, 1]) {
-      const xo = sd * (hw + 0.02),
-        xi = sd * (hw - fw);
-      quad([xi, -hh, at(xi)], [xo, -hh, at(xo)], [xo, hh, at(xo)], [xi, hh, at(xi)], 0, 1, 1, 0);
+      const xo = sd * (hw + 0.01),
+        xi = sd * (hw - fw),
+        // (a curved screen's ends: the strip turns with the arc, so it lies on the picture)
+        zi = zAt(xi),
+        zo = zAt(hw) + (Rc ? 0.01 : 0);
+      quad([xi, -hh, zi], [xo, -hh, zo], [xo, hh, zo], [xi, hh, zi], 0, 1, 1, 0);
     }
     const g2 = new uw();
     g2.setAttribute('position', new gi(new Float32Array(P), 3));
@@ -318,7 +524,7 @@ function __scrMake(def, root) {
     g2.setIndex(I);
     g2.computeBoundingSphere();
     const em = new Ni({ vertexColors: !0, transparent: !1, toneMapped: !1, fog: !1, side: 2 });
-    em.blending = 0; // writes its alpha: the picture fades into the masking
+    em.blending = 0; // writes its alpha
     const edge = new Ow(g2, em);
     edge.renderOrder = 1;
     edge.position.copy(mesh.position);
@@ -390,25 +596,30 @@ function __scrTV(sc, root) {
 function __scrApply(sc) {
   const s = __scrShowing(sc.id),
     key = __scrKey(s);
+  // the film's shape (a widescreen film inside a 16:9 YouTube video: set in /admin) only re-places the player
+  const asp = (s && s.aspect) || 0;
+  asp !== sc.aspect && ((sc.aspect = asp), (sc.cssM = null));
   if (key === sc.key) return;
   __scrStop(sc);
   sc.key = key;
   sc.s = s;
   sc.msg = 0;
+  sc.def.dome && __scrDomeMap(sc, s);
   if (!s) {
-    sc.tex = __scrSlate(sc, __scrName(sc.id), 'No showing');
+    sc.tex = sc.def.dome ? __scrDomeSky(__scrName(sc.id), 'No showing') : __scrSlate(sc, __scrName(sc.id), 'No showing');
     sc.mat.map = sc.tex;
     sc.mat.needsUpdate = !0;
     sc.mesh.material = sc.mat;
     return;
   }
   // until the film is up: its title on a slate
-  sc.tex = __scrSlate(sc, s.title || __scrName(sc.id), __scrName(sc.id) + ' · Now showing');
+  sc.tex = sc.def.dome ? __scrDomeSky(s.title || __scrName(sc.id), __scrName(sc.id) + ' · 360° · Now showing') : __scrSlate(sc, s.title || __scrName(sc.id), __scrName(sc.id) + ' · Now showing');
   sc.mat.map = sc.tex;
   sc.mat.needsUpdate = !0;
   sc.mesh.material = sc.mat;
   if (s.kind === 'file' && s.url) __scrFile(sc, s);
-  else if (s.kind === 'youtube')
+  // (a dome keeps its sky till the player is up: a 360° film's thumbnail is a flat crop)
+  else if (s.kind === 'youtube' && !sc.def.dome)
     __scrStill(sc, s, (t) => {
       if (sc.key !== key || !t) return;
       sc.still = t;
@@ -434,6 +645,67 @@ function __scrStop(sc) {
   __scrYTOff(sc, !0);
   for (const k of ['tex', 'still']) sc[k] && (sc[k].dispose(), (sc[k] = null));
   sc.mat.map = null;
+}
+// ---------------------------------------------------------------- a cinema screen's picture fills it
+// A video file is cropped to cover the screen edge to edge (its shape kept): black bars baked into the file
+// (a widescreen film inside a 16:9 frame) are found by sampling a small copy of the frame every few seconds
+// (each bar: the smallest seen over the last few samples, so a dark scene doesn't count as a bar).
+function __scrFit(sc, v, t) {
+  const cv = document.createElement('canvas'),
+    W = 64,
+    H = 36,
+    hist = [];
+  cv.width = W;
+  cv.height = H;
+  const cx = cv.getContext('2d', { willReadFrequently: !0 }),
+    apply = (bt, bb, bl, br) => {
+      const vw = v.videoWidth || 16,
+        vh = v.videoHeight || 9,
+        fw = 1 - bl - br,
+        fh = 1 - bt - bb,
+        ca = (fw * vw) / (fh * vh),
+        sa = (sc.arcW || sc.w) / sc.h;
+      let rx = fw,
+        ry = fh;
+      ca > sa ? (rx = fw * (sa / ca)) : (ry = fh * (ca / sa));
+      t.repeat.set(rx, ry);
+      t.offset.set(bl + (fw - rx) / 2, bb + (fh - ry) / 2);
+    },
+    look = () => {
+      if (!sc.video || sc.video !== v) return clearInterval(iv);
+      if (v.readyState < 2 || v.paused) return;
+      try {
+        cx.drawImage(v, 0, 0, W, H);
+        const d = cx.getImageData(0, 0, W, H).data,
+          lum = (i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2],
+          rowDark = (y) => {
+            for (let x = 0; x < W; x++) if (lum((y * W + x) * 4) > 26) return !1;
+            return !0;
+          },
+          _ = 0;
+        // letterbox bars only (top and bottom, the same height: that's how a widescreen film sits in a 16:9
+        // file); a dark scene's edges are not bars, so they must match and hold over several samples
+        let t0 = 0,
+          b0 = 0;
+        const cap = Math.floor(H * 0.16);
+        while (t0 <= cap && rowDark(t0)) t0++;
+        while (b0 <= cap && rowDark(H - 1 - b0)) b0++;
+        // (a frame bright right to its top or bottom edge says there are no bars; a frame dark past the bars or
+        // dark on one side only says nothing, and is skipped)
+        if (t0 && b0 && (t0 > cap || b0 > cap || Math.abs(t0 - b0) > 1)) return;
+        hist.push(Math.min(t0, b0));
+        hist.length > 6 && hist.shift();
+        if (hist.length < 3) return;
+        const m = Math.min(...hist),
+          f = m ? (m + 0.6) / H : 0;
+        apply(f, f, 0, 0);
+      } catch (e) {
+        clearInterval(iv);
+      }
+    },
+    iv = setInterval(look, 2500);
+  apply(0, 0, 0, 0);
+  setTimeout(look, 600);
 }
 // ---------------------------------------------------------------- a video file: texture and positional sound
 function __scrFile(sc, s) {
@@ -461,6 +733,7 @@ function __scrFile(sc, s) {
     sc.tex = t;
     sc.mat.map = t;
     sc.mat.needsUpdate = !0;
+    sc.def.dome ? __scrDomeEye(sc, t, s) : sc.def.room && __scrFit(sc, v, t);
   });
   v.addEventListener('ended', () => s.loop === !1 && (sc.mat.map = sc.still || sc.mat.map));
   sc.sync = sync;
@@ -481,7 +754,7 @@ function __scrAudio(sc) {
     lp.frequency.value = 18e3;
     pan.panningModel = 'HRTF';
     pan.distanceModel = 'inverse';
-    pan.refDistance = sc.def.room ? 9 : 3.5;
+    pan.refDistance = sc.def.dome ? 40 : sc.def.room ? 9 : 3.5;
     pan.rolloffFactor = 1.1;
     pan.maxDistance = 200;
     const p = sc.c.clone().addScaledVector(sc.n, 0.4);
@@ -492,8 +765,8 @@ function __scrAudio(sc) {
     pan.orientationX.value = sc.n.x;
     pan.orientationY.value = 0;
     pan.orientationZ.value = sc.n.z;
-    pan.coneInnerAngle = 200;
-    pan.coneOuterAngle = 330;
+    pan.coneInnerAngle = sc.def.dome ? 360 : 200;
+    pan.coneOuterAngle = sc.def.dome ? 360 : 330;
     pan.coneOuterGain = 0.35;
     rv.gain.value = 0.12;
     src.connect(gain).connect(lp).connect(pan).connect(yC);
@@ -514,20 +787,29 @@ function __scrYTOn(sc, gl) {
   sc.ytOffAt = 0;
   if (sc.ytEl) return; // still playing (players keep going when you leave): nothing to restart
   // the player's size picks YouTube's quality: 1080p, or 1440p on a large high-density display
-  const PW = (window.devicePixelRatio || 1) * (window.innerWidth || 0) >= 2400 ? 2560 : 1920,
-    PH = Math.round((PW * sc.h) / sc.w);
+  const dome = !!sc.def.dome,
+    cvEl = gl.domElement,
+    // (a cinema screen on a large high-density display gets a 4K player: YouTube picks its quality by the
+    // player's size, and these screens fill most of the view)
+    hiDPI = (window.devicePixelRatio || 1) * (window.innerWidth || 0),
+    PW = dome ? Math.round((cvEl.clientWidth || innerWidth) * __SCR_DOME_K) : sc.def.room && hiDPI >= 2800 ? 3840 : hiDPI >= 2400 ? 2560 : 1920,
+    PH = dome ? Math.round((cvEl.clientHeight || innerHeight) * __SCR_DOME_K) : Math.round((PW * 9) / 16); // 16:9, as YouTube's films are: scaled to cover the screen (below)
   const box = document.createElement('div');
-  box.style.cssText = `position:absolute;left:0;top:0;width:${PW}px;height:${PH}px;visibility:hidden;background:#000;pointer-events:none`;
+  // (a dome's player is not placed in 3D: it fills the window, a little over (its corners, where YouTube puts
+  // its 360° badge, fall outside), and YouTube turns its view to match the camera)
+  box.style.cssText = dome
+    ? `position:absolute;left:${-Math.round((PW - (cvEl.clientWidth || innerWidth)) / 2)}px;top:${-Math.round((PH - (cvEl.clientHeight || innerHeight)) / 2)}px;width:${PW}px;height:${PH}px;visibility:hidden;background:#000;pointer-events:none`
+    : `position:absolute;left:0;top:0;width:${PW}px;height:${PH}px;visibility:hidden;background:#000;pointer-events:none`;
   const inner = document.createElement('div');
   box.appendChild(inner);
-  __SCR.camEl.appendChild(box);
+  (dome ? L : __SCR.camEl).appendChild(box);
   sc.ytEl = box;
   sc.ytPW = PW;
   sc.ytPH = PH;
   sc.ytReady = !1;
   __scrYT((YT) => {
     if (!sc.ytEl || sc.ytEl !== box) return;
-    const pv = { autoplay: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, cc_load_policy: 0, vq: PW > 2000 ? 'hd1440' : 'hd1080', cc_lang_pref: 'zz', hl: 'en', origin: location.origin };
+    const pv = { autoplay: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, cc_load_policy: 0, vq: dome ? 'hd2160' : PW > 3000 ? 'hd2160' : PW > 2000 ? 'hd1440' : 'hd1080', cc_lang_pref: 'zz', hl: 'en', origin: location.origin };
     s.listId ? Object.assign(pv, { listType: 'playlist', list: s.listId, loop: 1 }) : (pv.start = Math.floor(__scrPos(s, 0)));
     sc.yt = new YT.Player(inner, {
       width: PW,
@@ -541,7 +823,7 @@ function __scrYTOn(sc, gl) {
             const p = e.target;
             p.setVolume(0);
             __scrNoCaptions(p);
-            p.setPlaybackQuality && p.setPlaybackQuality(PW > 2000 ? 'hd1440' : 'hd1080');
+            p.setPlaybackQuality && p.setPlaybackQuality(dome ? 'hd2160' : PW > 3000 ? 'hd2160' : PW > 2000 ? 'hd1440' : 'hd1080');
             const dur = p.getDuration();
             dur > 0 && ((__SCR.durs || (__SCR.durs = {}))[sc.id] = dur);
             !s.listId && dur > 0 && p.seekTo(__scrPos(s, dur), !0);
@@ -590,6 +872,7 @@ function __scrYTOff(sc, kill) {
   } else sc.ytOffAt = performance.now();
   sc.mesh.material = sc.mat;
   sc.still && (sc.mat.map = sc.still);
+  sc.flatMesh && ((sc.flatMesh.visible = !1), kill && ((sc.domeFlat = !1), (sc.domeMode = null)));
 }
 // the player's place in 3D: the CSS camera is set from the rendering camera once a frame, each player from its
 // screen's plane (on a curved screen, its chord), a little larger than the screen (its edges, where YouTube
@@ -610,15 +893,111 @@ function __scrCam(cam, r) {
   C.style.transform =
     `perspective(${fov}px) translateZ(${fov}px) matrix3d(${[e[0], -e[1], e[2], e[3], e[4], -e[5], e[6], e[7], e[8], -e[9], e[10], e[11], e[12], -e[13], e[14], e[15]].map(__scrE).join(',')}) translate(${W / 2}px,${H / 2}px)`;
 }
+const __SCR_DOME_K = 1.1;
+// the dome's player box: the window's size and a little over, centred on it
+function __scrDomeBox(sc, W, H) {
+  const K = __SCR_DOME_K,
+    PW = Math.round(W * K),
+    PH = Math.round(H * K),
+    b = sc.ytEl;
+  b.style.left = -Math.round((PW - W) / 2) + 'px';
+  b.style.top = -Math.round((PH - H) / 2) + 'px';
+  b.style.width = PW + 'px';
+  b.style.height = PH + 'px';
+  try {
+    sc.yt && sc.ytReady && sc.yt.setSize(PW, PH);
+  } catch {}
+}
+// the dome's player: kept the window's size; YouTube's 360° view turned to the camera's yaw and pitch (both
+// count up turning left and looking up, as the game's do), its field of view the camera's across the window's
+// longer side, widened for the player's overscan. A video that turns out not to be 360° keeps the sky up.
+function __scrPlaceDome(sc, cam, r) {
+  const cv = r.domElement,
+    W = cv.clientWidth,
+    H = cv.clientHeight,
+    K = __SCR_DOME_K;
+  if (sc.yt && sc.ytReady && !sc.domeFlat && (sc.domeW !== W || sc.domeH !== H)) {
+    sc.domeW = W;
+    sc.domeH = H;
+    __scrDomeBox(sc, W, H);
+  }
+  sc.ytEl.style.visibility = 'visible';
+  let sph = !1;
+  if (sc.yt && sc.ytReady && sc.yt.setSphericalProperties && sc.domeMode !== 'flat')
+    try {
+      const sp = sc.yt.getSphericalProperties && sc.yt.getSphericalProperties();
+      sph = !!(sp && typeof sp.yaw === 'number');
+      sph && (sc.domeMode = '360');
+      if (sph) {
+        const d = cam.getWorldDirection(__scrV),
+          yaw = Math.atan2(-d.x, -d.z),
+          pitch = Math.asin(Math.max(-1, Math.min(1, d.y))),
+          vf = (cam.fov * Math.PI) / 180,
+          // the camera's field across the window's longer side, then across the (larger) player's
+          f = W >= H ? 2 * Math.atan(Math.tan(vf / 2) * (W / H)) : vf,
+          fk = 2 * Math.atan(Math.tan(f / 2) * K),
+          deg = 180 / Math.PI,
+          y = ((((yaw - sc.def.dome.front) * deg) % 360) + 360) % 360,
+          o = { yaw: y, pitch: pitch * deg, roll: 0, fov: Math.max(30, Math.min(120, fk * deg)) },
+          L = sc.domeLast;
+        // (only when it changes: each call is a message to the player's frame)
+        if (!L || Math.abs(L.yaw - o.yaw) > 0.05 || Math.abs(L.pitch - o.pitch) > 0.05 || Math.abs(L.fov - o.fov) > 0.05) {
+          sc.yt.setSphericalProperties(o);
+          sc.domeLast = o;
+        }
+      }
+    } catch {}
+  // not a 360° video (YouTube gives it no view to turn): it plays on the flat screen at the dome's front. Decided
+  // once per player: a 360° film reports no view for its first moments, and moving the player back and forth
+  // between the two placements every frame stalled the page; it is flat only after 5 s of playing with no view.
+  !sc.domeMode && sc.ytPlaying && !sph && performance.now() - (sc.ytPlayAt || 0) > 5000 && (sc.domeMode = 'flat');
+  const flat = sc.domeMode === 'flat';
+  if (flat !== !!sc.domeFlat) {
+    sc.domeFlat = flat;
+    const b = sc.ytEl,
+      FW = 1920,
+      FH = 1080;
+    if (flat) {
+      __SCR.camEl.appendChild(b);
+      b.style.left = b.style.top = '0';
+      b.style.width = FW + 'px';
+      b.style.height = FH + 'px';
+      try {
+        sc.yt.setSize(FW, FH);
+      } catch {}
+      const u = Math.max(sc.flatW / FW, sc.flatH / FH) * 1.04,
+        e = sc.flatMesh.matrixWorld.clone().multiply(new _A().compose(new U(), new Kw(), new U(u, u, 1))).elements;
+      b.style.transform = `translate(-50%,-50%) matrix3d(${[e[0], e[1], e[2], e[3], -e[4], -e[5], -e[6], -e[7], e[8], e[9], e[10], e[11], e[12], e[13], e[14], e[15]].map(__scrE).join(',')})`;
+    } else {
+      __SCR.layer.appendChild(b);
+      b.style.transform = '';
+      sc.domeW = 0;
+    }
+  }
+  sc.flatMesh.visible = flat;
+  flat && __scrCam(cam, r);
+  sc.mesh.material = sc.domeMode === '360' && sc.ytPlaying && !sc.ended && performance.now() - (sc.ytPlayAt || 0) > 1300 ? sc.matHole : sc.mat;
+}
+const __scrV = new U();
 function __scrPlace(sc, cam, r) {
   sc.rendered = __SCR.frame;
   if (!sc.active || !sc.ytEl) return;
+  if (sc.def.dome) return __scrPlaceDome(sc, cam, r);
   __scrCam(cam, r);
   if (!sc.cssM) {
-    const k = sc.def.room || sc.def.frame === 'flat' ? 1.08 : 1.012,
+    // the player covers the screen (one scale for both axes, so the picture keeps its shape: what overhangs is
+    // cropped by the hole), a little over, so its edges (YouTube's title and logo) fall outside the picture
+    const k = sc.def.room || sc.def.frame === 'flat' ? 1.06 : 1.012,
       M = sc.mesh.matrixWorld.clone(),
-      sag = sc.def.curve || 0;
-    sc.cssM = M.multiply(new _A().compose(new U(0, 0, sag * 0.55), new Kw(), new U((sc.w * k) / sc.ytPW, (sc.h * k) / sc.ytPH, 1)));
+      sag = sc.def.curve || 0,
+      // (a widescreen film inside the 16:9 video: the picture is ytPW wide and ytPW / aspect high, between black
+      // bars: scaled so that picture covers the screen, the bars fall outside it)
+      asp = sc.aspect > 16 / 9 + 0.01 ? sc.aspect : 0,
+      u = sc.def.room ? Math.max(sc.w / sc.ytPW, sc.h / (asp ? sc.ytPW / asp : sc.ytPH)) * (sag > 0.01 ? 1.015 : k) : 0;
+    // (a curved screen's player lies on its chord, the plane through its two ends: there the picture and the
+    // player meet exactly from any seat, and in between the player is seen through the curve, so no edge of it
+    // ever shows; the old placement half-way into the curve let its edges show as glowing borders)
+    sc.cssM = M.multiply(new _A().compose(new U(0, 0, sag), new Kw(), u ? new U(u, u, 1) : new U((sc.w * k) / sc.ytPW, (sc.h * k) / sc.ytPH, 1)));
     const e = sc.cssM.elements;
     sc.ytEl.style.transform = `translate(-50%,-50%) matrix3d(${[e[0], e[1], e[2], e[3], -e[4], -e[5], -e[6], -e[7], e[8], e[9], e[10], e[11], e[12], e[13], e[14], e[15]].map(__scrE).join(',')})`;
   }
@@ -649,7 +1028,7 @@ function __scrTick(list, st) {
       R = d.room,
       inRoom = inRoomOf(R);
     // in front of the screen?
-    const front = (ear.x - sc.c.x) * sc.n.x + (ear.z - sc.c.z) * sc.n.z > -0.2;
+    const front = !!d.dome || (ear.x - sc.c.x) * sc.n.x + (ear.z - sc.c.z) * sc.n.z > -0.2;
     if (los) sc.clear = front && dist < 60 && Pg(ear, sc.c.clone().addScaledVector(sc.n, 0.3), aw().boxes);
     sc.dist = dist;
     sc.inRoom = inRoom;
@@ -815,5 +1194,6 @@ typeof window < 'u' &&
     skew: __SCR.skew,
     err: __SCR.err,
     yt: !!__SCR.yt,
-    screens: __SCR.live.map((sc) => ({ id: sc.id, kind: sc.s && sc.s.kind, title: sc.s && sc.s.title, active: sc.active, playing: !!sc.ytPlaying, lv: +(sc.lv || 0).toFixed(2), vol: +(sc.vol || 0).toFixed(2), dist: +(sc.dist || 0).toFixed(1), inRoom: sc.inRoom, clear: sc.clear, video: sc.video ? { t: +sc.video.currentTime.toFixed(1), paused: sc.video.paused, muted: sc.video.muted } : null, audio: !!sc.audio })),
+    __live: __SCR.live,
+    screens: __SCR.live.map((sc) => ({ id: sc.id, kind: sc.s && sc.s.kind, title: sc.s && sc.s.title, active: sc.active, playing: !!sc.ytPlaying, lv: +(sc.lv || 0).toFixed(2), vol: +(sc.vol || 0).toFixed(2), dist: +(sc.dist || 0).toFixed(1), inRoom: sc.inRoom, clear: sc.clear, video: sc.video ? { t: +sc.video.currentTime.toFixed(1), paused: sc.video.paused, muted: sc.video.muted, crop: sc.tex && sc.tex.repeat ? [+sc.tex.repeat.x.toFixed(3), +sc.tex.repeat.y.toFixed(3)] : null } : null, audio: !!sc.audio })),
   }));

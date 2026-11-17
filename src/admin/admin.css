@@ -524,3 +524,14 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rg
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* the Starlight (360° dome): its format */
+.fmt { margin-top: 14px; padding: 12px; border-radius: 12px; background: rgba(120, 150, 255, .06); border: 1px solid rgba(140, 170, 255, .16); display: grid; gap: 8px; }
+.fmt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fmt-l { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); min-width: 62px; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; padding: 2px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.seg button:hover:not(:disabled) { color: var(--gold-hi); }
+.seg button[aria-pressed="true"] { background: linear-gradient(180deg, #9fb6ff, #6f8bf0); color: #0b0f1d; font-weight: 600; }
+.seg button:disabled { opacity: .45; cursor: default; }
+.fmt-note { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--dim); }

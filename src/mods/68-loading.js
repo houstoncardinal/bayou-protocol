@@ -36,7 +36,7 @@ const __LD = { pending: 0, quietAt: 0, cover: null, state: null, step: '', t0: 0
 }
 const __ldBusy = () => __LD.pending > 0 || (typeof __GLQ < 'u' && (__GLQ.active > 0 || __GLQ.q.length > 0));
 // the scenery a map builds for itself
-const __LD_VIEW = { prison: 'bp-prison', frostline: 'bp-frostline', ridgeback: 'bp-ridgeback', cinema: 'bp-cinema' };
+const __LD_VIEW = { prison: 'bp-prison', frostline: 'bp-frostline', ridgeback: 'bp-ridgeback', cinema: 'bp-cinema', fortress: 'bp-fortress' };
 function __ldCover(m) {
   if (typeof document > 'u') return null;
   let el = __LD.cover;

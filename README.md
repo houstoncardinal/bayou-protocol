@@ -1,8 +1,9 @@
 # Bayou Protocol
 
 A browser tactical first-person shooter built on three.js and React Three Fiber.
-Modes: Bomb Defusal (with halftime and overtime), Team Deathmatch, Free-for-All, Capture the Flag.
-Runs on desktop (mouse and keyboard, gamepad) and on phones and tablets (touch, landscape).
+Modes: Bomb Defusal (with halftime and overtime), Team Deathmatch, Free-for-All, Jailbreak (Blackwater
+Penitentiary only), and Theater Mode (the cinema with no guns, from its Home card).
+Runs on desktop (mouse and keyboard, gamepad) and on phones and tablets (touch, portrait).
 
 ## Quick start
 
@@ -35,7 +36,6 @@ src/
     03-ballistic-fx.js         Bullet streaks, muzzle flash, smoke, shell casings
     04-weapons.js              Weapon stats, recoil, shop prices, unlocks
     05-netcode-and-bots.js     Hit validation, movement limits, bot site logic
-    06-capture-the-flag.js     Capture the Flag rules, bots, flags, network sync
     07-modes.js                Which modes are offered
     08-fullscreen.js           Full screen and Esc handling
     09-ui-screens.js           Buy menu, end-of-match screen, HUD overlay, colour-blind palettes
@@ -111,15 +111,27 @@ src/
                                and every shader is compiled (offline the match waits underneath); a map's assets
                                start loading as soon as it is picked in the menus
     69-static-scenery.js       Scenery that never moves (vegetation) gets its matrices once, not every frame
-    70-screens.js              Video screens: files as textures with positional sound; YouTube in an iframe behind
+    70-screens.js              Video screens (and the Starlight's 360° dome): files as textures with positional sound; YouTube in an iframe behind
                                the canvas, warped into a hole in the screen; synced to the showings (/admin)
     71-cinema.js               Bayou Palace Cinemas map (code-built): layout, collision, what each shape is
     72-cinema-view.js          The cinema's kit (drawn by the prison's pipeline) and detail: seats, curtains,
                                marquee, posters, concession stand, projectors and their beams
+    72b-cinema-sacred.js       The cinema's sacred geometry (Flower of Life, Metatron's Cube, Sri Yantra, golden
+                               spiral...) inlaid, gilded and backlit; mouldings and panelling; the covered cars
     73-cinema-seats.js         Sitting in the cinema's seats (Use to sit and stand): a steady seated view, gun put away
-    74-theater-mode.js         Theater Mode: the cinema with no bots, guns or clock (Home card, side rail, mode list)
+    74-theater-mode.js         Theater Mode: the cinema with no bots, guns or clock (Home card, side rail)
     75-menu-art.js             Menu artwork: real in-game screenshots for the map and mode cards (public/game/menu/)
     76-film-control.js         The projection booth's film controls: play, pause, skip, scrub, for everyone
+    77-fortress.js             Fortress map (code-built from the concept art): three levels, layout, collision, routes
+    78-fortress-view.js        Fortress's kit (drawn by the prison's pipeline) and detail: arches, arcade, houses,
+                               fountain, palms, crates, sheds, helicopter, lighthouse, jungle rim, cliffs and sea
+    79-radar.js                The radar shows the real map: rendered once from above when a map loads (roofs cut
+                               away at a per-map height), the walls traced faintly over it
+    80-home-luxe.js            The Home screen: cinematic hero, glass nav and cards, season/challenges/maps/career
+                               panels, hover light and generated UI sounds (styles in src/styles/home-luxe.css)
+    81-net.js                  Real online play: the hub connection, matches browser to browser (WebRTC), servers
+                               (browse, start, private by code), friends, chat, invites, join-in-progress, the
+                               leaderboard; the social panel (F2) and window.__bpSocial. See docs/online.md
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
@@ -298,6 +310,13 @@ static files. The build uses relative paths, so it also works from a sub-folder.
 Mouse lock and full screen need the game to run as its own page, which any of
 these hosts gives you. On iPhone, "Add to Home Screen" from Safari launches it
 without the browser bars.
+
+## Online play
+
+Matches run browser to browser (WebRTC). A small hub connects players: it lists servers, keeps friends, chat and the
+leaderboard. Online, the hub is a Cloudflare Worker on the free plan (`server/net-worker.mjs`, `wrangler.toml`,
+deployed to `wss://bayou-net.bayou-protocol.workers.dev`, set in `net.config.json`). For LAN parties, the dev and
+preview servers run the same hub at `/net`. The details, deploying and limits are in `docs/online.md`.
 
 ## Pushing to GitHub
 
