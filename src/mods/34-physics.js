@@ -113,10 +113,86 @@ function __phxBuild(m) {
     P.boxOf.set(c.handle, b);
     return c;
   });
+  // stairs: a smooth slope over each flight (through the steps' front edges), so walking up or down never
+  // catches on a riser; the steps stay for the eye, bullets and the bots' walk grid
+  P.slopes = [];
+  try {
+    for (const s of __phxSlopes(m)) {
+      const c = w.createCollider(R.ColliderDesc.convexHull(new Float32Array(s)).setCollisionGroups(__cg(__CG.ENV, __CG.ALL)).setFriction(0.8));
+      c && P.slopes.push(c);
+    }
+  } catch (e) {
+    P.slopeErr = String(e);
+  }
   P.kcc = __phxMakeKcc(w);
   P.acc = 0;
   __phxPropsBuild(m);
   w.step(P.events); // scene queries only see colliders after a step
+}
+// Slopes (convex wedges, 8 corner points each) for a map's stairs: the map's own (m.__slopes: { x0, z0, x1,
+// z1, lo, hi, dir } with dir the way it rises, 'N' 'S' 'E' 'W', lo / hi the heights at its low and high ends) and
+// every flight found among its 'stair' boxes: three or more boxes of one width, each ahead of the last and one
+// riser higher (0.08 - 0.36 m). A flight's slope runs through the steps' front edges, from the floor in front of
+// the first step to the top of the last.
+function __phxWedge(x0, z0, x1, z1, lo, hi, dir) {
+  const b = Math.min(lo, hi) - 0.06,
+    // heights at the four top corners
+    h = (x, zz) => (dir === 'S' ? (zz === z1 ? hi : lo) : dir === 'N' ? (zz === z0 ? hi : lo) : dir === 'E' ? (x === x1 ? hi : lo) : x === x0 ? hi : lo),
+    P = [];
+  for (const [x, zz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]) P.push(x, b, zz, x, h(x, zz), zz);
+  return P;
+}
+function __phxSlopes(m) {
+  const out = [];
+  for (const s of m.__slopes || []) out.push(__phxWedge(s.x0, s.z0, s.x1, s.z1, s.lo, s.hi, s.dir));
+  const st = m.boxes.filter((b) => b.kind === 'stair' && !b.off && !b.__noSlope),
+    near = (a, b) => Math.abs(a - b) < 0.03;
+  for (const ax of ['z', 'x']) {
+    const ox = ax === 'z' ? 'x' : 'z',
+      used = new Set();
+    // steps ahead of each other along ax, the same span across
+    const next = (a, sgn) =>
+      st.find((b) => b !== a && !used.has(b) && near(b.min[ox], a.min[ox]) && near(b.max[ox], a.max[ox]) && (sgn > 0 ? near(b.min[ax], a.max[ax]) : near(b.max[ax], a.min[ax])) && b.max.y - a.max.y > 0.08 && b.max.y - a.max.y < 0.36);
+    for (const a of st) {
+      if (used.has(a)) continue;
+      for (const sgn of [1, -1]) {
+        // walk down to the first step of the flight, then up to the last
+        let first = a;
+        for (let g = 0; g < 200; g++) {
+          const prev = st.find((b) => b !== first && near(b.min[ox], first.min[ox]) && near(b.max[ox], first.max[ox]) && (sgn > 0 ? near(b.max[ax], first.min[ax]) : near(b.min[ax], first.max[ax])) && first.max.y - b.max.y > 0.08 && first.max.y - b.max.y < 0.36);
+          if (!prev) break;
+          first = prev;
+        }
+        const run = [first];
+        for (let g = 0; g < 200; g++) {
+          const n = next(run[run.length - 1], sgn);
+          if (!n) break;
+          run.push(n);
+        }
+        if (run.length < 3) continue;
+        for (const b of run) used.add(b);
+        const r0 = run[0],
+          rl = run[run.length - 1],
+          rise = (rl.max.y - r0.max.y) / (run.length - 1),
+          tread = Math.abs(run[1].min[ax] - r0.min[ax]) || 0.28,
+          // front edges: the side each step faces down the flight
+          edge = (b) => (sgn > 0 ? b.min[ax] : b.max[ax]),
+          lowAt = edge(r0) - sgn * tread,
+          lowY = r0.max.y - rise,
+          hiAt = edge(rl),
+          hiY = rl.max.y,
+          a0 = Math.min(lowAt, hiAt),
+          a1 = Math.max(lowAt, hiAt),
+          c0 = r0.min[ox] + 0.02,
+          c1 = r0.max[ox] - 0.02;
+        const dir = ax === 'z' ? (sgn > 0 ? 'S' : 'N') : sgn > 0 ? 'E' : 'W';
+        out.push(ax === 'z' ? __phxWedge(c0, a0, c1, a1, lowY, hiY, dir) : __phxWedge(a0, c0, a1, c1, lowY, hiY, dir));
+        break;
+      }
+    }
+  }
+  __PHX.slopeN = out.length;
+  return out;
 }
 function __phxDispose() {
   const P = __PHX;
@@ -1161,6 +1237,10 @@ typeof window < 'u' &&
   (window.__phx = {
     get ready() {
       return __phxOn();
+    },
+    // stairs walked as slopes on this map (and why not, if building them failed)
+    get slopes() {
+      return { n: __PHX.slopeN, err: __PHX.slopeErr || null };
     },
     // A/B switch for testing: true = the game's original box solver
     set off(v) {

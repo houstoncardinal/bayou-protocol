@@ -54,4 +54,14 @@ function __pfAreas(nav) {
     return r;
   };
 }
-typeof window < 'u' && (window.__bpPath = () => ({ ...__PF }));
+typeof window < 'u' &&
+  ((window.__bpPath = () => ({ ...__PF })),
+  // dev: a path between two points, and the walk-grid area each point is in
+  (window.__bpPathTo = (a, b) => {
+    const nav = p9(),
+      area = nav.__areas || (nav.__areas = __pfAreas(nav)),
+      A = l8(a),
+      B = l8(b);
+    return { from: A >= 0 ? area[A] : null, to: B >= 0 ? area[B] : null, path: KT(a, b) };
+  }),
+  (window.__bpMap = () => aw()));

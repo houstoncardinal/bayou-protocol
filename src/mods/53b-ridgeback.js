@@ -384,6 +384,140 @@ async function __rbJSON(p) {
 //   - triplanar projections with under 1 % of the blend are not sampled
 // The terrain covers most of the screen and its shader is the most expensive one in the game, so this is the
 // largest single saving on this map. Applied to the loaded material, so src/maps stays as delivered.
+// Skirts: where the package's meshes leave an open edge with nothing below it, a face hangs from that edge
+// into the ground, so no gap shows through to the sky:
+//   - the tunnel mouths: the terrain is cut where each tunnel enters, and the tunnel floor starts above the
+//     cut grass with no face closing the drop (at six mouths: Smuggler's Cave, B Tunnels, ...). Seen from a
+//     low angle the gap showed the sky under the floor as a white strip. Every open edge of the tunnels'
+//     floors gets a skirt 2.5 m down
+//   - the terrain tiles: each of the 16 tiles has its own two levels of detail, and two neighbours at
+//     different levels do not meet exactly along their seam (a crack). Every tile level's seam edges get a
+//     skirt 1.5 m down
+// The skirts use the terrain's own world-space rock shader (it needs only positions and normals), cast no
+// shadow, and sit inside their source mesh, so they switch with its level of detail.
+function __rbSkirtGeo(geo, depth, keep, lift = 0.02, ext = 0) {
+  const pos = geo.attributes.position,
+    idx = geo.index,
+    n = idx ? idx.count : pos.count,
+    at = (i) => (idx ? idx.getX(i) : i),
+    key = (i) => Math.round(pos.getX(i) * 500) + ',' + Math.round(pos.getY(i) * 500) + ',' + Math.round(pos.getZ(i) * 500),
+    edges = new Map();
+  for (let t = 0; t < n; t += 3) {
+    const v = [at(t), at(t + 1), at(t + 2)];
+    for (let k = 0; k < 3; k++) {
+      const a = v[k],
+        b = v[(k + 1) % 3],
+        ka = key(a),
+        kb = key(b),
+        e = ka < kb ? ka + '|' + kb : kb + '|' + ka,
+        r = edges.get(e);
+      r ? r.n++ : edges.set(e, { n: 1, a, b, c: v[(k + 2) % 3] });
+    }
+  }
+  const P = [],
+    N = [],
+    I = [],
+    A = new U(),
+    B = new U(),
+    Cc = new U(),
+    nn = new U(),
+    e1 = new U(),
+    e2 = new U();
+  for (const r of edges.values()) {
+    if (r.n !== 1) continue;
+    A.fromBufferAttribute(pos, r.a);
+    B.fromBufferAttribute(pos, r.b);
+    Cc.fromBufferAttribute(pos, r.c);
+    if (!keep(A, B, Cc)) continue;
+    // the face hangs straight down, facing away from its triangle
+    e1.subVectors(B, A);
+    nn.set(-e1.z, 0, e1.x).normalize();
+    e2.subVectors(Cc, A);
+    nn.dot(e2) > 0 && nn.negate();
+    if (!isFinite(nn.x) || nn.lengthSq() < 0.5) continue;
+    // ext: each strip runs on past both ends of its edge (closes the corners where a tunnel's floor meets the
+    // rock at its mouth: the sky showed through there in slivers)
+    if (ext > 0) {
+      const L = e1.length() || 1,
+        ux = (e1.x / L) * ext,
+        uy = (e1.y / L) * ext,
+        uz = (e1.z / L) * ext;
+      A.set(A.x - ux, A.y - uy, A.z - uz);
+      B.set(B.x + ux, B.y + uy, B.z + uz);
+    }
+    // both sides (a skirt is seen from whichever side the gap is on), each with its own normal: one normal
+    // for both made the far side shade as if it faced away from the light (nearly black flaps)
+    for (const sd of [1, -1]) {
+      const k = P.length / 3;
+      P.push(A.x, A.y + lift, A.z, B.x, B.y + lift, B.z, B.x, B.y - depth, B.z, A.x, A.y - depth, A.z);
+      for (let q = 0; q < 4; q++) N.push(nn.x * sd, nn.y * sd, nn.z * sd);
+      // the order A-B-B'-A' faces (e.z, 0, -e.x): wound that way for the side whose normal points there
+      (e1.z * nn.x - e1.x * nn.z) * sd > 0 ? I.push(k, k + 1, k + 2, k, k + 2, k + 3) : I.push(k, k + 2, k + 1, k, k + 3, k + 2);
+    }
+  }
+  if (!P.length) return null;
+  const g = new uw();
+  g.setAttribute('position', new gi(new Float32Array(P), 3));
+  g.setAttribute('normal', new gi(new Float32Array(N), 3));
+  g.setAttribute('uv', new gi(new Float32Array((P.length / 3) * 2), 2));
+  g.setIndex(I);
+  g.computeBoundingSphere();
+  return g;
+}
+function __rbSkirts(group) {
+  let terrainMat = null,
+    made = 0,
+    edges = 0;
+  const add = (mesh, geo, mat) => {
+    const o = new Ow(geo, mat);
+    o.name = 'rb-skirt';
+    o.castShadow = !1;
+    o.receiveShadow = !0;
+    mesh.add(o);
+    made++;
+    edges += geo.index.count / 12;
+  };
+  const W = __rbW / 2;
+  group.traverse((o) => {
+    if (o.type !== 'LOD' || !/^terrain_/.test(o.name)) return;
+    for (const lv of o.levels) {
+      const m = lv.object;
+      if (!m.isMesh || m.userData.rbSkirt) continue;
+      m.userData.rbSkirt = 1;
+      terrainMat = terrainMat || m.material;
+      // only along the seams between tiles (the package is centred on 0: tiles meet on a 50 m grid; the
+      // map's outer edge, at +-W, needs none, and the tunnel cuts are closed by the tunnels' own skirts: a
+      // skirt from a cut's upper edge would hang across the tunnel's mouth)
+      const seam = (v) => Math.abs(v - Math.round(v / 50) * 50) < 0.05 && Math.abs(v) < W - 0.05;
+      const g = __rbSkirtGeo(m.geometry, 1.5, (A, B) => (seam(A.x) && seam(B.x)) || (seam(A.z) && seam(B.z)));
+      g && add(m, g, m.material);
+    }
+  });
+  if (!terrainMat) return;
+  const tunnels = [];
+  group.traverse((o) => {
+    if (!o.isMesh || o.userData.rbSkirt || o.name === 'rb-skirt') return;
+    // the tunnels' floors (their walls and roofs meet the floor; a skirt from a roof edge would hang across
+    // the tunnel's mouth)
+    let isT = !1;
+    for (let p = o; p && p !== group; p = p.parent) /tunnel/i.test(p.name) && /floor/i.test(p.name) && (isT = !0);
+    isT && tunnels.push(o);
+  });
+  for (const m of tunnels) {
+    m.userData.rbSkirt = 1;
+    // (the tunnel meshes are scaled by their nodes: depths in the mesh's own units)
+    const sc = m.getWorldScale(new U()).y || 1;
+    // the open edges of floor that faces up (not the underside)
+    const g = __rbSkirtGeo(m.geometry, 2.5 / sc, (A, B, C) => {
+      const nx = (B.y - A.y) * (C.z - A.z) - (B.z - A.z) * (C.y - A.y),
+        ny = (B.z - A.z) * (C.x - A.x) - (B.x - A.x) * (C.z - A.z),
+        nz = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x);
+      return ny / (Math.hypot(nx, ny, nz) || 1) > 0.5;
+    }, 0.02 / sc, 0.6 / sc);
+    g && add(m, g, terrainMat);
+  }
+  __RB.stats.skirts = { meshes: made, edges: Math.round(edges) };
+}
 function __rbFastTerrain(group) {
   group.traverse((o) => {
     const m = o.isMesh && o.material;
@@ -482,6 +616,11 @@ function __rbLoadView(q, gl) {
       __RB.viewLoading = null;
       const old = __RB.view;
       __rbFastTerrain(group);
+      try {
+        __rbSkirts(group);
+      } catch (e) {
+        console.warn('[ridgeback] skirts', e);
+      }
       __rbTerrainShadows(group);
       __rbTerrainPrepass(group, q);
       __RB.view = { q, map, group };
@@ -681,9 +820,10 @@ if (typeof window < 'u') {
 typeof window < 'u' && (window.__bpRbGroup = () => __RB.view && __RB.view.group);
 typeof window < 'u' && (window.__bpRidgeback = () => ({ collision: !!__RB.col, data: !!__RB.data, view: !!__RB.view, stats: __RB.stats, ground: (x, z) => __rbGround(x, z) }));
 // ---------------------------------------------------------------- map list
-// Dune Market, Dry Gulch, Reactor, Cell Block and the Firing Range are retired: off the map list, and a
+// Dune Market, Dry Gulch, Reactor, Cell Block, the Firing Range, Temple and Piazza are retired: off the map list, and a
 // saved choice of one of them (or of the firing range mode) moves to Ridgeback Pass / team deathmatch.
-for (const id of ['sandstorm', 'dustbowl', 'reactor', 'cellblock', 'range']) {
+// Temple and Piazza are retired too (removed from the game, 2026-11-16).
+for (const id of ['sandstorm', 'dustbowl', 'reactor', 'cellblock', 'range', 'temple', 'piazza']) {
   const i = BD.findIndex((x) => x.id === id);
   i >= 0 && BD.splice(i, 1);
 }

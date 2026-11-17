@@ -41,7 +41,8 @@ if (typeof document < 'u') {
   window.addEventListener(
     'keydown',
     (e) => {
-      if (e.code !== 'Escape' || !document.fullscreenElement) return;
+      // (not while an in-game panel has the keys: the cinema's film controls close on Esc)
+      if (e.code !== 'Escape' || !document.fullscreenElement || window.__bpPanelOpen) return;
       const z = Zw.getState();
       if (z.screen === 'playing' && !z.paused && !z.buyOpen) {
         e.preventDefault();

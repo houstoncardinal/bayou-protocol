@@ -1,14 +1,14 @@
-// Download the Frostline map's Poly Haven assets (all CC0) and build game-ready copies.
+// Download a map's Poly Haven assets (all CC0) and build game-ready copies.
 //
-//   node tools/fetch-polyhaven.mjs          everything below (skips files already downloaded)
+//   node tools/fetch-polyhaven.mjs [frostline|prison|cinema]   (default frostline; skips files already downloaded)
 //
-// Sources (as downloaded, not shipped): assets-src/maps/frostline/
-// Output (shipped):                     public/game/maps/frostline/
+// Sources (as downloaded, not shipped): assets-src/maps/<map>/
+// Output (shipped):                     public/game/maps/<map>/
 //   tex/<id>_{diff,nor,rough}.webp      tiling textures (2048 px for the ground and cliffs, 1024 for the rest)
 //   models/<id>.glb                     models: simplified to a triangle budget (plants: whole cards kept
 //                                       at random, enlarged; their alpha mask merged in), textures 1024 px
 //                                       WebP, meshopt-compressed (decoded in the game by 42-smooth.js)
-//   sky.webp                            the sky panorama (tonemapped from the HDRI, 4096 x 2048)
+//   sky.webp (sky_dusk.webp)            the sky panorama (tonemapped from the HDRI, 4096 x 2048)
 // Poly Haven's API: https://api.polyhaven.com (files/<id> lists every download of an asset).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,40 +18,129 @@ import { dedup, prune, weld, simplify, textureCompress, meshopt } from '@gltf-tr
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
+const MAPS = {
+  frostline: {
+    textures: {
+      snow_02: 2048, // the snowfield and snow caps
+      rock_face: 2048, // cliffs and rock walls (greyed to granite in the shader)
+      brown_planks_05: 1024, // timber: huts, walkways, crates
+      blue_metal_plate: 1024, // station walls, containers
+      weathered_plank_siding: 1024, // the log cabins' walls
+      rustic_stone_wall: 1024, // cabin footings and chimneys
+      roof_planks: 1024, // cabin roofs (under the snow)
+    },
+    // model: triangle budget (the trees are scans with 100k+ triangles)
+    models: {
+      rock_face_02: 5000,
+      old_military_crate: 2500,
+      wooden_crate_02: 2000,
+      barrel_03: 2500,
+      metal_jerrycan: 1500,
+      portable_generator: 4000,
+      portable_searchlight: 3000,
+      dead_tree_trunk: 3000,
+      street_lamp_02: 3000, // lamp posts the Christmas lights hang from
+      wooden_lantern_01: 2500,
+      barrel_stove: 3000,
+      stone_fire_pit: 4000,
+      wooden_barrels_01: 4000,
+      cardboard_box_01: 800,
+      ammo_box: 1500,
+      wooden_crate_01: 2000,
+      tree_stump_01: 2500,
+      wooden_bucket_01: 1500,
+    },
+    skies: { sky: 'snowy_hillside' },
+  },
+  prison: {
+    textures: {
+      painted_brick: 1024, // painted block: cell and corridor walls (greyed, then tinted to the paint colour)
+      painted_plaster_wall: 1024, // plastered walls (administration, infirmary)
+      garage_floor: 1024, // sealed concrete floors (cell block, solitary, laundry)
+      large_grey_tiles: 1024, // tiled floors (administration, cafeteria, kitchen, infirmary)
+      concrete_wall_008: 1024, // cast concrete: the perimeter wall and plain exteriors
+      concrete_floor_worn_001: 1024, // walks, yards, slab tops
+      asphalt_02: 1024, // roads, the visitor lot, the dock
+      red_brick_03: 1024, // the old cell house
+      granite_wall: 1024, // the gatehouse and the cell house's stone dressings
+      green_metal_rust: 1024, // painted steel (greyed, then tinted): doors, bars, rails, furniture
+      metal_plate: 1024, // diamond plate: galleries, stair treads, the dock
+      sparse_grass: 1024, // verges and the ground outside
+      brown_mud_dry: 1024, // dirt, the breach
+      rubber_tiles: 1024, // the weight pit
+      tarred_gravel: 1024, // flat roofs
+      corrugated_iron: 1024, // tower roofs, sheds, the sally port
+    },
+    models: {
+      security_camera_01: [1200, 512],
+      mounted_fluorescent_lights: [500, 512],
+      hanging_industrial_lamp: [1200, 512],
+      Television_01: [1900, 512],
+      steel_frame_shelves_01: 2000,
+      metal_office_desk: 2500,
+      utility_box_02: [2000, 512],
+      korean_fire_extinguisher_01: [1000, 512],
+      wheelchair_01: [3000, 512],
+      trashbag: [1200, 512],
+      concrete_road_barrier: [1500, 512],
+      barrel_03: [1473, 512],
+      bolt_cutters_01: [800, 512],
+      security_light: [1000, 512],
+      WetFloorSign_01: [228, 512],
+      fire_hydrant: [2000, 512],
+    },
+    skies: { sky: 'kloofendal_48d_partly_cloudy_puresky', sky_dusk: 'industrial_sunset_02_puresky' },
+  },
+  // the cinema also uses the prison's asphalt, concrete, plaster, steel plate, brick, gravel roofs and skies
+  // (72-cinema-view.js loads those from public/game/maps/prison/)
+  cinema: {
+    textures: {
+      poly_wool_herringbone: 1024, // carpet (tinted per room: burgundy, navy, gold)
+      velour_velvet: 1024, // seats, curtains, acoustic wall panels (tinted per auditorium)
+      marble_01: 1024, // the lobby's floor, columns and counters
+      herringbone_parquet: 1024, // the lounge floor and the stages
+      dark_wooden_planks: 1024, // wall panelling, the bar, doors
+      white_stucco: 1024, // the art-deco facade and upper walls (tinted)
+      leather_red_02: 1024, // the Velvet Room's recliners
+      terrazzo_tiles: 1024, // the plaza and the promenade's border
+      quatrefoil_jacquard_fabric: 1024, // the auditoriums' acoustic panels (tinted per theater)
+      wood_plank_wall: 1024, // ribbed timber lining the auditoriums' lower walls
+      marble_mosaic_tiles: 1024, // the lobby's border bands
+    },
+    models: {
+      Chandelier_02: [4000, 512],
+      CashRegister_01: [1500, 512],
+      bar_chair_round_01: [1200, 512], // (the scan's mesh will not simplify: about 14k triangles a stool)
+      Sofa_01: [3000, 512],
+      coffee_table_round_01: [1200, 512],
+      potted_plant_02: [3000, 512],
+      street_lamp_01: [1500, 512],
+      metal_trash_can: [800, 512],
+      ornate_mirror_01: [1500, 512],
+      mid_century_lounge_chair: [2500, 512],
+      fancy_picture_frame_01: [600, 1024],
+      brass_vase_01: [1200, 512],
+      modern_ceiling_lamp_01: [800, 512],
+      CoffeeCart_01: [2500, 512], // lobby and Promenade cover
+      ArmChair_01: [2000, 512],
+      potted_plant_04: [2500, 512],
+      side_table_01: [800, 512],
+      industrial_storage_cart: [2000, 512], // the projection level
+      steel_frame_shelves_02: [1500, 512],
+      cardboard_box_01: [300, 512],
+      painted_wooden_bench: [1200, 512], // the street
+      outdoor_table_chair_set_01: [2500, 512], // the café across the street
+      planter_box_01: [1200, 512],
+    },
+    skies: {},
+  },
+};
+const MAP = process.argv[2] || 'frostline';
+if (!MAPS[MAP]) throw new Error('unknown map ' + MAP + ' (' + Object.keys(MAPS).join(', ') + ')');
+const { textures: TEXTURES, models: MODELS, skies: SKIES } = MAPS[MAP];
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const SRC = path.join(ROOT, 'assets-src/maps/frostline');
-const OUT = path.join(ROOT, 'public/game/maps/frostline');
-const TEXTURES = {
-  snow_02: 2048, // the snowfield and snow caps
-  rock_face: 2048, // cliffs and rock walls (greyed to granite in the shader)
-  brown_planks_05: 1024, // timber: huts, walkways, crates
-  blue_metal_plate: 1024, // station walls, containers
-  weathered_plank_siding: 1024, // the log cabins' walls
-  rustic_stone_wall: 1024, // cabin footings and chimneys
-  roof_planks: 1024, // cabin roofs (under the snow)
-};
-// model: triangle budget (the trees are scans with 100k+ triangles)
-const MODELS = {
-  rock_face_02: 5000,
-  old_military_crate: 2500,
-  wooden_crate_02: 2000,
-  barrel_03: 2500,
-  metal_jerrycan: 1500,
-  portable_generator: 4000,
-  portable_searchlight: 3000,
-  dead_tree_trunk: 3000,
-  street_lamp_02: 3000, // lamp posts the Christmas lights hang from
-  wooden_lantern_01: 2500,
-  barrel_stove: 3000,
-  stone_fire_pit: 4000,
-  wooden_barrels_01: 4000,
-  cardboard_box_01: 800,
-  ammo_box: 1500,
-  wooden_crate_01: 2000,
-  tree_stump_01: 2500,
-  wooden_bucket_01: 1500,
-};
-const SKY = 'snowy_hillside';
+const SRC = path.join(ROOT, 'assets-src/maps', MAP);
+const OUT = path.join(ROOT, 'public/game/maps', MAP);
 
 const api = async (id) => (await fetch('https://api.polyhaven.com/files/' + id)).json();
 async function download(url, file) {
@@ -70,7 +159,8 @@ for (const [id, px] of Object.entries(TEXTURES)) {
     res = px >= 2048 ? '2k' : '1k';
   for (const [key, out] of [['Diffuse', 'diff'], ['nor_gl', 'nor'], ['Rough', 'rough']]) {
     const src = path.join(SRC, 'tex', `${id}_${out}_${res}.jpg`);
-    await download(f[key][res].jpg.url, src);
+    // a few textures come in colour variants (coll1, coll2) instead of one Diffuse map: the first is used
+    await download((f[key] || (key === 'Diffuse' && f.coll1))[res].jpg.url, src);
     const dst = path.join(OUT, 'tex', `${id}_${out}.webp`);
     // roughness at half size: it is low-frequency
     await sharp(src)
@@ -82,12 +172,12 @@ for (const [id, px] of Object.entries(TEXTURES)) {
 }
 
 // ---------------------------------------------------------------- sky
-{
-  const f = await api(SKY),
-    src = path.join(SRC, SKY + '.jpg');
+for (const [name, id] of Object.entries(SKIES)) {
+  const f = await api(id),
+    src = path.join(SRC, id + '.jpg');
   await download(f.tonemapped.url, src);
-  await sharp(src).resize(4096, 2048).webp({ quality: 82 }).toFile(path.join(OUT, 'sky.webp'));
-  console.log(`sky ${SKY}: ${(fs.statSync(path.join(OUT, 'sky.webp')).size / 1e6).toFixed(2)} MB`);
+  await sharp(src).resize(4096, 2048).webp({ quality: 82 }).toFile(path.join(OUT, name + '.webp'));
+  console.log(`${name} ${id}: ${(fs.statSync(path.join(OUT, name + '.webp')).size / 1e6).toFixed(2)} MB`);
 }
 
 // ---------------------------------------------------------------- models
@@ -100,7 +190,9 @@ const tris = (doc) => {
   for (const m of doc.getRoot().listMeshes()) for (const p of m.listPrimitives()) t += (p.getIndices() ? p.getIndices().getCount() : p.getAttribute('POSITION').getCount()) / 3;
   return Math.round(t);
 };
-for (const [id, budget] of Object.entries(MODELS)) {
+for (const [id, spec] of Object.entries(MODELS)) {
+  // budget, or [budget, texture size] (small props: 512 px)
+  const [budget, texPx] = Array.isArray(spec) ? spec : [spec, 1024];
   const f = await api(id),
     g = f.gltf['1k'].gltf,
     dir = path.join(SRC, 'models', id),
@@ -183,8 +275,8 @@ for (const [id, budget] of Object.entries(MODELS)) {
     await doc.transform(prune());
   }
   await doc.transform(
-    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(baseColor|normal|emissive)/, resize: [1024, 1024], quality: 84 }),
-    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(metallicRoughness|occlusion)/, resize: [512, 512], quality: 82 }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(baseColor|normal|emissive)/, resize: [texPx, texPx], quality: 84 }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(metallicRoughness|occlusion)/, resize: [texPx / 2, texPx / 2], quality: 82 }),
     meshopt({ encoder: MeshoptEncoder, level: 'medium' }),
     prune(),
   );
@@ -195,4 +287,4 @@ for (const [id, budget] of Object.entries(MODELS)) {
 let total = 0;
 const walk = (d) => fs.readdirSync(d).forEach((f) => (fs.statSync(path.join(d, f)).isDirectory() ? walk(path.join(d, f)) : (total += fs.statSync(path.join(d, f)).size)));
 walk(OUT);
-console.log(`public/game/maps/frostline: ${(total / 1e6).toFixed(1)} MB`);
+console.log(`public/game/maps/${MAP}: ${(total / 1e6).toFixed(1)} MB`);

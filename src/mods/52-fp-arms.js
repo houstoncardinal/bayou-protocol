@@ -110,6 +110,9 @@ function __faStrip(g, gunSet) {
   if (sup) for (const c of sup.children) !c.isMesh && c.children.some((k) => k.isMesh) && (left = left || c), c.traverse((o) => o.isMesh && (o.visible = !1));
   return { right, left, sup };
 }
+// the two-handed pistol grip (tunable from the console: window.__bpArmsPistol)
+const __FA_PL = { rOff: [0, -0.055, 0.025], side: 0.032, down: -0.012, fwd: -0.012, tip: -0.45, curl: [1.45, 1.35, 0.95], thumbR: [0.05, 0.1, 0.05], thumbL: [0.05, 0.05, 0.05] };
+typeof window < 'u' && (window.__bpArmsPistol = __FA_PL);
 const __faT = { a: new U(), b: new U(), c: new U(), d: new U(), e: new U(), q: new Kw(), q2: new Kw(), q3: new Kw(), m: new _A(), m2: new _A() };
 // one arm: shoulder S, wrist target T (holder frame), pole direction; hand basis (finger dir, palm normal)
 function __faSolve(A, s, T, pole, F, P) {
@@ -180,15 +183,18 @@ function __faPose(A, ctx, cam) {
     dirH = (o, v) => toH(o, v).sub(toH(o, new U()));
   // the core's hand frames: local +Y = fingers, +Z = palm normal (towards what the hand holds)
   const R = ctx.right,
-    wR = toH(R, new U(0, 0.0, 0)),
+    // pistols: the hand down onto the grip (the core's frame sits at the top of the grip, under the slide)
+    wR = toH(R, new U(0, 0.0, 0)).add(ctx.left ? new U() : new U(...__FA_PL.rOff)),
     FR = dirH(R, new U(0, 1, 0)),
     PR = dirH(R, new U(0, 0, 1));
   let wL, FL, PL;
   if (ctx.left) (wL = toH(ctx.left, new U(0, 0, 0))), (FL = dirH(ctx.left, new U(0, 1, 0))), (PL = dirH(ctx.left, new U(0, 0, 1)));
   else {
-    // pistol: the left hand wraps the right from the left side, palm on the fingers
-    wL = wR.clone().add(PR.clone().multiplyScalar(0.042)).add(new U(-0.01, -0.035, 0.035));
-    FL = FR.clone().add(new U(0.35, -0.15, 0)).normalize();
+    // pistol (thumbs forward): the left palm against the grip's open left side, just under and ahead of the
+    // right hand, its fingers wrapping round the front of the right hand's fingers: the right hand's finger
+    // direction mirrored across the gun's centre plane, tipped a little forward
+    wL = wR.clone().add(PR.clone().multiplyScalar(__FA_PL.side)).add(new U(0, __FA_PL.down, __FA_PL.fwd));
+    FL = new U(-FR.x, FR.y, FR.z).add(new U(0, 0, __FA_PL.tip)).normalize();
     PL = PR.clone().multiplyScalar(-1);
   }
   // chest: below and just behind the eye, then forward only as far as each hand needs to reach its target
@@ -224,11 +230,12 @@ function __faPose(A, ctx, cam) {
     middle: [1.25, 1.2, 0.8],
     ring: [1.3, 1.25, 0.8],
     pink: [1.35, 1.2, 0.8],
-    thumb: [0.35, 0.55, 0.45],
+    // pistols: the thumb lies forward along the frame (under the support thumb); rifles: over the grip
+    thumb: ctx.left ? [0.35, 0.55, 0.45] : __FA_PL.thumbR,
   });
   ctx.left
     ? __faCurl(A, 'L', { point: [0.85, 0.75, 0.5], middle: [1.0, 0.85, 0.55], ring: [1.05, 0.9, 0.55], pink: [1.1, 0.9, 0.55], thumb: [0.4, 0.4, 0.3] })
-    : __faCurl(A, 'L', { point: [1.0, 0.9, 0.6], middle: [1.1, 0.95, 0.6], ring: [1.15, 1.0, 0.6], pink: [1.2, 1.0, 0.6], thumb: [0.3, 0.3, 0.25] });
+    : __faCurl(A, 'L', { point: __FA_PL.curl, middle: __FA_PL.curl, ring: __FA_PL.curl, pink: __FA_PL.curl, thumb: __FA_PL.thumbL });
   A.mesh.skeleton && A.mesh.skeleton.update();
   __FA.n++;
 }

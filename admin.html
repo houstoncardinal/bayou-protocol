@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- served at /admin and /admin/: resolve the built ./assets/... from the site root either way -->
+<base href="/">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#0a090c">
+<title>Screenings Office · Bayou Palace Cinemas</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preload" href="/game/fonts/font-06.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/game/fonts/font-01.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/src/admin/admin.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- PIN screen -->
+<main id="lock" class="lock" hidden>
+  <div class="curtain curtain-l" aria-hidden="true"></div>
+  <div class="curtain curtain-r" aria-hidden="true"></div>
+  <form class="lock-card" id="lock-form" autocomplete="off" novalidate>
+    <div class="marquee" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="44" height="44"><path d="M24 4l5.6 12.4L43 18l-10 9.3L35.8 41 24 34.3 12.2 41 15 27.3 5 18l13.4-1.6z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    </div>
+    <p class="eyebrow">Bayou Palace Cinemas</p>
+    <h1 class="lock-title">Screenings Office</h1>
+    <p class="lock-sub" id="lock-sub">Enter your 6-digit PIN to program the screens.</p>
+    <fieldset class="pin" id="pin" aria-describedby="lock-sub lock-msg">
+      <legend class="sr-only">PIN</legend>
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" aria-label="PIN digit 1 of 6" autofocus>
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="PIN digit 2 of 6">
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="PIN digit 3 of 6">
+      <span class="pin-gap" aria-hidden="true"></span>
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="PIN digit 4 of 6">
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="PIN digit 5 of 6">
+      <input class="pin-digit" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="PIN digit 6 of 6">
+    </fieldset>
+    <p class="lock-msg" id="lock-msg" role="alert" aria-live="assertive"></p>
+    <button class="btn btn-gold lock-submit" type="submit" id="lock-submit">Unlock</button>
+    <p class="lock-foot">Bayou Protocol · Staff only</p>
+  </form>
+</main>
+
+<!-- Dashboard -->
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <div class="topbar-in">
+      <a class="brand" href="/admin" aria-label="Screenings Office home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" width="22" height="22"><path d="M24 4l5.6 12.4L43 18l-10 9.3L35.8 41 24 34.3 12.2 41 15 27.3 5 18l13.4-1.6z" fill="currentColor"/></svg>
+        </span>
+        <span class="brand-text"><span class="brand-name">Bayou Palace</span><span class="brand-sub">Screenings Office</span></span>
+      </a>
+      <div class="topbar-status" id="status" aria-live="polite">
+        <span class="dot" id="status-dot"></span><span id="status-text">Loading…</span>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost btn-sm hide-sm" href="/" target="_blank" rel="noopener">Open game</a>
+        <button class="btn btn-ghost btn-sm" id="lock-btn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Lock</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main" id="main">
+    <section class="smart" id="smart" aria-labelledby="smart-title">
+      <div class="smart-head">
+        <div>
+          <p class="eyebrow">Tonight's programme</p>
+          <h1 id="smart-title" class="smart-title">Program the screens</h1>
+          <p class="smart-sub">Paste one or more YouTube links or <span class="nowrap">.mp4 / .webm</span> files. We look up every title and slot each one into the best screen. You check the lineup, then publish.</p>
+        </div>
+      </div>
+      <div class="smart-bar" id="smart-bar">
+        <svg class="smart-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <label class="sr-only" for="smart-input">Links to schedule</label>
+        <textarea id="smart-input" rows="1" spellcheck="false" autocomplete="off" placeholder="Paste links here, e.g. https://youtu.be/…"></textarea>
+        <button class="btn btn-gold" id="smart-go" type="button">Find showings</button>
+      </div>
+      <p class="smart-tip"><kbd id="kbd-mod">⌘</kbd><kbd>V</kbd> anywhere on this page pastes here · drop a link straight onto a screen · <kbd>/</kbd> focuses this box</p>
+      <div class="proposal" id="proposal" hidden>
+        <div class="proposal-head">
+          <h2 class="proposal-title">Proposed lineup</h2>
+          <p class="proposal-note" id="proposal-note"></p>
+        </div>
+        <ol class="proposal-list" id="proposal-list"></ol>
+        <div class="proposal-foot">
+          <p class="proposal-sum" id="proposal-sum" aria-live="polite"></p>
+          <div class="proposal-btns">
+            <button class="btn btn-ghost" type="button" id="proposal-discard">Discard</button>
+            <button class="btn btn-gold" type="button" id="proposal-publish">Publish lineup</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="load-error" class="load-error" hidden role="alert">
+      <p><strong>Couldn't load the schedule.</strong> <span id="load-error-msg"></span></p>
+      <button class="btn btn-ghost btn-sm" type="button" id="load-retry">Try again</button>
+    </div>
+
+    <div id="groups"></div>
+  </main>
+
+  <footer class="foot">
+    <p>Every player sees the same moment: a screen plays from the time it was published, looping. <span class="nowrap">Changes reach games within about a minute.</span></p>
+  </footer>
+</div>
+
+<!-- Replace dialog -->
+<dialog class="modal" id="replace-dlg" aria-labelledby="replace-title">
+  <form method="dialog" class="modal-in" id="replace-form">
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow" id="replace-eyebrow">Theater 1</p>
+        <h2 class="modal-title" id="replace-title">New showing</h2>
+      </div>
+      <button class="icon-btn" value="cancel" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <label class="field">
+      <span class="field-label">YouTube link or video file</span>
+      <input type="text" id="replace-input" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/watch?v=…">
+    </label>
+    <div class="replace-preview" id="replace-preview" aria-live="polite"></div>
+    <footer class="modal-foot">
+      <button class="btn btn-ghost" value="cancel">Cancel</button>
+      <button class="btn btn-gold" id="replace-ok" value="ok" disabled>Show on screen</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- Preview dialog -->
+<dialog class="modal modal-wide" id="preview-dlg" aria-labelledby="preview-title">
+  <div class="modal-in">
+    <header class="modal-head">
+      <div>
+        <p class="eyebrow" id="preview-eyebrow">Theater 1</p>
+        <h2 class="modal-title" id="preview-title">Preview</h2>
+      </div>
+      <button class="icon-btn" type="button" id="preview-close" aria-label="Close preview">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div class="screen-frame" id="preview-frame"></div>
+    <p class="preview-note" id="preview-note"></p>
+  </div>
+</dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<noscript><p class="noscript">The Screenings Office needs JavaScript.</p></noscript>
+<script type="module" src="/src/admin/admin.js"></script>
+</body>
+</html>

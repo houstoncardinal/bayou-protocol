@@ -138,7 +138,13 @@ function __spdTick() {
     try {
       __spdWarm(st);
     } catch (e) {}
-  }
+    // the menus' background match: two seconds of frames to settle, then a still (redrawn once a second).
+    // Nothing behind the dark overlay needs to move, and its bots, physics and drawing were what made the
+    // menus slow to click through (the simulation only advances on rendered frames)
+    __SPD.menuN = __SPD.mode === 'menu' && __SPD.menuMode ? __SPD.menuN + 1 : 0;
+    __SPD.menuMode = 1;
+    if (__SPD.menuN > 60 && __SPD.menuN % 30) return;
+  } else __SPD.menuMode = 0;
   st.invalidate();
 }
 typeof window < 'u' &&

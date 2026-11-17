@@ -59,7 +59,7 @@ src/
     32-ground-combat.js        No scorestreaks (UAV, airstrike, Aegis), no power-up pads, no rocket launcher
     33-knife.js                Animated first-person knife (knife_animated.glb): idle, slashes, stabs
     34-physics.js              Rapier physics: world per map, character controller, grenades, props, rays
-    35-prison.js               Blackwater Penitentiary map (code-built)
+    35-prison.js               Blackwater Penitentiary map (code-built): layout, collision, what each shape is
     36-precision-input.js      Mouse: same aim sensitivity on every gun, DPI keeps cm/360, raw-input status
     37-characters.js           Character roster (Mixamo models, plus Wraith), shared animations, 8-way rifle
                                locomotion, turning on the spot, upper-body reload / grenade toss / hit / recoil,
@@ -100,6 +100,26 @@ src/
     62-frostline-detail.js     Frostline in 3D: cliff faces, cavern vaults and portals, stone arches, pavilion, cover
     63-frostline-christmas.js  Frostline's Christmas decorations: trees, lights, presents, cabins, snowmen, garlands
     64-frostline-rooms.js      Frostline's hidden caverns furnished: Santa's Workshop, Crystal Cavern, Fireside Lodge
+    65-prison-view.js          Blackwater in 3D: Poly Haven materials on every surface, a baked light volume
+                               (daylight through openings, lamp light per room), the sky; see docs/maps/prison.md
+    66-prison-detail.js        Blackwater's architecture and metalwork: cell bars, chain-link and razor wire,
+                               rails, steel stairs, the cell house vault and trusses, stone portals and turrets
+    66b-prison-props.js        Blackwater's furniture, fixtures, signs, graffiti, the riot's fires and beacons, its
+                               doors (sliding cell gates, steel doors) and doorways
+    67-jailbreak.js            Jailbreak mode (prison only): cut the cell locks, lead inmates to the getaway van
+    68-loading.js              Loading screen: covers a new match until its textures, models and map scenery are in
+                               and every shader is compiled (offline the match waits underneath); a map's assets
+                               start loading as soon as it is picked in the menus
+    69-static-scenery.js       Scenery that never moves (vegetation) gets its matrices once, not every frame
+    70-screens.js              Video screens: files as textures with positional sound; YouTube in an iframe behind
+                               the canvas, warped into a hole in the screen; synced to the showings (/admin)
+    71-cinema.js               Bayou Palace Cinemas map (code-built): layout, collision, what each shape is
+    72-cinema-view.js          The cinema's kit (drawn by the prison's pipeline) and detail: seats, curtains,
+                               marquee, posters, concession stand, projectors and their beams
+    73-cinema-seats.js         Sitting in the cinema's seats (Use to sit and stand): a steady seated view, gun put away
+    74-theater-mode.js         Theater Mode: the cinema with no bots, guns or clock (Home card, side rail, mode list)
+    75-menu-art.js             Menu artwork: real in-game screenshots for the map and mode cards (public/game/menu/)
+    76-film-control.js         The projection booth's film controls: play, pause, skip, scrub, for everyone
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)
@@ -107,7 +127,7 @@ tools/
                                53a-ridgeback-data.js (heights, tunnel floors, decks, obstacles, clip walls)
   build-autorig.mjs          Retired auto-rigger; `--mixamo` still writes a zip for mixamo.com's Auto-Rigger
   build-assets.mjs           Props, masks, Arms6, the DJMaesen terrorist -> optimised GLBs
-  fetch-polyhaven.mjs        Downloads and optimises Frostline's Poly Haven textures, models and sky
+  fetch-polyhaven.mjs        Downloads and optimises a map's Poly Haven textures, models and sky (frostline, prison)
   optimize-models.mjs        meshopt-compresses every GLB under public/game (run after adding models)
   inspect-glb.mjs            What takes the space in a GLB (textures, geometry, animation)
   optimize-vegetation.mjs    Simplifies heavy vegetation meshes (trunks, cactus bodies)
@@ -127,6 +147,7 @@ docs/ENGINE_API.md         Engine internals the mods rely on
 docs/LAUNCH.md             What a public launch still needs (game server, accounts, legal, analytics)
 docs/maps/ridgeback_pass/  The v4 package's README, install notes, credits and a preview
 docs/maps/frostline.md     How Frostline was designed (rules from Dust2 / Nuke / Inferno, measured timings)
+docs/maps/prison.md        Blackwater Penitentiary: how it is drawn and lit, and the Jailbreak mode
 vite.config.js             Vite config and the plugin that loads the mods
 ```
 
@@ -147,8 +168,9 @@ call into the mods). Those are already applied in `core/game.core.js`.
 
 ### Common tasks
 
-- **Where the maps are:** most maps are built in code, not loaded from map files: Temple, Piazza and
-  Kindred City are in the core (`XE` in `core/game.core.js`), Blackwater Penitentiary is
+- **Where the maps are:** most maps are built in code, not loaded from map files: Kindred City (the menus'
+  background) is in the core (`XE` in `core/game.core.js`; Temple and Piazza are still there but retired from
+  the map list, `53b-ridgeback.js`), Bayou Palace Cinemas is `src/mods/71-cinema.js`, Blackwater Penitentiary is
   `src/mods/35-prison.js` and Frostline is `src/mods/61-frostline.js` (its ground plan is a list of smooth shapes;
   see `docs/maps/frostline.md`). Ridgeback Pass is a model package: `assets-src/maps/ridgeback_pass/` as delivered,
   copied to `public/game/maps/ridgeback_pass/` by `node tools/build-ridgeback.mjs` (which also writes

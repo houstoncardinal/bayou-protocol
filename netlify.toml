@@ -24,3 +24,39 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "microphone=(self), camera=(), geolocation=(), payment=(), usb=(), fullscreen=(self), gamepad=(self)"
     Strict-Transport-Security = "max-age=31536000"
+
+# Screenings: the /admin dashboard (admin.html) and its API (netlify/functions/showings.mjs, which serves
+# /api/showings itself through its `config.path`). Change the dashboard PIN with the ADMIN_PIN env variable.
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/"
+  to = "/admin.html"
+  status = 200
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+    X-Frame-Options = "DENY"
+
+[[headers]]
+  for = "/admin/"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+    X-Frame-Options = "DENY"
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+    X-Frame-Options = "DENY"

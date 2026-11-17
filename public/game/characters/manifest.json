@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-14T05:04:35.258Z",
+  "built": "2026-11-17T01:56:49.576Z",
   "characters": {
     "counter-terrorists": [
       {
@@ -78,6 +78,26 @@
         }
       },
       {
+        "name": "CrouchStopWalking",
+        "source": "Crouch Stop Walking.fbx",
+        "duration": 2.083,
+        "speed": 0.853,
+        "drift": {
+          "x": -0.002,
+          "z": 0.853
+        }
+      },
+      {
+        "name": "CrouchToStandingWithRifle",
+        "source": "Crouch To Standing With Rifle.fbx",
+        "duration": 1.083,
+        "speed": 0.014,
+        "drift": {
+          "x": 0.006,
+          "z": -0.013
+        }
+      },
+      {
         "name": "CrouchWalking",
         "source": "Crouch Walking.fbx",
         "duration": 1.167,
@@ -85,6 +105,16 @@
         "drift": {
           "x": 0,
           "z": 1.137
+        }
+      },
+      {
+        "name": "DeathFromTheFront",
+        "source": "Death From The Front.fbx",
+        "duration": 3.417,
+        "speed": 0.296,
+        "drift": {
+          "x": 0.074,
+          "z": 0.287
         }
       },
       {
@@ -138,9 +168,49 @@
         }
       },
       {
+        "name": "Reload",
+        "source": "Reload.fbx",
+        "duration": 6.833,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "RifleCrouchIdleToWalk",
+        "source": "Rifle Crouch Idle To Walk.fbx",
+        "duration": 2.375,
+        "speed": 0.184,
+        "drift": {
+          "x": -0.002,
+          "z": 0.184
+        }
+      },
+      {
+        "name": "RifleCrouchTurn",
+        "source": "Rifle Crouch Turn.fbx",
+        "duration": 1.458,
+        "speed": 0.031,
+        "drift": {
+          "x": 0.002,
+          "z": 0.031
+        }
+      },
+      {
+        "name": "RifleCrouchWalkToKneel",
+        "source": "Rifle Crouch Walk To Kneel.fbx",
+        "duration": 2.708,
+        "speed": 0.516,
+        "drift": {
+          "x": 0.008,
+          "z": 0.516
+        }
+      },
+      {
         "name": "RifleIdle",
         "source": "Rifle Idle.fbx",
-        "duration": 8.542,
+        "duration": 10.625,
         "speed": 0,
         "drift": {
           "x": 0,
@@ -155,6 +225,16 @@
         "drift": {
           "x": 0.001,
           "z": 1.856
+        }
+      },
+      {
+        "name": "RifleSideStep",
+        "source": "Rifle Side Step.fbx",
+        "duration": 1.167,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
         }
       },
       {
@@ -195,6 +275,76 @@
         "drift": {
           "x": 0.982,
           "z": 0.025
+        }
+      },
+      {
+        "name": "Throw",
+        "source": "Throw.fbx",
+        "duration": 2.167,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "TurnLeft45Degrees",
+        "source": "Turn Left 45 Degrees.fbx",
+        "duration": 1.167,
+        "speed": 0.004,
+        "drift": {
+          "x": -0.004,
+          "z": -0.002
+        }
+      },
+      {
+        "name": "WalkCrouchingBackwardLeft1",
+        "source": "Walk Crouching Backward Left (1).fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "WalkCrouchingBackwardLeft",
+        "source": "Walk Crouching Backward Left.fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "WalkCrouchingForward1",
+        "source": "Walk Crouching Forward (1).fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "WalkCrouchingForward",
+        "source": "Walk Crouching Forward.fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
+        }
+      },
+      {
+        "name": "WalkCrouchingRight",
+        "source": "Walk Crouching Right.fbx",
+        "duration": 1,
+        "speed": 0,
+        "drift": {
+          "x": 0,
+          "z": 0
         }
       },
       {
@@ -251,29 +401,29 @@
         "name": "RifleRun",
         "source": "rifle run.fbx",
         "duration": 0.708,
-        "speed": 3.14,
+        "speed": 3.208,
         "drift": {
           "x": 0.004,
-          "z": 3.14
+          "z": 3.208
         }
       },
       {
         "name": "RunBackwards",
         "source": "run backwards.fbx",
         "duration": 0.5,
-        "speed": 2.746,
+        "speed": 2.806,
         "drift": {
-          "x": -0.01,
-          "z": -2.746
+          "x": -0.011,
+          "z": -2.806
         }
       },
       {
         "name": "Strafe2",
         "source": "strafe (2).fbx",
         "duration": 0.5,
-        "speed": 2.802,
+        "speed": 2.863,
         "drift": {
-          "x": 2.802,
+          "x": 2.863,
           "z": 0.003
         }
       },
@@ -281,9 +431,9 @@
         "name": "StrafeLeft",
         "source": "strafe left.fbx",
         "duration": 1,
-        "speed": 1.381,
+        "speed": 1.411,
         "drift": {
-          "x": 1.381,
+          "x": 1.411,
           "z": -0.004
         }
       },
@@ -291,9 +441,9 @@
         "name": "StrafeRight",
         "source": "strafe right.fbx",
         "duration": 1.417,
-        "speed": 0.754,
+        "speed": 0.77,
         "drift": {
-          "x": -0.754,
+          "x": -0.77,
           "z": 0.001
         }
       },
@@ -301,9 +451,9 @@
         "name": "Strafe",
         "source": "strafe.fbx",
         "duration": 0.667,
-        "speed": 3.286,
+        "speed": 3.357,
         "drift": {
-          "x": -3.286,
+          "x": -3.357,
           "z": 0
         }
       },
@@ -341,23 +491,23 @@
         "name": "WalkingBackwards",
         "source": "walking backwards.fbx",
         "duration": 1.333,
-        "speed": 1.102,
+        "speed": 1.126,
         "drift": {
           "x": -0.003,
-          "z": -1.102
+          "z": -1.126
         }
       },
       {
         "name": "Walking",
         "source": "walking.fbx",
         "duration": 1.333,
-        "speed": 0.992,
+        "speed": 1.013,
         "drift": {
           "x": 0.002,
-          "z": 0.992
+          "z": 1.013
         }
       }
     ],
-    "bytes": 825368
+    "bytes": 1243336
   }
 }

@@ -17,8 +17,13 @@
 // Locomotion (__locoSpeed / __locoAfter hooks in the core character component): the clip follows the real
 // movement relative to where the character faces, from the Mixamo rifle locomotion set: walk and run
 // forwards, backwards, strafing left and right, a relaxed rifle idle and an aiming idle when engaged, turning
-// on the spot, crouch walk, kneeling idle when crouched still, rifle jump and fall. Over the legs, upper-body
-// actions: reloading, the grenade toss, a flinch when hit and the recoil loop while firing. Each locomotion
+// on the spot (45-degree turns both ways), rifle jump and fall. Crouched: the rifle crouch walk forwards, to
+// either side and back on either diagonal (the left and back-right clips are mirrored copies of the right and
+// back-left ones), a crouched turn, the kneeling idle; standing up plays the crouch-to-stand transition and a
+// crouch walk that stops plays the kneel-down. Two deaths, taken in turn (the stagger and drop, the fall back
+// from a shot in the front), each handing over to the ragdoll as its hips near the ground. Over the legs,
+// upper-body actions: reloading (kneeling reload when crouched), the grenade throw (the low toss when
+// crouched), a flinch when hit and the recoil loop while firing. Each locomotion
 // clip plays at the speed its feet really travel, measured from the clip itself when the model loads (foot
 // travel per cycle, scaled to the character's in-game size), so feet do not slide.
 const __CHAR = {
@@ -45,17 +50,30 @@ const __CHAR = {
     RunBack: 'RunBackwards',
     RunStrafeL: 'Strafe2',
     RunStrafeR: 'Strafe',
-    TurnL: 'TurnLeft',
+    TurnL: 'TurnLeft45Degrees',
     TurnR: 'TurningRight45Degrees',
     Fire: 'FiringRifle',
     Crouch: 'CrouchWalking',
     CrouchIdle: 'PistolKneelingIdle',
+    // crouched, rifle up, in every direction (left and back-right are mirrored copies: __charMirror)
+    CrouchFwd: 'WalkCrouchingForward',
+    CrouchR: 'WalkCrouchingRight',
+    CrouchL: 'WalkCrouchingLeft',
+    CrouchBackL: 'WalkCrouchingBackwardLeft',
+    CrouchBackR: 'WalkCrouchingBackwardRight',
+    CrouchTurn: 'RifleCrouchTurn',
+    // one-off transitions (played whole-body for a moment, __locoAfter)
+    Rise: 'CrouchToStandingWithRifle',
+    CrouchKneel: 'RifleCrouchWalkToKneel',
+    CrouchStart: 'RifleCrouchIdleToWalk',
     Jump: 'RifleJump',
     Fall: 'JumpingDown',
     Death: 'Dying',
+    Death2: 'DeathFromTheFront',
   },
   // upper-body actions played over the legs (spine, arms and head only): name -> source clip
-  overlay: { UpReload: 'Reloading', UpToss: 'TossGrenade', UpHit: 'HitReaction', UpFire: 'FiringRifle' },
+  // (crouched: the kneeling reload and the low toss)
+  overlay: { UpReload: 'Reloading', UpReloadLow: 'Reload', UpToss: 'Throw', UpTossLow: 'TossGrenade', UpHit: 'HitReaction', UpFire: 'FiringRifle' },
   urls: new Set(),
   clips: new Map(), // model url -> its clips (with the upper-body versions)
   gait: new Map(), // model url -> { clip: metres per second at timeScale 1 }
@@ -142,7 +160,29 @@ function __isCharUrl(u) {
   return __CHAR.urls.has(u);
 }
 // ---------------------------------------------------------------- loading: shared clips + gait measurement
-const __LOCO_CLIPS = { Walk: 1, WalkBack: 1, StrafeL: 1, StrafeR: 1, Run: 1, RunBack: 1, RunStrafeL: 1, RunStrafeR: 1, CrouchWalking: 1 };
+const __LOCO_CLIPS = { Walk: 1, WalkBack: 1, StrafeL: 1, StrafeR: 1, Run: 1, RunBack: 1, RunStrafeL: 1, RunStrafeR: 1, CrouchWalking: 1, CrouchFwd: 1, CrouchR: 1, CrouchL: 1, CrouchBackL: 1, CrouchBackR: 1 };
+// Clips recorded for one side only get a mirrored copy for the other (the crouch walk to the right -> to the
+// left, back and to the left -> back and to the right): left and right bones swap tracks, and every rotation
+// and the hips' sideways movement are reflected across the body's centre plane. Added to the shared clip file
+// once, so every model (and the retargeted ones) has them.
+const __MIRROR = { WalkCrouchingRight: 'WalkCrouchingLeft', WalkCrouchingBackwardLeft: 'WalkCrouchingBackwardRight' };
+function __charMirror(animGltf) {
+  if (animGltf.__bpMirror) return;
+  animGltf.__bpMirror = 1;
+  for (const [src, dst] of Object.entries(__MIRROR)) {
+    const c = animGltf.animations.find((x) => x.name === src);
+    if (!c || animGltf.animations.some((x) => x.name === dst)) continue;
+    const tracks = c.tracks.map((t) => {
+      const u = t.clone();
+      u.name = t.name.replace(/(Left|Right)/, (m) => (m === 'Left' ? 'Right' : 'Left'));
+      const v = u.values;
+      if (/\.quaternion$/.test(u.name)) for (let i = 0; i < v.length; i += 4) (v[i + 1] = -v[i + 1]), (v[i + 2] = -v[i + 2]);
+      else if (/\.position$/.test(u.name)) for (let i = 0; i < v.length; i += 3) v[i] = -v[i];
+      return u;
+    });
+    animGltf.animations.push(new so(dst, c.duration, tracks));
+  }
+}
 // The shared clips were recorded on one skeleton; the hips translation in them is in that skeleton's units.
 // A model whose legs are shorter or longer would stand in the floor or float, so every model gets its own
 // copy of the clips with the hips track scaled by (its hips rest height / the clip skeleton's).
@@ -163,6 +203,7 @@ function __charClips(animGltf, f = 1, key = '') {
             return u;
           }),
         );
+  __charMirror(animGltf);
   const base = animGltf.animations.map(scaled),
     list = [...base];
   for (const [a, src] of Object.entries(__CHAR.alias)) {
@@ -182,7 +223,7 @@ const __UPPER = /^mixamorig(Spine1|Spine2|Neck|Head|HeadTop_End|(Left|Right)(Sho
 function __charExtras(list) {
   if (list.__bpExtras) return list;
   const out = list.map((c) => {
-    if (c.name !== 'TurnL' && c.name !== 'TurnR') return c;
+    if (c.name !== 'TurnL' && c.name !== 'TurnR' && c.name !== 'CrouchTurn') return c;
     const tracks = c.tracks.map((t) => {
       if (!/Hips\.quaternion$/.test(t.name)) return t;
       const u = t.clone(),
@@ -272,7 +313,7 @@ function __charGait(url, gltf) {
   }
   // sensible fallbacks if a clip could not be measured
   // (the clips' own travel speeds, from their root motion: tools/build-characters.mjs -> manifest.json)
-  for (const [k, v] of Object.entries({ Walk: 1, WalkBack: 1.1, StrafeL: 1.38, StrafeR: 0.75, Run: 3.1, RunBack: 2.75, RunStrafeL: 2.8, RunStrafeR: 3.3, CrouchWalking: 1.1 })) g[k] = g[k] || v;
+  for (const [k, v] of Object.entries({ Walk: 1, WalkBack: 1.1, StrafeL: 1.38, StrafeR: 0.75, Run: 3.1, RunBack: 2.75, RunStrafeL: 2.8, RunStrafeR: 3.3, CrouchWalking: 1.1, CrouchFwd: 1, CrouchR: 0.9, CrouchL: 0.9, CrouchBackL: 0.9, CrouchBackR: 0.9 })) g[k] = g[k] || v;
   __CHAR.gait.set(url, g);
   return g;
 }
@@ -361,7 +402,7 @@ const __DIE = { rate: 1.35, handover: 2.45 }; // clip seconds at which the ragdo
   TZ.prototype.clipAction = function (clip) {
     const a = coreClipAction.apply(this, arguments);
     const name = typeof clip === 'string' ? clip : clip && clip.name;
-    a && /^(Death|Dying)$/.test(name || '') && a.loop !== 2200 && ((a.loop = 2200), (a.clampWhenFinished = !0)); // LoopOnce
+    a && /^(Death2?|Dying|DeathFromTheFront)$/.test(name || '') && a.loop !== 2200 && ((a.loop = 2200), (a.clampWhenFinished = !0)); // LoopOnce
     return a;
   };
   const coreRagdoll = yZ.from;
@@ -371,7 +412,7 @@ const __DIE = { rate: 1.35, handover: 2.45 }; // clip seconds at which the ragdo
     const now = performance.now() / 1e3;
     // a new death (the last one ended in a ragdoll, or long ago)
     (!st.dieAt || now - st.dieAt > 8) && ((st.dieAt = now), (st.dieInstant = !!(o.headshot || o.force >= 1.3 || st.dieCrouch || st.dieAir)));
-    if (!st.dieInstant && now - st.dieAt < __DIE.handover / __DIE.rate) return null; // the Dying clip plays meanwhile
+    if (!st.dieInstant && now - st.dieAt < __dieHandover(s, st.deathClip || 'Death') / __DIE.rate) return null; // the death clip plays meanwhile
     // hand over in the pose the clip has reached, facing the way it fell
     const K = s.parent;
     K && st.yaw != null && ((K.rotation.y = st.yaw), K.updateMatrixWorld(!0));
@@ -379,6 +420,69 @@ const __DIE = { rate: 1.35, handover: 2.45 }; // clip seconds at which the ragdo
     r && (st.dieAt = 0);
     return r;
   };
+}
+// The moment a death clip's body is about to reach the ground (its hips a third of the way down from where
+// they start): the ragdoll takes over then. Measured once per clip from the clip itself.
+const __DIE_AT = new Map();
+function __dieHandover(root, name) {
+  const key = (root.userData.bpChar || '') + ':' + name;
+  if (__DIE_AT.has(key)) return __DIE_AT.get(key);
+  let at = __DIE.handover;
+  try {
+    const clip = (__CHAR.clips.get(root.userData.bpChar) || []).find((c) => c.name === name),
+      hips = root.getObjectByName('mixamorigHips');
+    if (clip && hips) {
+      const m = new TZ(root),
+        act = m.clipAction(clip).play(),
+        p = new U(),
+        N = 60,
+        Y = [];
+      for (let i = 0; i <= N; i++) {
+        m.setTime((clip.duration * i) / N);
+        root.updateMatrixWorld(!0);
+        Y.push(hips.getWorldPosition(p).y);
+      }
+      act.stop();
+      m.uncacheRoot(root);
+      const y0 = Y[0],
+        yMin = Math.min(...Y),
+        i = Y.findIndex((y) => y < yMin + (y0 - yMin) * 0.33);
+      i > 0 && (at = Math.max(0.6, (clip.duration * i) / N));
+    }
+  } catch (e) {}
+  __DIE_AT.set(key, at);
+  return at;
+}
+// The part of a one-off transition clip worth playing (fractions of the clip): walk-to-kneel only from where
+// the hips start their last drop (the walking before it would replay steps the character has just taken)
+const __ONE_SPAN = new Map();
+function __oneSpan(root, clip) {
+  const key = (root.userData.bpChar || '') + ':' + clip.name;
+  if (__ONE_SPAN.has(key)) return __ONE_SPAN.get(key);
+  let span = [0, 1];
+  if (clip.name === 'CrouchKneel')
+    try {
+      const hips = root.getObjectByName('mixamorigHips'),
+        m = new TZ(root),
+        act = m.clipAction(clip).play(),
+        p = new U(),
+        N = 60,
+        Y = [];
+      for (let i = 0; i <= N; i++) {
+        m.setTime((clip.duration * i) / N);
+        root.updateMatrixWorld(!0);
+        Y.push(hips.getWorldPosition(p).y);
+      }
+      act.stop();
+      m.uncacheRoot(root);
+      const yEnd = Y[N];
+      let i = N;
+      while (i > 0 && Y[i - 1] <= Y[i] + 0.003) i--;
+      while (i > 0 && Y[i - 1] > Y[i] - 0.001 && Y[i - 1] > yEnd + 0.02) i--;
+      span = [Math.max(0, i / N - 0.05), 1];
+    } catch (e) {}
+  __ONE_SPAN.set(key, span);
+  return span;
 }
 // ---------------------------------------------------------------- locomotion
 const __LOCO = new Map();
@@ -418,6 +522,9 @@ function __locoSpeed(v, K, dt) {
   if (!v.alive) {
     // dying: turn to face where the shot came from (the fall goes away from it), over 0.2 s
     if (st.alive !== !1) {
+      // two deaths, taken in turn (a fall back from a shot in the front, or the stagger and drop)
+      st.deaths = (st.deaths || 0) + 1;
+      st.deathClip = (st.deaths + String(v.id).length) % 2 ? 'Death2' : 'Death';
       const d = v.deathDir;
       st.dieFace = d && Math.hypot(d.x, d.z) > 0.1 ? Math.atan2(-d.x, -d.z) : target;
       st.dieCrouch = v.crouch > 0.5;
@@ -457,10 +564,16 @@ function __locoSpeed(v, K, dt) {
   st.yawRate = (st.yawRate || 0) + (yr - (st.yawRate || 0)) * (1 - Math.exp(-dt * 8));
   let off = 0,
     cand;
-  if (!st.moving) cand = !crouch && v.alive && Math.abs(st.yawRate) > 1.1 ? (st.yawRate > 0 ? 'TurnL' : 'TurnR') : 'Still';
+  if (!st.moving) cand = v.alive && Math.abs(st.yawRate) > 1.1 ? (crouch ? 'CrouchTurn' : st.yawRate > 0 ? 'TurnL' : 'TurnR') : 'Still';
   else if (crouch) {
-    cand = backA ? 'CrouchWalking-' : 'CrouchWalking';
-    off = backA ? Math.max(-1, Math.min(1, Math.atan2(Math.sin(ang - Math.PI), Math.cos(ang - Math.PI)))) : Math.max(-1.35, Math.min(1.35, ang));
+    // the crouched rifle set: forwards, sideways, and back on the diagonals (legs turned to the travel)
+    const cl = (x, a) => Math.max(-a, Math.min(a, x));
+    if (fwdA) (cand = 'CrouchFwd'), (off = cl(ang, 1.0));
+    else if (backA) {
+      const dir = ang > 0 ? Math.PI * 0.75 : -Math.PI * 0.75;
+      cand = ang > 0 ? 'CrouchBackR' : 'CrouchBackL';
+      off = cl(Math.atan2(Math.sin(ang - dir), Math.cos(ang - dir)), 0.9);
+    } else (cand = ang > 0 ? 'CrouchR' : 'CrouchL'), (off = cl(ang - Math.sign(ang) * Math.PI * 0.5, 0.6));
   } else if (fwdA) {
     cand = run ? 'Run' : 'Walk';
     off = ang;
@@ -478,17 +591,27 @@ function __locoSpeed(v, K, dt) {
   } else st.cand = null;
   const move = st.move.replace('-', ''),
     sign = st.move.endsWith('-') ? -1 : 1,
-    turning = move === 'TurnL' || move === 'TurnR',
+    turning = move === 'TurnL' || move === 'TurnR' || move === 'CrouchTurn',
     nat = gait[move] || 1.1,
     rate = turning
-      ? Math.max(0.7, Math.min(2, Math.abs(st.yawRate) / (move === 'TurnL' ? 1.57 : 0.79)))
+      ? Math.max(0.7, Math.min(2, Math.abs(st.yawRate) / (move === 'TurnL' ? 0.67 : move === 'CrouchTurn' ? 2.1 : 0.79)))
       : sign * Math.max(/Run/.test(move) ? 0.45 : 0.5, Math.min(/Run/.test(move) ? 1.9 : 1.95, speed / nat));
-  st.ts = v.alive ? { [move]: rate } : { Death: __DIE.rate };
-  const still = crouch ? 'CrouchIdle' : turning ? move : 'Idle';
+  st.ts = v.alive ? { [move]: rate } : { [st.deathClip || 'Death']: __DIE.rate };
+  R.dead = st.deathClip || 'Death';
+  const still = turning ? move : crouch ? 'CrouchIdle' : 'Idle';
   R.idle = still;
   R.walk = move === 'Still' || turning ? still : move;
   R.run = R.walk;
-  R.aim = crouch ? 'CrouchIdle' : turning ? move : 'AimIdle';
+  R.aim = turning ? move : crouch ? 'CrouchIdle' : 'AimIdle';
+  // one-off transitions: standing up from a crouch, a crouch walk ending on one knee
+  if (v.alive && st.prevCrouch !== void 0) {
+    if (st.prevCrouch && !crouch && !st.moving) st.one = { name: 'Rise', t0: performance.now() / 1e3, len: 0.55 };
+    else if (crouch && st.prevMoving && !st.moving) st.one = { name: 'CrouchKneel', t0: performance.now() / 1e3, len: 0.6 };
+    else if (st.moving || (st.one && st.one.name === 'Rise' && crouch) || (st.one && st.one.name === 'CrouchKneel' && !crouch)) st.one = null;
+  }
+  v.alive || (st.one = null);
+  st.prevCrouch = crouch;
+  st.prevMoving = st.moving;
   if (st.air > 0.28 && v.alive) R.idle = R.walk = R.run = R.aim = v.vel.y > 0 ? 'Jump' : 'Fall';
   s && (s.userData.__bpLoco = st);
   return st.moving ? Math.max(speed, 0.7) : 0;
@@ -561,22 +684,37 @@ function __locoAfter(s, v, K, dt) {
   if (v.alive && gun && v.reloadLeft > 0) {
     ub.relTotal = ub.relOn ? Math.max(ub.relTotal, v.reloadLeft) : v.reloadLeft;
     ub.relOn = !0;
-    want.UpReload = [12, 1 - v.reloadLeft / Math.max(0.3, ub.relTotal)];
+    want[st.crouchClip ? 'UpReloadLow' : 'UpReload'] = [12, 1 - v.reloadLeft / Math.max(0.3, ub.relTotal)];
   } else ub.relOn = !1;
   // grenade toss: from 0.7 s before the release to the end of the follow-through
   if (v.alive && ev.toss && now - ev.toss < 1.2) {
-    const c = clips.find((x) => x.name === 'UpToss');
+    const tn = st.crouchClip ? 'UpTossLow' : 'UpToss',
+      c = clips.find((x) => x.name === tn);
     if (c) {
       const rel = __tossRelease(c, s),
         t = rel * c.duration + (now - ev.toss) * 1.3 - 0.7 * 1.3;
-      want.UpToss = [12, Math.max(0, Math.min(1, t / c.duration))];
+      want[tn] = [12, Math.max(0, Math.min(1, t / c.duration))];
+    }
+  }
+  // a one-off transition: the whole body for its length, fading in and out round the edges
+  if (st.one) {
+    const k = (now - st.one.t0) / st.one.len,
+      c = clips.find((x) => x.name === st.one.name);
+    if (k >= 1 || !c) st.one = null;
+    else {
+      const [f0, f1] = __oneSpan(s, c),
+        w = Math.min(1, k / 0.12, (1 - k) / 0.25) * 12;
+      want[st.one.name] = [w, f0 + (f1 - f0) * k];
     }
   }
   // hit flinch: a short jolt, half strength (the aim does not leave the target)
   if (v.alive && ev.hit && now - ev.hit < 0.42) want.UpHit = [1, (now - ev.hit) / 0.42];
   // firing: the recoil loop while the trigger is held
-  if (v.alive && gun && S && S.t - v.lastShotAt < 0.14 && !want.UpReload) want.UpFire = [1.4, (now * 4) % 1];
-  for (const name of ['UpReload', 'UpToss', 'UpHit', 'UpFire']) {
+  if (v.alive && gun && S && S.t - v.lastShotAt < 0.14 && !want.UpReload && !want.UpReloadLow) want.UpFire = [1.4, (now * 4) % 1];
+  // for the weapon hold (__gunHold): the arms belong to the clip while reloading or throwing; when it fired
+  st.armsBusy = !!(want.UpReload || want.UpReloadLow || want.UpToss || want.UpTossLow);
+  st.shotAgo = S && v.lastShotAt !== void 0 ? S.t - v.lastShotAt : 9;
+  for (const name of ['UpReload', 'UpReloadLow', 'UpToss', 'UpTossLow', 'UpHit', 'UpFire', 'Rise', 'CrouchKneel']) {
     let a = ub[name];
     const goal = want[name];
     if (!a && !goal) continue;
@@ -629,6 +767,7 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
       now = performance.now() / 1e3,
       dt = Math.min(0.1, now - (this.__pt || now));
     this.__pt = now;
+    this.__dt = dt;
     // lower body towards the direction of travel, upper body back onto the aim (before the arms are solved)
     if (st && Math.abs(st.off) > 0.01 && !o.hidden) {
       const B = this.__lb || (this.__lb = ['Hips', 'Spine', 'Spine1', 'Spine2'].map((n) => body.getObjectByName('mixamorig' + n)));
@@ -655,14 +794,17 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
     const r = coreIk.call(this, { ...o, pitch: this.__p, aiming, crouch: 0, hidden: !0 });
     if (!o.hidden)
       try {
-        __gunInHands(this, o, aiming);
-      } catch (e) {}
+        __gunHold(this, o, aiming);
+      } catch (e) {
+        // (kept for the console: window.__bpHoldErr)
+        typeof window < 'u' && (window.__bpHoldErr = String(e && e.stack).slice(0, 400));
+      }
     return r;
   };
 }
 // the gun into the animated hands: grip in the right palm, barrel through the left palm, kept upright
 const __gh = { a: new U(), b: new U(), c: new U(), d: new U(), f: new U(), u: new U(), x: new U(), m: new _A(), q: new Kw(), pq: new Kw(), up: new U(0, 1, 0) };
-function __gunInHands(ik, o, aiming) {
+function __gunInHands(ik, o, aiming, noLean) {
   const g = ik.gun && ik.gun.obj,
     I = ik.b,
     body = ik.body,
@@ -673,9 +815,7 @@ function __gunInHands(ik, o, aiming) {
   // the upper body follows the aim, as the core does
   const D = aiming || blade ? ik.__p : Math.min(ik.__p, 0) * 0.3 - 0.08,
     side = aV(par);
-  I.Abdomen && CM(I.Abdomen, side, -D * 0.25);
-  I.Torso && CM(I.Torso, side, -D * 0.35);
-  I.Head && CM(I.Head, side, -D * 0.2);
+  noLean || (I.Abdomen && CM(I.Abdomen, side, -D * 0.25), I.Torso && CM(I.Torso, side, -D * 0.35), I.Head && CM(I.Head, side, -D * 0.2));
   if (blade) return void (g.visible = !1);
   g.visible = !0;
   const T = __gh,
@@ -717,6 +857,268 @@ function __gunInHands(ik, o, aiming) {
   par.worldToLocal(want);
   g.position.copy(want);
   g.updateMatrixWorld(!0);
+}
+// ---------------------------------------------------------------- holding the weapon (every character, every clip)
+// The clips' arms are not a reliable way to hold a gun: some locomotion clips are unarmed (the arms swing), the
+// rifle clips differ from each other, and none knows which weapon the character carries. So the hold is worked
+// out each frame from the weapon and what the character is doing, and both arms are solved onto it:
+//   - long guns (rifles, SMGs, shotguns, LMGs, snipers): the stock in the right shoulder pocket. Aiming or
+//     firing: on the aim line, cheek to the stock. Standing, walking, crouched: low ready, the muzzle down
+//     about 30 degrees and angled across the body. Sprinting: port arms, the muzzle down and well across
+//   - pistols: aiming, both arms out with the gun at eye height; otherwise compact low ready at the chest
+//   - the right palm closes on the pistol grip (back of the hand outward, trigger finger along the frame
+//     unless firing); the left hand cups the handguard from under the left side (pistols: wraps the right)
+//   - the elbows hang naturally (right out a little, left tucked); the fingers curl round what they hold
+//   - reloading and throwing: the arms go back to the clip (its reload / toss) and the gun follows the hands
+//   - each shot kicks the gun back and up a little; changing hold blends over a quarter of a second
+// The hands are aimed with their own geometry (from each model's bind pose), so any rig holds the same way.
+const __GH = { q: new Kw(), q2: new Kw(), m: new _A(), m2: new _A(), v: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(() => new U()), up: new U(0, 1, 0) };
+const __GH_FING = ['Index', 'Middle', 'Ring', 'Pinky', 'Thumb'];
+// a hand's geometry from the skin's bind pose: its finger direction and palm normal (in the hand bone's
+// frame), where the palm's centre is, and each finger joint's rest rotation and curl axis
+function __ghHand(body, side) {
+  const S = side === 'R' ? 'Right' : 'Left',
+    get = (n) => body.getObjectByName('mixamorig' + n);
+  const hand = get(S + 'Hand');
+  if (!hand) return null;
+  let skel = null;
+  body.traverse((o) => !skel && o.isSkinnedMesh && o.skeleton && o.skeleton.bones.includes(hand) && (skel = o.skeleton));
+  if (!skel) return null;
+  const bindW = (b) => {
+    const i = skel.bones.indexOf(b);
+    return i < 0 ? null : new _A().copy(skel.boneInverses[i]).invert();
+  };
+  const Hw = bindW(hand),
+    mid = get(S + 'HandMiddle1') || get(S + 'HandIndex1'),
+    th = get(S + 'HandThumb1');
+  if (!Hw || !mid) return null;
+  const hp = new U().setFromMatrixPosition(Hw),
+    Hq = new Kw().setFromRotationMatrix(new _A().extractRotation(Hw)),
+    Hqi = Hq.clone().invert(),
+    Mw = bindW(mid),
+    fW = new U().setFromMatrixPosition(Mw).sub(hp),
+    flen = fW.length();
+  fW.normalize();
+  // the palm faces where the thumb and fingers close: right hand thumb x fingers, left fingers x thumb
+  let nW = new U(0, -1, 0);
+  const Tw = th && bindW(th);
+  if (Tw) {
+    const t = new U().setFromMatrixPosition(Tw).sub(hp);
+    t.addScaledVector(fW, -t.dot(fW)).normalize();
+    nW = side === 'R' ? new U().crossVectors(t, fW) : new U().crossVectors(fW, t);
+    nW.lengthSq() < 0.5 && nW.set(0, -1, 0);
+    nW.normalize();
+  }
+  const f = fW.clone().applyQuaternion(Hqi),
+    n = nW.clone().addScaledVector(fW, -nW.dot(fW)).normalize().applyQuaternion(Hqi);
+  const fingers = [];
+  for (const F of __GH_FING)
+    for (let k = 1; k <= 3; k++) {
+      const b = get(S + 'Hand' + F + k);
+      if (!b || !b.parent) continue;
+      const bw = bindW(b),
+        pw = bindW(b.parent);
+      if (!bw || !pw) continue;
+      const rest = new Kw().setFromRotationMatrix(new _A().extractRotation(new _A().copy(pw).invert().multiply(bw)));
+      // curl: turning the finger's direction towards the palm (for the thumb, across the palm)
+      const bq = new Kw().setFromRotationMatrix(new _A().extractRotation(bw)),
+        axisW = F === 'Thumb' ? fW.clone() : new U().crossVectors(fW, nW).normalize();
+      F === 'Thumb' && side === 'R' && axisW.negate();
+      fingers.push({ b, F, k, rest, axis: axisW.applyQuaternion(bq.invert()).normalize() });
+    }
+  return { hand, mid, arm: get(S + 'Arm'), fore: get(S + 'ForeArm'), f, n, fingers };
+}
+// the curl of each finger by grip (joints 1, 2, 3; radians)
+const __GH_CURL = {
+  rifleR: { Index: [0.25, 0.2, 0.15], Middle: [1.15, 1.35, 0.9], Ring: [1.2, 1.4, 0.9], Pinky: [1.25, 1.35, 0.85], Thumb: [0.35, 0.45, 0.3] },
+  fireR: { Index: [0.75, 0.9, 0.5] },
+  rifleL: { Index: [0.75, 0.85, 0.55], Middle: [0.85, 0.95, 0.6], Ring: [0.9, 1.0, 0.6], Pinky: [0.95, 1.0, 0.6], Thumb: [0.3, 0.3, 0.2] },
+  pistolR: { Index: [0.55, 0.75, 0.45], Middle: [1.3, 1.5, 1.0], Ring: [1.35, 1.5, 1.0], Pinky: [1.4, 1.45, 0.95], Thumb: [0.55, 0.45, 0.3] },
+  pistolL: { Index: [1.05, 1.2, 0.8], Middle: [1.1, 1.25, 0.8], Ring: [1.15, 1.25, 0.8], Pinky: [1.2, 1.25, 0.75], Thumb: [0.1, 0.05, 0.05] },
+};
+// hold targets per weapon class and state: muzzle down (dp), across the body (dy), cant (roll), and where the
+// stock (long guns) or the grip (pistols) sits, from the right shoulder: [right, up, forward] metres
+const __GH_POSE = {
+  long: {
+    aim: { dp: 0, dy: 0.02, roll: 0, at: [-0.045, -0.015, 0.02] },
+    // (small differences between the holds: bots switch between walking, running and aiming all the time, and a
+    // gun swinging 24-54 degrees across the body at each switch read as it jumping from hand to hand)
+    ready: { dp: 0.42, dy: 0.18, roll: 0.06, at: [-0.035, -0.05, 0.06] },
+    sprint: { dp: 0.55, dy: 0.32, roll: 0.1, at: [-0.02, -0.09, 0.1] },
+  },
+  // two hands (an isosceles stance): aiming, both arms out with the gun centred at eye level; otherwise compact
+  // low ready at the chest, muzzle down; sprinting, tucked in close
+  pistol: {
+    aim: { dp: 0, dy: 0.0, roll: 0, at: [-0.19, 0.06, 0.5] },
+    ready: { dp: 0.72, dy: 0.1, roll: 0, at: [-0.17, -0.2, 0.27] },
+    sprint: { dp: 0.95, dy: 0.15, roll: 0, at: [-0.15, -0.24, 0.2] },
+  },
+};
+function __ghFrame(ik, body, par, aiming) {
+  const T = __GH.v,
+    f = T[0].set(0, 0, 1).applyQuaternion(body.getWorldQuaternion(__GH.q)).setY(0).normalize(),
+    side = aV(par);
+  f.applyAxisAngle(side, -(aiming ? ik.__p : Math.min(ik.__p, 0) * 0.5));
+  const u = T[1].copy(__GH.up).addScaledVector(f, -__GH.up.dot(f)).normalize(),
+    r = T[2].crossVectors(f, u).normalize();
+  return { f, u, r };
+}
+function __ghSolveArm(H, wrist, pole, handQ) {
+  if (!H || !H.arm || !H.fore) return;
+  ZP(H.arm, H.fore, H.hand, wrist, pole);
+  H.hand.parent.getWorldQuaternion(__GH.q2);
+  H.hand.quaternion.copy(__GH.q2.invert().multiply(handQ));
+  H.hand.updateMatrixWorld(!0);
+}
+// where the wrist goes so the palm's centre lands on a point: back along the fingers, out of the palm (in
+// this model's own size: a fraction of its wrist-to-knuckle length)
+function __ghWrist(H, palmPt, F, N) {
+  const L = H.hand.getWorldPosition(new U()).distanceTo(H.mid.getWorldPosition(new U())) || 0.09,
+    n = N.clone().addScaledVector(F, -N.dot(F)).normalize();
+  return palmPt.clone().addScaledVector(F, -0.45 * L).addScaledVector(n, -0.26 * L);
+}
+// the hand's world rotation that puts its fingers along F and its palm towards N
+function __ghHandQ(H, F, N, out) {
+  const e1 = H.f,
+    e2 = H.n,
+    e3 = __GH.v[6].crossVectors(e1, e2),
+    E2 = __GH.v[7].copy(N).addScaledVector(F, -N.dot(F)).normalize(),
+    E3 = __GH.v[8].crossVectors(F, E2);
+  __GH.m.makeBasis(F, E2, E3);
+  __GH.m2.makeBasis(e1, e2, e3).transpose();
+  return out.setFromRotationMatrix(__GH.m.multiply(__GH.m2));
+}
+function __ghCurl(H, curl, extra, w) {
+  if (!H) return;
+  for (const c of H.fingers) {
+    const a = ((extra && extra[c.F]) || curl[c.F] || [0.8, 0.9, 0.6])[c.k - 1];
+    __GH.q.setFromAxisAngle(c.axis, a);
+    const tgt = __GH.q2.copy(c.rest).multiply(__GH.q);
+    w >= 0.999 ? c.b.quaternion.copy(tgt) : c.b.quaternion.slerp(tgt, w);
+  }
+}
+function __gunHold(ik, o, aiming) {
+  const g = ik.gun && ik.gun.obj,
+    body = ik.body,
+    par = body && body.parent,
+    st = body && body.userData.__bpLoco,
+    wpn = o.weapon;
+  if (!g || !par || wpn === 'knife' || wpn === 'grenade') return __gunInHands(ik, o, aiming);
+  const hd = ik.__hd || (ik.__hd = { R: __ghHand(body, 'R'), L: __ghHand(body, 'L') }),
+    R = hd.R,
+    L = hd.L;
+  if (!R || !R.arm) return __gunInHands(ik, o, aiming);
+  // which kind of gun: the core's table knows only its own pistols; the game's weapon classes (qO: kestrel,
+  // striker -> pistol) decide for the rest, and a pistol gets the pistol grip points
+  const pistol = ik.gun.grip.pistol || qO[wpn] === 'pistol',
+    C = pistol && !ik.gun.grip.pistol ? ik.gun.pgrip || (ik.gun.pgrip = { grip: new U(0, -0.055, 0.022), fore: new U(0, -0.085, 0.03), pistol: !0, stock: 0 }) : ik.gun.grip,
+    dt = ik.__dt || 0.016,
+    cls = C.pistol ? 'pistol' : 'long';
+  // the core leans the upper body to the aim; do that first (as __gunInHands does)
+  const D = aiming ? ik.__p : Math.min(ik.__p, 0) * 0.3 - 0.08,
+    side = aV(par),
+    I = ik.b;
+  I.Abdomen && CM(I.Abdomen, side, -D * 0.25);
+  I.Torso && CM(I.Torso, side, -D * 0.35);
+  I.Head && CM(I.Head, side, -D * 0.2);
+  g.visible = !0;
+  // the state, and its targets blended smoothly
+  // the run hold only after 0.6 s of running (not on every burst of speed)
+  const running = !aiming && st && st.moving && st.move === 'Run' && !st.crouchClip,
+    now = performance.now();
+  running ? ik.__runSince || (ik.__runSince = now) : (ik.__runSince = 0);
+  const sprint = running && now - ik.__runSince > 600,
+    state = aiming ? 'aim' : sprint ? 'sprint' : 'ready',
+    P = __GH_POSE[cls][state],
+    hp = ik.__hp || (ik.__hp = { dp: P.dp, dy: P.dy, roll: P.roll, x: P.at[0], y: P.at[1], z: P.at[2], w: 1, cls }),
+    k = 1 - Math.exp(-dt * 6.5);
+  if (hp.cls !== cls) Object.assign(hp, { dp: P.dp, dy: P.dy, roll: P.roll, x: P.at[0], y: P.at[1], z: P.at[2], cls });
+  hp.dp += (P.dp - hp.dp) * k;
+  hp.dy += (P.dy - hp.dy) * k;
+  hp.roll += (P.roll - hp.roll) * k;
+  hp.x += (P.at[0] - hp.x) * k;
+  hp.y += (P.at[1] - hp.y) * k;
+  hp.z += (P.at[2] - hp.z) * k;
+  // the arms are the clip's while reloading or throwing
+  const wantW = st && st.armsBusy ? 0 : 1;
+  hp.w += (wantW - hp.w) * (1 - Math.exp(-dt * (wantW > hp.w ? 9 : 14)));
+  const W = hp.w;
+  // recoil: a short kick back and up after each shot
+  const ago = st ? st.shotAgo : 9,
+    kick = ago < 0.12 ? Math.sin((ago / 0.12) * Math.PI) * (C.pistol ? 1 : 0.6) : 0;
+  // the aim frame at the right shoulder
+  body.updateMatrixWorld(!0);
+  const { f, u, r } = __ghFrame(ik, body, par, aiming),
+    sh = R.arm.getWorldPosition(__GH.v[3]);
+  // barrel direction: down by dp, across the body by dy (towards the left), plus the kick
+  const b = __GH.v[4].copy(f).multiplyScalar(Math.cos(hp.dp - kick * 0.06)).addScaledVector(u, -Math.sin(hp.dp - kick * 0.06)).normalize();
+  b.multiplyScalar(Math.cos(hp.dy)).addScaledVector(r, -Math.sin(hp.dy)).normalize();
+  // gun axes: -Z along the barrel, +Y up (canted by roll)
+  const zA = __GH.v[5].copy(b).negate(),
+    yA = __GH.v[6].copy(__GH.up).addScaledVector(zA, -__GH.up.dot(zA)).normalize();
+  hp.roll && yA.applyAxisAngle(zA, -hp.roll);
+  const xA = __GH.v[7].crossVectors(yA, zA).normalize();
+  __GH.m.makeBasis(xA, yA, zA);
+  const gq = new Kw().setFromRotationMatrix(__GH.m);
+  // where it sits: the stock in the shoulder pocket (long guns) or the grip in front (pistols)
+  const anchor = new U().copy(sh).addScaledVector(r, hp.x).addScaledVector(u, hp.y).addScaledVector(f, hp.z - kick * 0.035),
+    gpos = new U();
+  if (C.pistol) gpos.copy(anchor).sub(C.grip.clone().applyQuaternion(gq));
+  else gpos.copy(anchor).addScaledVector(b, C.stock).addScaledVector(yA, 0.035 + kick * 0.01);
+  // where the clip's hands would put it (for reloads and throws), and the blend between the two
+  if (W < 0.999) {
+    __gunInHands(ik, o, aiming, !0);
+    g.updateMatrixWorld(!0);
+    const cp = g.getWorldPosition(new U()),
+      cq = g.getWorldQuaternion(new Kw());
+    gpos.lerpVectors(cp, gpos, W);
+    gq.slerpQuaternions(cq, gq, W);
+  }
+  par.getWorldQuaternion(__GH.q2);
+  g.quaternion.copy(__GH.q2.clone().invert().multiply(gq));
+  g.position.copy(par.worldToLocal(gpos.clone()));
+  g.updateMatrixWorld(!0);
+  if (W < 0.01) return;
+  // the hands onto the gun
+  const save = W < 0.999 ? [R, L].filter(Boolean).flatMap((H) => [H.arm, H.fore, H.hand, ...H.fingers.map((c) => c.b)]).filter(Boolean).map((bn) => [bn, bn.quaternion.clone()]) : null;
+  const gx = new U(1, 0, 0).applyQuaternion(gq),
+    gy = new U(0, 1, 0).applyQuaternion(gq),
+    gz = new U(0, 0, 1).applyQuaternion(gq),
+    toW = (x, y, z) => new U().copy(g.position).set(0, 0, 0).addScaledVector(gx, x).addScaledVector(gy, y).addScaledVector(gz, z),
+    pt = (p) => g.localToWorld(p.clone());
+  // right hand: palm on the grip's right side, fingers forward and down round it, palm facing left (a pistol's
+  // grip is nearer upright: the hand's long axis is nearer the barrel)
+  const FR = (C.pistol ? toW(0, -0.35, -0.94) : toW(0, -0.55, -0.8)).normalize(),
+    NR = toW(-1, -0.1, 0).normalize(),
+    qR = __ghHandQ(R, FR, NR, new Kw()),
+    palmR = pt(C.grip).addScaledVector(gx, C.pistol ? 0.022 : 0.026),
+    wristR = __ghWrist(R, palmR, FR, NR);
+  __ghSolveArm(R, wristR, new U().copy(u).multiplyScalar(-1).addScaledVector(r, aiming ? 0.75 : 0.45).addScaledVector(f, -0.25), qR);
+  C.pistol ? __ghCurl(R, __GH_CURL.pistolR, null, 1) : __ghCurl(R, __GH_CURL.rifleR, ago < 0.25 || aiming ? __GH_CURL.fireR : null, 1);
+  if (L && L.arm) {
+    let qL, palmL, pole, FL, NL;
+    if (C.pistol) {
+      // support hand (thumbs forward): the palm on the grip's open left side, below the slide, its fingers
+      // wrapping round the front of the right hand's fingers under the trigger guard; the thumb along the frame
+      FL = toW(0.08, -0.5, -0.86).normalize();
+      NL = toW(1, 0.08, 0).normalize();
+      qL = __ghHandQ(L, FL, NL, new Kw());
+      palmL = pt(C.grip).addScaledVector(gx, -0.034).addScaledVector(gy, -0.004).addScaledVector(gz, -0.004);
+      pole = new U().copy(u).multiplyScalar(-1).addScaledVector(r, -0.75).addScaledVector(f, -0.1);
+      __ghCurl(L, __GH_CURL.pistolL, null, 1);
+    } else {
+      // support hand: under the handguard from the left, fingers wrapping up its right side
+      FL = toW(0.7, 0.25, -0.55).normalize();
+      NL = toW(0.45, 0.9, 0).normalize();
+      qL = __ghHandQ(L, FL, NL, new Kw());
+      palmL = pt(C.fore).addScaledVector(gx, -0.025).addScaledVector(gy, -0.03);
+      pole = new U().copy(u).multiplyScalar(-1).addScaledVector(r, -0.35).addScaledVector(f, -0.1);
+      __ghCurl(L, __GH_CURL.rifleL, null, 1);
+    }
+    __ghSolveArm(L, __ghWrist(L, palmL, FL, NL), pole, qL);
+  }
+  // part-way back to the clip (a reload or toss starting or ending)
+  if (save) for (const [bn, q0] of save) (bn.quaternion.copy(q0.slerp(bn.quaternion.clone(), W)), bn.updateMatrixWorld(!0));
 }
 // the old classic / realistic choice no longer exists: hide the setting
 {

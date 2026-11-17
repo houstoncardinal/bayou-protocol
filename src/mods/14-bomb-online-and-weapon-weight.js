@@ -43,7 +43,7 @@ function __bmUnpack(A, r, net) {
           k = Math.max(0, mates.indexOf(me.id));
         me.pos = { ...sp[k % sp.length] };
         me.vel.x = me.vel.y = me.vel.z = 0;
-        me.yaw = me.team === 'T' ? 0 : Math.PI;
+        me.yaw = m.spawnFaceCenter ? Math.atan2(-(m.w / 2 - me.pos.x), -(m.d / 2 - me.pos.z)) : me.team === 'T' ? 0 : Math.PI;
         me.actionProgress = 0;
       }
     }

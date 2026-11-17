@@ -127,3 +127,31 @@ typeof window < 'u' &&
       window[k] = void 0;
     }
   }, 0);
+// ---------------------------------------------------------------- shooting through walls
+// The core lets a bullet through a box that has a penetration cost (`pen`, per metre) when the box is no
+// thicker than 0.6 m and the gun has the power left (rifle 1.6, AK 1.9, LMG 2, sniper 2.8, pistols 0.7).
+// Most walls were built without one, so they stopped everything. Every wall of a map now gets a cost by what
+// it is made of, on its first match: plaster and timber partitions let anything through, a 40 cm brick or
+// concrete wall takes a rifle (not a pistol), steel takes a sniper; anything over 0.6 m (perimeter walls,
+// rock, the bounds) still stops every bullet. Walls a map gave its own cost keep it.
+const __PEN_MAT = { plaster: 1.1, wood: 1.0, dirt: 2.6, concrete: 3.0, metal: 4.5, glass: 0.2 };
+function __penWalls(m) {
+  if (!m || m.__penSet) return;
+  m.__penSet = 1;
+  for (const b of m.boxes) {
+    if (b.kind !== 'wall' || b.pen || b.__rock || b.__bound) continue;
+    const t = Math.min(b.max.x - b.min.x, b.max.z - b.min.z);
+    if (t > 0.6 || b.max.y - b.min.y < 0.3) continue;
+    b.pen = __PEN_MAT[b.mat] ?? 3.0;
+  }
+}
+{
+  const coreStart = BY;
+  BY = function () {
+    const st = coreStart.apply(this, arguments);
+    try {
+      __penWalls(aw());
+    } catch (e) {}
+    return st;
+  };
+}

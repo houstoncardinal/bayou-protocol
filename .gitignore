@@ -15,3 +15,6 @@ assets-src/props/secure_box_crates_type_a.glb
 assets-src/maps/
 # sources no longer used (see assets-src/_retired/README.md)
 assets-src/_retired/
+
+# local data of the dev server (/api/showings, /admin)
+.data/

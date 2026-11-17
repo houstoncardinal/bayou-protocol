@@ -99,7 +99,7 @@ function __HomePlay({ cls, art, icon, kick, title, sub, meta, onClick, primary }
     className: `hm2-play ${cls || ''} ${primary ? 'hm2-play--primary' : ''}`,
     onClick,
     children: [
-      M.jsx('span', { className: 'hm2-play-art', style: { backgroundImage: `url(./game/textures/${art})` } }),
+      M.jsx('span', { className: 'hm2-play-art', style: { backgroundImage: `url(./game/${/\//.test(art) ? art : 'textures/' + art})` } }),
       M.jsx('span', { className: 'hm2-play-shade' }),
       M.jsxs('span', {
         className: 'hm2-play-body',
@@ -189,7 +189,7 @@ function __Home() {
           children: [
             M.jsx(__HomePlay, {
               primary: !0,
-              art: 'texture-21.jpg',
+              art: 'menu/map-cinema.webp',
               icon: 'globe',
               kick: 'Multiplayer',
               title: 'Play online',
@@ -198,13 +198,22 @@ function __Home() {
               onClick: () => w.setScreen('online'),
             }),
             M.jsx(__HomePlay, {
-              art: 'texture-19.jpg',
+              art: 'menu/map-ridgeback.webp',
               icon: 'target',
               kick: 'Offline',
               title: 'Play vs bots',
               sub: 'Pick a side and operator, any mode and map.',
-              meta: ['4 modes', '4 maps'],
+              meta: ['6 modes', '4 maps'],
               onClick: () => w.setScreen('setup'),
+            }),
+            M.jsx(__HomePlay, {
+              art: 'menu/theater.webp',
+              icon: 'eye',
+              kick: 'New',
+              title: 'Theater Mode',
+              sub: 'Walk into Bayou Palace Cinemas, take a seat and watch together. No weapons.',
+              meta: ['6 screens', 'Voice chat'],
+              onClick: () => typeof window < 'u' && window.__bpTheater && window.__bpTheater(),
             }),
           ],
         }),

@@ -55,7 +55,8 @@ if (typeof document < 'u') {
   window.addEventListener(
     'keydown',
     (e) => {
-      if (e.code !== 'Escape' || !__NL.on || document.pointerLockElement) return;
+      // (not while an in-game panel has the keys: the cinema's film controls)
+      if (e.code !== 'Escape' || !__NL.on || document.pointerLockElement || window.__bpPanelOpen) return;
       const z = Zw.getState();
       z.screen === 'playing' &&
         !z.paused &&

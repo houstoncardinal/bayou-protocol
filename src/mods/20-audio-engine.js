@@ -8,9 +8,12 @@
 //   - caps simultaneous voices, dropping the quietest/farthest sounds first (your own always play)
 //   - uses HRTF panning only for a few nearby sounds, cheaper equal-power panning for the rest
 //   - resumes the context when the browser suspends it (tab switch, device change, Safari interruptions)
+// Positional sound for a competitive game: every sound out to 70 m is placed with HRTF (front / behind /
+// above / below, through headphones), up to 28 at once, the nearest first; beyond that equal-power panning.
+// Footsteps carry 40 m, quieter through walls; gunfire carries as before. See docs/audio.md.
 const __AUD = {
-  maxVoices: 56,
-  maxHrtf: 10,
+  maxVoices: 72,
+  maxHrtf: 28,
   voices: [], // { end, prio, nodes, hrtf }
   life: 4.5, // seconds a voice chain is kept before it is disconnected (longest tails, slow reloads, ~3.5s)
 };
@@ -88,7 +91,7 @@ xw = function (w, A, i = {}) {
       nodes.push(j, d);
     }
     const t = I.createPanner();
-    hrtf = n < 18 && __AUD.voices.reduce((s, x) => s + (x.hrtf ? 1 : 0), 0) < __AUD.maxHrtf;
+    hrtf = n < 70 && __AUD.voices.reduce((s, x) => s + (x.hrtf ? 1 : 0), 0) < __AUD.maxHrtf;
     t.panningModel = hrtf ? 'HRTF' : 'equalpower';
     t.distanceModel = 'inverse';
     t.refDistance = 2.5;

@@ -1498,7 +1498,7 @@ html.swat-touch body {
   overflow: hidden;
 }
 @media (orientation: portrait) {
-  html.swat-touch #swat-rotate {
+  html.swat-touch #swat-rotate.landscape-only {
     display: grid;
     position: fixed;
     inset: 0;
@@ -1877,18 +1877,6 @@ html.swat-ctf .fps-root--touch .hud-alerts {
   .fps-root--touch .hud-feed > :nth-child(n + 3) {
     display: none;
   }
-}
-.po-mode[data-mode='tdm'] .po-mode-art {
-  background-image: url(/game/textures/texture-19.jpg) !important;
-}
-.po-mode[data-mode='ffa'] .po-mode-art {
-  background-image: url(/game/textures/texture-20.jpg) !important;
-}
-.po-mode[data-mode='ctf'] .po-mode-art {
-  background-image: url(/game/textures/texture-21.jpg) !important;
-}
-.po-mode[data-mode='bomb'] .po-mode-art {
-  background-image: url(/game/textures/texture-22.jpg) !important;
 }
 
 /* =====================================================================

@@ -17,7 +17,8 @@
 // vertices welded, heavy meshes simplified to about 22k triangles, textures resized (colour and normal
 // 1024 px, roughness 512 px) and stored as WebP, vertex data quantised (KHR_mesh_quantization, decoded
 // natively by three.js). Animations: clip named from the file name ("Rifle Walk.fbx" -> "RifleWalk"),
-// root motion removed (the hips keep their height and sway but do not travel), redundant keys resampled
+// the hips track scaled to the shared skeleton (files exported at another scale or for another character
+// stand on the floor), root motion removed (the hips keep their height and sway but do not travel), redundant keys resampled
 // out, all merged onto one skeleton so every character shares one small file.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -132,7 +133,8 @@ if (only !== 'chars') {
   const files = fs.readdirSync(dir).filter((f) => /\.fbx$/i.test(f)).sort();
   // the shared skeleton comes from the first animation file
   let base = null,
-    nodeBy = null;
+    nodeBy = null,
+    baseRestY = null;
   manifest.animations.clips = [];
   for (const f of files) {
     const clip = clean(f);
@@ -148,6 +150,22 @@ if (only !== 'chars') {
       console.log(`${f}: no animation, skipped`);
       continue;
     }
+    // One scale for every clip. Mixamo files come at different scales: downloaded for another character, or
+    // exported with the unit conversion baked into the skeleton (a hips rest height of 0.008 m instead of 0.97 m).
+    // The hips track is the only translation the game plays, so it is scaled by (the shared skeleton's hips
+    // rest height / this file's): any file then stands on the floor, at the shared skeleton's size.
+    const hipsNode = root.listNodes().find((n) => /Hips$/.test(n.getName())),
+      restY = hipsNode ? hipsNode.getTranslation()[1] : 0;
+    baseRestY === null && restY > 0 && (baseRestY = restY);
+    const fit = restY > 0 && baseRestY ? baseRestY / restY : 1;
+    if (Math.abs(fit - 1) > 0.002)
+      for (const ch of anim.listChannels()) {
+        const n = ch.getTargetNode();
+        if (!n || n !== hipsNode || ch.getTargetPath() !== 'translation') continue;
+        const out = ch.getSampler().getOutput();
+        out.setArray(out.getArray().map((v) => v * fit));
+      }
+    Math.abs(fit - 1) > 0.05 && console.log(`  ${f}: hips scaled x${fit.toFixed(2)} (skeleton at another scale)`);
     // root motion: the hips keep their own height and sway but do not travel through the level
     let drift = { x: 0, z: 0 };
     for (const ch of anim.listChannels()) {

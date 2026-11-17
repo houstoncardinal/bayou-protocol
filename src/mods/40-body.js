@@ -125,6 +125,24 @@ function __bodyFeet(s, v, K, dt) {
     L.ankle.quaternion.copy(pq.invert().multiply(fq));
     L.ankle.updateMatrixWorld(!0);
   }
+  // the soles follow the ground: each foot pitched to the floor between its heel and toe (slopes, ramps,
+  // terrain, a toe over a step's edge), smoothed, at most 26 degrees
+  if (!on) return;
+  for (const L of r.legs) {
+    if (!L.toe) continue;
+    const Aw = L.ankle.getWorldPosition(__bt.a).clone(),
+      Tw = L.toe.getWorldPosition(__bt.b).clone(),
+      run = Math.hypot(Tw.x - Aw.x, Tw.z - Aw.z);
+    if (run < 0.04) continue;
+    const fa = __bodyFloor(Aw.x, rootY, Aw.z),
+      ft = __bodyFloor(Tw.x, rootY, Tw.z),
+      want = Math.max(-0.45, Math.min(0.45, Math.atan2(ft - fa, run * 1.6)));
+    L.tilt = (L.tilt || 0) + (want - (L.tilt || 0)) * k;
+    if (Math.abs(L.tilt) < 0.01) continue;
+    const f = __bt.c.set(Tw.x - Aw.x, 0, Tw.z - Aw.z).normalize(),
+      axis = __bt.d.crossVectors(f, __bt.e.set(0, 1, 0)).normalize();
+    __bodyRotWorld(L.ankle, __bt.q.setFromAxisAngle(axis, L.tilt));
+  }
 }
 // ---------------------------------------------------------------- hitboxes
 // [key, from bone, to bone, zone, bones whose vertices size it (prefix match), [end A, end B] pulled in by this

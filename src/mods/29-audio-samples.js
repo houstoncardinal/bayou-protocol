@@ -188,7 +188,9 @@ const __SH = {
     if (n - (__SND['st' + B.who] || 0) < 180) return !0;
     __SND['st' + B.who] = n;
     const self = VI(B.who);
-    return __sndPlay(k, self ? null : B.pos, (self ? 0.32 : 0.85) * (run ? 1.2 : 1) * (who && who.crouch > 0.5 ? 0.45 : 1), { maxDist: 32, reverb: 0.1 });
+    // other people's footsteps: at their feet (so you hear where they are, and above or below you), out to
+    // 40 m; crouch-walking is near silent
+    return __sndPlay(k, self ? null : { x: B.pos.x, y: B.pos.y + 0.05, z: B.pos.z }, (self ? 0.32 : 1.0) * (run ? 1.2 : 1) * (who && who.crouch > 0.5 ? 0.35 : 1), { maxDist: self ? 32 : 40, reverb: 0.1 });
   },
   land(B) {
     const k = __sndKey('land.' + TE(aw(), B.pos.x, B.pos.y, B.pos.z), 'land.concrete');

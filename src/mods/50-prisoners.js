@@ -165,12 +165,21 @@ function __prsPlay(n, k, fade = 0.35, ts = 1) {
   n.cur = k;
 }
 // arms pointed along the pose's directions (blended with the clip by poseW), head shake and look down
-const __prsT = { q: new Kw(), q2: new Kw(), q3: new Kw(), hq: new Kw(), hqi: new Kw(), v: new U(), up: new U(0, 1, 0), x: new U(1, 0, 0) };
+const __prsT = { q: new Kw(), q2: new Kw(), q3: new Kw(), hq: new Kw(), hqi: new Kw(), v: new U(), up: new U(0, 1, 0), x: new U(1, 0, 0), chain: [] };
+// A bone's rotation relative to the holder, from the local rotations up the chain (no matrix updates: the
+// old way forced each inmate's whole skeleton to recompute its matrices several times a frame, the biggest
+// CPU cost on this map)
+function __prsRel(o, holder, out) {
+  const chain = __prsT.chain;
+  chain.length = 0;
+  for (let p = o; p && p !== holder; p = p.parent) chain.push(p);
+  out.identity();
+  for (let i = chain.length - 1; i >= 0; i--) out.multiply(chain[i].quaternion);
+  return out;
+}
 function __prsArms(n, t) {
-  const T = __prsT;
-  n.holder.updateMatrixWorld(!0);
-  n.holder.getWorldQuaternion(T.hq);
-  T.hqi.copy(T.hq).invert();
+  const T = __prsT,
+    h = n.holder;
   const P = __PRS_POSE[n.pose] || __PRS_POSE.down,
     w = n.poseW;
   if (w > 0.01)
@@ -184,21 +193,18 @@ function __prsArms(n, t) {
         const d = P[key],
           sw = n.pose === 'down' ? n.swing * (side ? -1 : 1) * (key === 'up' ? 0.32 : 0.18) : 0;
         T.v.set(side ? -d[0] : d[0], d[1], d[2] + sw).normalize();
-        // target, in the holder frame; the clip's current rotation, in the holder frame; blend; back to local
+        // target and the clip's rotation, both relative to the holder; blend; back to the bone's own
         T.q.setFromUnitVectors(r.d, T.v).multiply(r.q);
-        b.getWorldQuaternion(T.q2);
-        T.q3.copy(T.hqi).multiply(T.q2).slerp(T.q, w);
-        b.parent.getWorldQuaternion(T.q2);
-        b.quaternion.copy(T.q2.invert().multiply(T.hq).multiply(T.q3));
-        b.updateMatrixWorld(!0);
+        __prsRel(b.parent, h, T.q2);
+        T.q3.copy(T.q2).multiply(b.quaternion).slerp(T.q, w);
+        b.quaternion.copy(T.q2.invert().multiply(T.q3));
       }
   const H = n.B.head;
   if (H && (Math.abs(n.shake) > 0.002 || Math.abs(n.look) > 0.002)) {
-    H.getWorldQuaternion(T.q2);
-    T.q.setFromAxisAngle(T.up, n.shake).multiply(T.q3.setFromAxisAngle(T.v.copy(T.x).applyQuaternion(T.hq), n.look));
-    H.parent.getWorldQuaternion(T.q3);
-    H.quaternion.copy(T.q3.invert().multiply(T.q).multiply(T.q2));
-    H.updateMatrixWorld(!0);
+    __prsRel(H.parent, h, T.q2);
+    T.q3.copy(T.q2).multiply(H.quaternion);
+    T.q.setFromAxisAngle(T.up, n.shake).multiply(T.hq.setFromAxisAngle(T.x, n.look)).multiply(T.q3);
+    H.quaternion.copy(T.q2.invert().multiply(T.q));
   }
 }
 // ---------------------------------------------------------------- where they are (A Block, 35-prison.js)
@@ -215,7 +221,8 @@ function __prsPlan(m) {
     for (let tier = 0; tier < 2; tier++)
       for (let i = 0; i < 13; i++) {
         const open = (i * 7 + tier * 3 + (side === 'E' ? 5 : 0)) % 4 === 0 || i === 6;
-        if (open || h(i, tier, side === 'E' ? 2 : 1) > 0.34) continue;
+        // (the Jailbreak cells hold their own inmates: 67-jailbreak.js)
+        if (open || h(i, tier, side === 'E' ? 2 : 1) > 0.2 || (m.__jbCells || []).some(([sd, tr, ci]) => sd === side && tr === tier && ci === i)) continue;
         const s = side === 'W' ? 1 : -1,
           back = side === 'W' ? 4.4 : 35.6,
           front = side === 'W' ? 7.6 : 32.4,
@@ -240,7 +247,7 @@ function __prsPlan(m) {
     { x: 28.0, z: 68.6 },
     { x: 28.0, z: 42.8 },
   ];
-  for (let k = 0; k < 3; k++)
+  for (let k = 0; k < 2; k++)
     out.push({
       kind: 'mx',
       y: 0,
@@ -347,7 +354,25 @@ function __prsTick(g, dt, cam, frame) {
     n.look += ((n.pose === 'head' && n.state === 'idle' ? 0.42 : n.pose === 'bars' ? -0.05 : 0.08) - n.look) * Math.min(1, dt * 3);
     n.swing = n.state === 'walk' ? Math.sin(n.phase * 5.6 * (p.speed / 1.1)) : n.swing * 0.9;
     // animation: full rate up close, every third frame further out, none past 60 m
-    if (dCam > 60) continue;
+    // out of sight (far, or behind the camera): taken out of the scene graph, so its skeleton costs nothing
+    // (three.js recomputes every bone's matrix every frame while it is in the scene, seen or not)
+    let seen = dCam < 60;
+    if (seen && cam && dCam > 3) {
+      const f = __prsT.fwd || (__prsT.fwd = new U());
+      cam.getWorldDirection(f);
+      seen = ((pos.x - cam.position.x) * f.x + (pos.y + 1 - cam.position.y) * f.y + (pos.z - cam.position.z) * f.z) / dCam > 0.2;
+    }
+    if (!seen) {
+      n.holder.parent && g.remove(n.holder);
+      continue;
+    }
+    n.holder.parent || g.add(n.holder);
+    // a shadow only up close
+    const near = dCam < 16;
+    if (n.__cast !== near) {
+      n.__cast = near;
+      n.root.traverse((o) => o.isMesh && (o.castShadow = near));
+    }
     if (dCam > 30 && (frame + n.plan.seed * 3) % 3 >= 1) continue;
     n.mixer.update(dCam > 30 ? dt * 3 : dt);
     __prsArms(n, dt);
