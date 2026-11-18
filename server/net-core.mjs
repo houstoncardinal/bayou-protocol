@@ -141,6 +141,8 @@ export class NetHub {
   // ------------------------------------------------------------------ accounts
   async hello(c, m) {
     if (c.uid) return;
+    // a check (the TURN setup script's): the relay addresses only, no account made
+    if (m.probe) return this.send(c, { t: 'hi', probe: 1, ice: await this.ice() });
     let u = null;
     if (ID_RE.test(String(m.id || '')) && typeof m.tok === 'string') {
       const got = await this.store.get('u:' + m.id);
@@ -375,6 +377,30 @@ export class NetHub {
     }
     await this.store.put(doneKey, done.slice(-128));
     this.lb = null;
+  }
+  // Once, after the release that added it: the accounts made while testing the hub (the scripted test match's
+  // "Alice" and "Bob", and the TURN checks' "turn-check" guests) go, with their friends lists, friend requests,
+  // chats, unread counts and match-result records. Recorded as done ('purge:v1'), so it never runs again: a real
+  // player who later takes one of those names is untouched.
+  async purgeDemo() {
+    if (this.purgeRan) return this.purgeRan;
+    return (this.purgeRan = (async () => {
+      if (await this.store.get('purge:v1')) return;
+      const DEMO = new Set(['Alice', 'Bob', 'turn-check']);
+      const ids = new Set((await this.store.list('u:')).map(([, u]) => u).filter((u) => u && DEMO.has(u.name)).map((u) => u.id));
+      for (const id of ids) for (const k of ['u:', 'f:', 'fr:', 'un:']) await this.store.delete(k + id);
+      for (const pre of ['f:', 'fr:', 'rr:'])
+        for (const [k, v] of await this.store.list(pre))
+          Array.isArray(v) && v.some((x) => ids.has(x)) && (await this.store.put(k, v.filter((x) => !ids.has(x))));
+      for (const [k, v] of await this.store.list('un:'))
+        if (v && typeof v === 'object' && Object.keys(v).some((x) => ids.has(x))) {
+          for (const x of ids) delete v[x];
+          await this.store.put(k, v);
+        }
+      for (const [k] of await this.store.list('m:')) k.slice(2).split('|').some((x) => ids.has(x)) && (await this.store.delete(k));
+      await this.store.put('purge:v1', { at: Date.now(), removed: ids.size });
+      this.lb = null;
+    })());
   }
   async leaderboard() {
     if (this.lb && Date.now() - this.lb.at < 30000) return this.lb.rows;

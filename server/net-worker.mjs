@@ -55,6 +55,7 @@ export class BayouHub extends DurableObject {
     }
   }
   async fetch(req) {
+    await this.hub.purgeDemo();
     const url = new URL(req.url);
     if (url.pathname.endsWith('/leaderboard')) return Response.json(await this.hub.leaderboard(), { headers: CORS });
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Bayou Protocol online hub', { status: 200 });

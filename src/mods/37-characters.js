@@ -420,6 +420,42 @@ const __DIE = { rate: 1.35, handover: 2.45 }; // clip seconds at which the ragdo
     r && (st.dieAt = 0);
     return r;
   };
+  // The ragdoll turned each limb bone by the shortest rotation from the limb's direction when it died to its
+  // direction now. Once a limb swung round to point roughly the opposite way (an arm held forward on the gun,
+  // flung back as the body drops) that rotation is undefined, and the limb spun half a turn about itself in a
+  // frame, over and over while the body settled. Each limb now turns from where it pointed last frame (always a
+  // small, well-defined turn), carrying its twist along. The spine and hips (oriented by the shoulders and
+  // hips as well) are unchanged.
+  const __rgQ = { inc: new Kw(), e: new Kw(), n: new Kw(), g: new Kw(), I: new _A(), B: new _A(), dir: new U(), M: new _A() };
+  yZ.prototype.apply = function () {
+    const A = this.vec(jA.shR).sub(this.vec(jA.shL)),
+      i = this.vec(jA.hipR).sub(this.vec(jA.hipL)),
+      T = __rgQ;
+    for (const D of this.order) {
+      const s = this.vec(D.a),
+        C = this.vec(D.b).sub(s);
+      if (C.lengthSq() < 1e-8) continue;
+      if (D.core) {
+        const l = D.bone.name.replace(/[^a-z]/gi, '').toLowerCase() === 'hips' ? this.hipSide0 : this.side0,
+          c = l === this.hipSide0 ? i : A;
+        ub(D.d0, l, T.I), ub(C, c, T.B), T.g.setFromRotationMatrix(T.B.multiply(T.I.transpose()));
+      } else {
+        D.__g || ((D.__g = new Kw()), (D.__d = D.d0.clone().normalize()));
+        T.dir.copy(C).normalize();
+        D.__g.premultiply(T.inc.setFromUnitVectors(D.__d, T.dir)).normalize();
+        D.__d.copy(T.dir);
+        T.g.copy(D.__g);
+      }
+      T.n.copy(T.g).multiply(D.q0);
+      const o = D.bone.parent;
+      o.updateWorldMatrix(!0, !1);
+      o.getWorldQuaternion(T.e);
+      D.bone.quaternion.copy(T.e.invert().multiply(T.n));
+      T.M.copy(o.matrixWorld).invert();
+      D.bone.position.copy(s.applyMatrix4(T.M));
+      D.bone.updateMatrixWorld(!1);
+    }
+  };
 }
 // The moment a death clip's body is about to reach the ground (its hips a third of the way down from where
 // they start): the ragdoll takes over then. Measured once per clip from the clip itself.
@@ -509,7 +545,9 @@ function __locoSpeed(v, K, dt) {
     p = v.pos,
     R = jV.realistic;
   dt = Math.max(1e-3, Math.min(dt, 0.1));
-  if (!st.last || !v.alive || Math.hypot(p.x - st.last.x, p.z - st.last.z) > 3) st.last = { x: p.x, z: p.z };
+  // (a jump of over 3 m between frames is a respawn or a teleport, not movement)
+  const tele = !st.last || Math.hypot(p.x - st.last.x, p.z - st.last.z) > 3;
+  if (tele || !v.alive) st.last = { x: p.x, z: p.z };
   const k = 1 - Math.exp(-dt * 10);
   st.vx += ((p.x - st.last.x) / dt - st.vx) * k;
   st.vz += ((p.z - st.last.z) / dt - st.vz) * k;
@@ -533,9 +571,14 @@ function __locoSpeed(v, K, dt) {
     target = st.dieFace;
   }
   st.alive = v.alive;
-  if (st.yaw === null) st.yaw = target;
-  const dy = Math.atan2(Math.sin(target - st.yaw), Math.cos(target - st.yaw));
-  st.yaw = Math.abs(dy) > 2.5 && v.alive ? target : st.yaw + dy * (1 - Math.exp(-dt * (v.alive ? 13 : 16)));
+  if (st.yaw === null || (tele && v.alive)) st.yaw = target;
+  // The body turns towards the aim smoothly, and never faster than about 800 degrees a second: a turn of more
+  // than 143 degrees used to be a snap, the whole character flicking round in a single frame each time a bot
+  // spun to a new target (or a player flicked the mouse). Only a respawn or teleport snaps (above).
+  const dy = Math.atan2(Math.sin(target - st.yaw), Math.cos(target - st.yaw)),
+    turn = dy * (1 - Math.exp(-dt * (v.alive ? 13 : 16))),
+    maxTurn = dt * 14;
+  st.yaw += Math.max(-maxTurn, Math.min(maxTurn, turn));
   K.rotation.y = st.yaw;
   const yaw = st.yaw - Math.PI,
     fwd = st.vx * -Math.sin(yaw) + st.vz * -Math.cos(yaw),
@@ -725,14 +768,21 @@ function __locoAfter(s, v, K, dt) {
       a.timeScale = 0; // time is set below, not advanced by the mixer
       a.setEffectiveWeight(0);
     }
-    // (a death stops every action; play() again is a no-op while it is running)
+    // (a death stops every action; play() again is a no-op while it is running, and one starting afresh
+    // eases in from nothing)
+    goal && !a.isScheduled() && (a.__share = 0);
     goal && a.play();
-    const target = goal ? goal[0] : 0,
-      cur = a.getEffectiveWeight();
-    // in quickly, out a little slower (the arms return to the gun)
-    a.setEffectiveWeight(cur + (target - cur) * (1 - Math.exp(-dt * (target > cur ? 18 : 10))));
-    goal && (a.time = goal[1] * a.getClip().duration);
-    a.getEffectiveWeight() < 0.01 && !goal && a.setEffectiveWeight(0);
+    // Blended by the share of the pose the action has, not by its raw weight: against the legs' weight of 1 an
+    // action of weight w has w / (w + 1) of the pose, so a raw weight easing from 0 towards 12 put 70 % of a
+    // reload or a kneel on the body in the first frame (the arms and spine jumped). The share eases in and out
+    // and the weight is worked back from it.
+    const target = goal ? goal[0] / (goal[0] + 1) : 0;
+    a.__share === void 0 && (a.__share = 0);
+    a.__share += (target - a.__share) * (1 - Math.exp(-dt * (target > a.__share ? 11 : 8)));
+    a.__share < 0.004 && !goal && (a.__share = 0);
+    a.setEffectiveWeight(a.__share / Math.max(0.02, 1 - a.__share));
+    // (a clip set to its very end would wrap to its first frame: stop just short of it)
+    goal && (a.time = Math.min(goal[1], 0.999) * a.getClip().duration);
   }
 }
 // rotate a bone about the world up axis
@@ -785,6 +835,9 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
     // low ready and aim on every shot, which read as ducking
     o.aiming && (this.__aimUntil = now + 2.5);
     const aiming = !!o.aiming || now < (this.__aimUntil || 0) || (eA.state && eA.state.mode === 'range');
+    // how far into the aim the body is (0 low ready, 1 aiming), eased over about a third of a second: the lean,
+    // the gun's pitch and the elbows follow this, not the on / off state (each switch was a jump of the arms)
+    this.__ak = this.__ak === void 0 || o.hidden ? +aiming : this.__ak + (+aiming - this.__ak) * (1 - Math.exp(-dt * 7));
     // crouching is the crouch animation's job: never squat the hips on top of it
     if (!body || !body.userData.bpChar) return coreIk.call(this, { ...o, pitch: this.__p, aiming, crouch: 0 });
     // Characters with real animations: the rifle clips already hold a rifle (right hand on the pistol grip,
@@ -813,7 +866,8 @@ function __gunInHands(ik, o, aiming, noLean) {
   const wpn = o.weapon,
     blade = wpn === 'knife' || wpn === 'grenade';
   // the upper body follows the aim, as the core does
-  const D = aiming || blade ? ik.__p : Math.min(ik.__p, 0) * 0.3 - 0.08,
+  const ak = blade ? 1 : __ghAk(ik, aiming),
+    D = __ghMix(Math.min(ik.__p, 0) * 0.3 - 0.08, ik.__p, ak),
     side = aV(par);
   noLean || (I.Abdomen && CM(I.Abdomen, side, -D * 0.25), I.Torso && CM(I.Torso, side, -D * 0.35), I.Head && CM(I.Head, side, -D * 0.2));
   if (blade) return void (g.visible = !1);
@@ -831,7 +885,7 @@ function __gunInHands(ik, o, aiming, noLean) {
   // barrel direction: through the left hand for long guns; along the aim for pistols (and when the left hand
   // is too far off to be on the gun)
   const fwd = T.f.set(0, 0, 1).applyQuaternion(body.getWorldQuaternion(T.q)).setY(0).normalize();
-  fwd.applyAxisAngle(side, -(aiming ? ik.__p : Math.min(ik.__p, 0) * 0.5 - 0.12));
+  fwd.applyAxisAngle(side, -__ghMix(Math.min(ik.__p, 0) * 0.5 - 0.12, ik.__p, ak));
   let dir = fwd;
   if (!C.pistol && pl) {
     const d = T.d.copy(pl).sub(pr),
@@ -926,7 +980,16 @@ function __ghHand(body, side) {
       F === 'Thumb' && side === 'R' && axisW.negate();
       fingers.push({ b, F, k, rest, axis: axisW.applyQuaternion(bq.invert()).normalize() });
     }
-  return { hand, mid, arm: get(S + 'Arm'), fore: get(S + 'ForeArm'), f, n, fingers };
+  // the upper arm's and forearm's rest rotations (relative to their parents, from the bind pose: arms out to
+  // the side), where the arm solve starts every frame (__ghSolveArm)
+  const arm = get(S + 'Arm'),
+    fore = get(S + 'ForeArm'),
+    restOf = (b) => {
+      const bw = b && bindW(b),
+        pw = b && b.parent && bindW(b.parent);
+      return bw && pw ? new Kw().setFromRotationMatrix(new _A().extractRotation(new _A().copy(pw).invert().multiply(bw))) : null;
+    };
+  return { hand, mid, arm, fore, armRest: restOf(arm), foreRest: restOf(fore), f, n, fingers };
 }
 // the curl of each finger by grip (joints 1, 2, 3; radians)
 const __GH_CURL = {
@@ -949,22 +1012,46 @@ const __GH_POSE = {
   // two hands (an isosceles stance): aiming, both arms out with the gun centred at eye level; otherwise compact
   // low ready at the chest, muzzle down; sprinting, tucked in close
   pistol: {
-    aim: { dp: 0, dy: 0.0, roll: 0, at: [-0.19, 0.06, 0.5] },
+    // (0.42 m out, not 0.5: at 0.5 the grip was at or past full reach, the elbow locked straight, and each
+    // shot's kick swung the whole arm)
+    aim: { dp: 0, dy: 0.0, roll: 0, at: [-0.19, 0.06, 0.42] },
     ready: { dp: 0.72, dy: 0.1, roll: 0, at: [-0.17, -0.2, 0.27] },
     sprint: { dp: 0.95, dy: 0.15, roll: 0, at: [-0.15, -0.24, 0.2] },
   },
 };
+// the eased aim amount (Ou.update) and a blend between the low-ready and aiming values of something
+function __ghAk(ik, aiming) {
+  return ik.__ak === void 0 ? +!!aiming : ik.__ak;
+}
+function __ghMix(ready, aim, k) {
+  return ready + (aim - ready) * k;
+}
 function __ghFrame(ik, body, par, aiming) {
   const T = __GH.v,
     f = T[0].set(0, 0, 1).applyQuaternion(body.getWorldQuaternion(__GH.q)).setY(0).normalize(),
     side = aV(par);
-  f.applyAxisAngle(side, -(aiming ? ik.__p : Math.min(ik.__p, 0) * 0.5));
+  f.applyAxisAngle(side, -__ghMix(Math.min(ik.__p, 0) * 0.5, ik.__p, __ghAk(ik, aiming)));
   const u = T[1].copy(__GH.up).addScaledVector(f, -__GH.up.dot(f)).normalize(),
     r = T[2].crossVectors(f, u).normalize();
   return { f, u, r };
 }
 function __ghSolveArm(H, wrist, pole, handQ) {
   if (!H || !H.arm || !H.fore) return;
+  // The two-bone solve turns each bone the shortest way from where it is to where it must point, keeping the
+  // twist it started with. Started from the clip's arm, that made the result depend on the clip: where a clip
+  // held the arm nearly opposite to the hold (the kneeling clips, a reload ending), the shortest turn was
+  // undefined and the arm twisted one way, then the other, frame after frame. Started from the rest pose (the
+  // arm out to the side, never opposite to a hold in front of the body), the same hold gives the same arm.
+  H.armRest && H.arm.quaternion.copy(H.armRest);
+  H.foreRest && H.fore.quaternion.copy(H.foreRest);
+  H.arm.updateMatrixWorld(!0);
+  // Never stretched past 95 % of the arm's length: with the elbow at its straight limit the solve is all
+  // but undefined (a centimetre nearer or further swings the elbow a long way), so a gun at arm's length
+  // made the arm jump with every recoil kick. The hand stops a little short instead.
+  const sh = H.arm.getWorldPosition(__GH.v[3].clone()),
+    reach = (H.reach || (H.reach = sh.distanceTo(H.fore.getWorldPosition(new U())) + H.fore.getWorldPosition(new U()).distanceTo(H.hand.getWorldPosition(new U())))) * 0.95,
+    d = wrist.clone().sub(sh);
+  d.length() > reach && (wrist = sh.add(d.setLength(reach)));
   ZP(H.arm, H.fore, H.hand, wrist, pole);
   H.hand.parent.getWorldQuaternion(__GH.q2);
   H.hand.quaternion.copy(__GH.q2.invert().multiply(handQ));
@@ -997,6 +1084,28 @@ function __ghCurl(H, curl, extra, w) {
     w >= 0.999 ? c.b.quaternion.copy(tgt) : c.b.quaternion.slerp(tgt, w);
   }
 }
+// Part-way between the clip's pose and the hold (a reload or toss starting or ending), each bone and the gun
+// are blended between the two. A plain slerp always takes the shorter way round; where the clip's hand and the
+// held hand point nearly opposite ways, the shorter way switches sides from one frame to the next and the hand
+// (or the gun) spun half a turn in a frame. This blend keeps going the way it went last frame, and changes only
+// when the other way has become clearly shorter.
+function __ghSlerpKeep(ik, key, out, q0, q1, t) {
+  const sides = ik.__side || (ik.__side = new Map());
+  let d = q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w,
+    s = sides.get(key) || (d < 0 ? -1 : 1);
+  d * s < -0.3 && (s = -s);
+  sides.set(key, s);
+  d *= s;
+  let a = 1 - t,
+    b = t * s;
+  if (d < 0.9995) {
+    const th = Math.acos(Math.max(-1, Math.min(1, d))),
+      sn = Math.sin(th);
+    a = Math.sin((1 - t) * th) / sn;
+    b = (Math.sin(t * th) / sn) * s;
+  }
+  return out.set(q0.x * a + q1.x * b, q0.y * a + q1.y * b, q0.z * a + q1.z * b, q0.w * a + q1.w * b).normalize();
+}
 function __gunHold(ik, o, aiming) {
   const g = ik.gun && ik.gun.obj,
     body = ik.body,
@@ -1015,7 +1124,8 @@ function __gunHold(ik, o, aiming) {
     dt = ik.__dt || 0.016,
     cls = C.pistol ? 'pistol' : 'long';
   // the core leans the upper body to the aim; do that first (as __gunInHands does)
-  const D = aiming ? ik.__p : Math.min(ik.__p, 0) * 0.3 - 0.08,
+  const ak = __ghAk(ik, aiming),
+    D = __ghMix(Math.min(ik.__p, 0) * 0.3 - 0.08, ik.__p, ak),
     side = aV(par),
     I = ik.b;
   I.Abdomen && CM(I.Abdomen, side, -D * 0.25);
@@ -1072,8 +1182,8 @@ function __gunHold(ik, o, aiming) {
     const cp = g.getWorldPosition(new U()),
       cq = g.getWorldQuaternion(new Kw());
     gpos.lerpVectors(cp, gpos, W);
-    gq.slerpQuaternions(cq, gq, W);
-  }
+    __ghSlerpKeep(ik, 'gun', gq, cq, gq.clone(), W);
+  } else ik.__side && ik.__side.size && ik.__side.clear(); // (a new blend starts from the shorter way)
   par.getWorldQuaternion(__GH.q2);
   g.quaternion.copy(__GH.q2.clone().invert().multiply(gq));
   g.position.copy(par.worldToLocal(gpos.clone()));
@@ -1093,7 +1203,7 @@ function __gunHold(ik, o, aiming) {
     qR = __ghHandQ(R, FR, NR, new Kw()),
     palmR = pt(C.grip).addScaledVector(gx, C.pistol ? 0.022 : 0.026),
     wristR = __ghWrist(R, palmR, FR, NR);
-  __ghSolveArm(R, wristR, new U().copy(u).multiplyScalar(-1).addScaledVector(r, aiming ? 0.75 : 0.45).addScaledVector(f, -0.25), qR);
+  __ghSolveArm(R, wristR, new U().copy(u).multiplyScalar(-1).addScaledVector(r, 0.45 + 0.3 * ak).addScaledVector(f, -0.25), qR);
   C.pistol ? __ghCurl(R, __GH_CURL.pistolR, null, 1) : __ghCurl(R, __GH_CURL.rifleR, ago < 0.25 || aiming ? __GH_CURL.fireR : null, 1);
   if (L && L.arm) {
     let qL, palmL, pole, FL, NL;
@@ -1118,7 +1228,7 @@ function __gunHold(ik, o, aiming) {
     __ghSolveArm(L, __ghWrist(L, palmL, FL, NL), pole, qL);
   }
   // part-way back to the clip (a reload or toss starting or ending)
-  if (save) for (const [bn, q0] of save) (bn.quaternion.copy(q0.slerp(bn.quaternion.clone(), W)), bn.updateMatrixWorld(!0));
+  if (save) for (const [bn, q0] of save) (__ghSlerpKeep(ik, bn, bn.quaternion, q0, bn.quaternion.clone(), W), bn.updateMatrixWorld(!0));
 }
 // the old classic / realistic choice no longer exists: hide the setting
 {
@@ -1390,3 +1500,4 @@ typeof window < 'u' &&
       me = eA.human();
     v && v.alive && o1(S, v, me, weapon, !1, { dir: { x: v.pos.x - me.pos.x, y: 0, z: v.pos.z - me.pos.z } });
   });
+

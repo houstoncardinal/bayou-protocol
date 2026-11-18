@@ -68,7 +68,7 @@ function bayouNet() {
   let hub = null;
   const attach = (server) => {
     if (!server.httpServer) return;
-    hub || (hub = new NetHub(netFileStore(fs, path.resolve(process.cwd(), '.data/net.json'))));
+    hub || ((hub = new NetHub(netFileStore(fs, path.resolve(process.cwd(), '.data/net.json')))), hub.purgeDemo()); // (the test accounts, once)
     const wss = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024 });
     server.httpServer.on('upgrade', (req, sock, head) => {
       if ((req.url || '').split('?')[0] !== '/net') return;

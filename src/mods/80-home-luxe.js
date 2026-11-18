@@ -38,7 +38,7 @@ function __hxPreload(list) {
 if (typeof window < 'u') {
   setTimeout(() => __hxPreload([__hxImg('reel-cinema'), __HX_ART.op, __HX_ART.crate]), 0);
   const rest = () =>
-    __hxPreload(['fortress', 'prison', 'frostline', 'ridgeback', 'theater', 'velvet', 'starlight', 'bomb', 'jailbreak', 'operators'].map((k) => __hxImg('reel-' + k)));
+    __hxPreload(['fortress', 'prison', 'frostline', 'ridgeback', 'theater', 'velvet', 'starlight', 'bomb', 'highroller', 'jailbreak', 'operators'].map((k) => __hxImg('reel-' + k)));
   typeof requestIdleCallback == 'function' ? requestIdleCallback(rest, { timeout: 2500 }) : setTimeout(rest, 1200);
 }
 // ---------------------------------------------------------------- sound
@@ -640,6 +640,7 @@ const __HX_REEL = [
   { id: 'velvet', ch: 'Theater Mode', title: 'The Velvet Room', pitch: 'An ultra-wide curved screen wrapped round rows of leather recliners.', act: 'Take a seat', go: __hxTheater },
   { id: 'starlight', ch: 'Theater Mode', title: 'The Starlight', pitch: 'Walk the gilded hallway into a 360° sphere and stand inside the film.', act: 'Step inside', go: __hxTheater },
   { id: 'bomb', ch: 'Game modes', title: 'Bomb Defusal', pitch: 'One life a round and a buy menu. Plant at A or B, or hold, retake and defuse.', act: 'Play Bomb Defusal', go: () => __hxPlay({ mode: 'bomb' }) },
+  { id: 'highroller', ch: 'Game modes', title: 'High Roller', pitch: 'Start with $100,000 and buy any gun from the first second. No rank locks, any map.', act: 'Play High Roller', go: () => __hxPlay({ mode: 'hr' }) },
   { id: 'jailbreak', ch: 'Game modes', title: 'Jailbreak', pitch: 'Cut the cell locks and lead the inmates to the van, or keep every cell shut till time runs out.', act: 'Play Jailbreak', go: () => __hxPlay({ mode: 'jb', map: 'prison' }) },
   { id: 'operators', ch: 'Operators', title: 'Pick your side', pitch: 'Five Counter-Terrorists and five of the crew, each with a look and a role of their own.', act: 'Choose an operator', go: () => __hxPlay() },
 ];

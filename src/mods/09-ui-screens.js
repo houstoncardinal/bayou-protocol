@@ -234,7 +234,7 @@ function __BuyMenu() {
           children: [
             M.jsxs('div', {
               className: 'sb2-title',
-              children: [M.jsxs('small', { children: ['Armory · ', Eg[st.mode]] }), M.jsx('b', { children: 'Buy' })],
+              children: [M.jsxs('small', { children: ['Armory · ', __modeName(st)] }), M.jsx('b', { children: 'Buy' })],
             }),
             M.jsx('div', {
               className: 'sb2-timer',
@@ -412,7 +412,7 @@ function __EndScreen() {
           children: [
             M.jsxs('div', {
               className: 'es-meta',
-              children: [Eg[A.mode], ' · ', aw().name, eA.net ? ' · Online' : ' · Offline'],
+              children: [__modeName(A), ' · ', aw().name, eA.net ? ' · Online' : ' · Offline'],
             }),
             M.jsx('h1', { children: draw ? 'Draw' : won ? 'Victory' : 'Defeat' }),
             M.jsx('div', {

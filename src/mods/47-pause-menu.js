@@ -86,7 +86,7 @@ function __pvStatus() {
     phase = w.phase === 'freeze' ? 'Buy time' : w.phase === 'roundEnd' ? 'Round over' : w.phase === 'matchEnd' ? 'Match over' : 'Live',
     bomb = w.mode === 'bomb';
   return {
-    mode: Eg[w.mode] || w.mode,
+    mode: __modeName(w) || w.mode,
     map: aw().name,
     phase,
     round: bomb ? `Round ${w.round}` : '',
@@ -171,6 +171,9 @@ function __PvQuick() {
       row('Aiming down sights', 'Relative to hip-fire', M.jsx(BB, { label: 'Aiming down sights', value: s.adsSensitivity, min: 0.3, max: 2, step: 0.01, onChange: (v) => upd('adsSensitivity', v), format: (v) => `${v.toFixed(2)}×` })),
       row('Field of view', null, M.jsx(BB, { label: 'Field of view', value: s.fov, min: 65, max: 110, step: 1, onChange: (v) => upd('fov', v), format: (v) => `${v}°` })),
       row('Volume', null, M.jsx(BB, { label: 'Volume', value: s.volume, min: 0, max: 1, step: 0.01, onChange: (v) => upd('volume', v), format: (v) => `${Math.round(v * 100)}%` })),
+      // brightness, shadows, contrast (85-view-tuning.js), with the button that shows the game while held
+      ...__vtQuickRows(row, upd),
+      M.jsx('div', { className: 'pv-qrow vt-qpeek', children: M.jsx(__VtPeekBtn, {}) }, 'vt-peek'),
     ],
   });
 }

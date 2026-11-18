@@ -621,7 +621,7 @@ const __bpSocial = {
   createServer: (o) => __netCreate(o),
   servers() {
     const L = __netLobbyRoom().peers();
-    return aBA(L).map((l) => ({ code: l.name, title: l.title || null, mode: l.mode, map: l.map, count: l.count, players: l.players, priv: !!l.priv }));
+    return aBA(L).map((l) => ({ code: l.name, title: l.title || null, mode: l.mode, map: l.map, count: l.count, players: l.players, priv: !!l.priv, official: !!l.official }));
   },
   on(cb) {
     __NET.subs.add(cb);
@@ -746,12 +746,16 @@ function __netUI() {
     });
   }
   function renderServers() {
-    const list = __bpSocial.servers().filter((s) => !s.priv),
+    const all = __bpSocial.servers().filter((s) => !s.priv),
+      off = all.filter((s) => s.official),
+      list = all.filter((s) => !s.official),
       modes = (typeof CN < 'u' ? CN : ['tdm', 'ffa', 'bomb']).filter((m) => m !== 'theater'),
       maps = typeof BD < 'u' ? BD : [];
     body.innerHTML = `<div class="bpn-cols"><div>
-      <h4>Online servers <small>${list.length}</small></h4>
-      ${list.map((s) => `<div class="bpn-sv"><div><b>${esc(s.title || `${__netModeName(s.mode)} · ${__netMapName(s.map)}`)}</b><span>${esc(__netModeName(s.mode))} · ${esc(__netMapName(s.map))} · ${s.count} playing</span></div><button data-act="code" data-code="${esc(s.code)}">Join</button></div>`).join('') || '<p class="bpn-empty">No servers running right now. Start one: your friends can join it from here.</p>'}
+      ${off.length ? `<h4>Official servers <small>always on</small></h4>
+      ${off.map((s) => `<div class="bpn-sv bpn-off"><div><b>${esc(s.title)} <em>${esc(__netModeName(s.mode))}</em></b><span>${esc(__netMapName(s.map))} · ${s.count ? `${s.count} playing` : 'Empty: join and it starts, bots fill the seats'}</span></div><button data-act="code" data-code="${esc(s.code)}">${s.count ? 'Join' : 'Start'}</button></div>`).join('')}` : ''}
+      <h4>Community servers <small>${list.length}</small></h4>
+      ${list.map((s) => `<div class="bpn-sv"><div><b>${esc(s.title || `${__netModeName(s.mode)} · ${__netMapName(s.map)}`)}</b><span>${esc(__netModeName(s.mode))} · ${esc(__netMapName(s.map))} · ${s.count} playing</span></div><button data-act="code" data-code="${esc(s.code)}">Join</button></div>`).join('') || '<p class="bpn-empty">No player servers right now. Join an official one above, or start your own: friends can join it from here.</p>'}
       <form class="bpn-add bpn-code"><input placeholder="Join a private server by code" maxlength="48" autocomplete="off"><button>Join</button></form>
       </div><div class="bpn-card bpn-create"><h4>Start a server</h4>
       <label>Name<input name="n" maxlength="32" value="${esc(__netName())}'s server"></label>
@@ -881,6 +885,8 @@ if (typeof document < 'u') {
 #bp-net button.bpn-ghost{background:rgba(255,255,255,.07);color:#d6dcef}
 .bpn-f,.bpn-sv{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;transition:background .2s}
 .bpn-f:hover,.bpn-sv:hover{background:rgba(255,255,255,.04)}
+.bpn-sv.bpn-off{border:1px solid rgba(232,190,104,.22);background:rgba(232,190,104,.05);margin-bottom:6px}
+.bpn-sv.bpn-off b em{font-style:normal;font-weight:500;opacity:.7;margin-left:6px;font-size:.9em}
 .bpn-fn,.bpn-sv>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .bpn-fn b,.bpn-sv b{font-weight:700;font-size:15px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bpn-fn span,.bpn-sv span{font-size:12px;color:#8f97ad}

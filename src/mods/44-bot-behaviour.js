@@ -53,6 +53,16 @@ const __BOTB = new Map();
           i.slot = alt || 3;
           i.fire = i.firePressed = !1;
         }
+        // ...and never back to a gun with nothing left in it. The core's AI asks for the primary whenever the
+        // bot holds anything else, empty or not, so a bot with a dry rifle went sidearm, rifle, sidearm, rifle
+        // every simulation tick: the gun in its hands was rebuilt and its arms swung between the rifle and
+        // pistol holds 60 times a second, and it never got a shot off (each switch restarts the draw).
+        const dry = (sl) => {
+          const x = A.weapons[sl],
+            xd = x && gw[x.id];
+          return !!(xd && xd.mag > 0 && x.mag === 0 && x.reserve === 0);
+        };
+        if (i.slot && i.slot !== A.active && dry(i.slot)) i.slot = dry(A.active) ? [1, 2].find((sl) => A.weapons[sl] && !dry(sl)) || 3 : null;
         // no sprinting for 8 s after a fight: bots jog between positions instead of dashing everywhere
         !fighting && w.t - (c.fightUntil || -99) < 8 && (i.sprint = !1);
         if (fighting && !rush) {

@@ -151,7 +151,7 @@ function __ldCover(m) {
   el.querySelector('.bp-ld-name').textContent = info.name || m.name || 'Loading';
   el.querySelector('.bp-ld-blurb').textContent = info.blurb || '';
   const st = eA.state;
-  el.querySelector('.bp-ld-mode').textContent = st && st.theater ? 'THEATER' : st && st.jb ? 'JAILBREAK' : st ? String((typeof Eg < 'u' && Eg[st.mode]) || st.mode || '').toUpperCase() : '';
+  el.querySelector('.bp-ld-mode').textContent = st && st.theater ? 'THEATER' : st ? String(__modeName(st) || st.mode || '').toUpperCase() : '';
   el.querySelector('.bp-ld-net').textContent = eA.net ? 'ONLINE' : 'LOCAL';
   el.querySelector('.bp-ld-grid-id').textContent = `${String(m.id || 'bt').slice(0, 3).toUpperCase()}-${String((m.w || 0) | 0).padStart(3, '0')}`;
   // the first tip is about the mode; the rest rotate

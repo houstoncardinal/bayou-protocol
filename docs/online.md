@@ -30,6 +30,27 @@
   - **Leaderboard:** the top 100 by rating, with K/D and wins. A match's host reports its results when it ends;
     your rating moves with wins and losses and how you played.
 
+## Official servers
+
+Five permanent servers, one per map, listed first in the Servers panel and the Multiplayer screen even when
+they're empty (`src/mods/86-official-servers.js`):
+
+| Server | Mode | Map |
+|---|---|---|
+| Bayou #1 | Team Deathmatch | Ridgeback Pass |
+| Bayou #2 | Bomb Defusal | Fortress |
+| Bayou #3 | Free-for-All | Frostline |
+| Bayou #4 | Jailbreak | Blackwater Penitentiary |
+| Bayou #5 | Team Deathmatch | Bayou Palace Cinemas |
+
+They cost nothing to run. Each is a fixed match room: the first player to join an empty one hosts it (bots fill the
+seats), others join them, and when the host leaves the next player takes over. Quick play goes to the matching
+official server when no other lobby is running. To add one, add an entry to `__OFFICIAL` with a new room name
+(`cds.<mode>.<map>.<letters and digits>`). To run them on dedicated machines later, those machines join the same
+room names; nothing else changes.
+
+Player-made servers keep their name after a host hand-over: whoever hosts the match advertises it.
+
 ## Deploying the hub (once)
 
 1. `npx wrangler login` (opens Cloudflare in your browser; a free account is enough).

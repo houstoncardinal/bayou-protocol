@@ -52,7 +52,7 @@ if (url && typeof WebSocket !== 'undefined') {
   const ok = await new Promise((res) => {
     const ws = new WebSocket(url.replace(/\/?$/, '/net'));
     const t = setTimeout(() => (ws.close(), res(null)), 15000);
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'hi', name: 'turn-check' }));
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'hi', probe: 1 })); // (a check: no account is made)
     ws.onmessage = (e) => {
       const m = JSON.parse(e.data);
       if (m.t !== 'hi') return;
