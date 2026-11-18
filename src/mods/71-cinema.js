@@ -561,9 +561,10 @@ function __cinemaBuild() {
   item('coatcheck', { x0: 87.6, x1: 89.6, z0: 30.0, z1: 35.0 });
   for (const [x, zz, ry, sl] of [[30.42, 36.5, Math.PI / 2, 4], [89.98, 40, -Math.PI / 2, 5], [80.02, 40, Math.PI / 2, 0]]) N.posters.push({ x, y: 1.5, z: zz, ry, w: 1.2, h: 1.8, k: 'wall', slot: sl });
   // ---------------------------------------------------------------- The Velvet Room (theater 5, x 4-30)
-  // An ultra-wide curved screen on its east wall: a 19 m chord bowed 4 m towards the audience, 7.95 m high
-  // (2.39 : 1, the scope of the widest films), wrapping round the seats: from the middle rows it fills about
-  // 110-125° of the view, the front rows more. Leather recliners in five curved rows on tiers rising west, every
+  // An ultra-wide curved screen that IS the east wall: wall to wall (a 19.5 m chord, its ends at the side walls)
+  // and floor to ceiling (from a 0.2 m lip to the ceiling), curving round the seats to the left and right (its
+  // middle 4 m further back than its ends; 21.6 m along the curve, about 1.85 : 1). From the middle rows it fills
+  // about 120-135° of the view, the front rows more. Leather recliners in five curved rows on tiers rising west, every
   // seat turned square to the screen; a black velour surround following the curve; deep red drapes down the side
   // walls; a black ceiling 12.1 m up (the room's depth / φ). You come in from the Promenade at the front, beside
   // the screen's south end.
@@ -579,8 +580,9 @@ function __cinemaBuild() {
     slab(4, FAC, 30, P0, H + 0.3, 0.3, ['roof', '#ffffff'], ['black', '#0a0b10'], 'roof');
     wall(!1, 4.2, 0.4, FAC, P0, 0, H, [], ['stucco', C.stucco], ['velvet', o.wall]);
     wall(!1, 30.2, 0.4, FAC + 0.4, P0, 0, H, [], ['black', '#0b0b0d'], ['plaster', '#d7c7a8']);
-    // the screen: an arc through its 19 m chord, its middle 0.35 m off the east wall, its ends 4 m nearer the seats
-    const SC = { chord: 19.0, sag: 4.0, h: 7.95, y0: 1.5 },
+    // the screen: an arc through its chord (wall to wall), its middle 0.35 m off the east wall, its ends 4 m nearer
+    // the seats; floor to ceiling
+    const SC = { chord: z1 - z0 - 0.1, sag: 4.0, h: +(H - 0.32 - 0.04).toFixed(2), y0: 0.32 },
       xs = x1 - 0.35,
       Rr = (SC.chord ** 2 / 4 + SC.sag ** 2) / (2 * SC.sag),
       xcR = xs - Rr,

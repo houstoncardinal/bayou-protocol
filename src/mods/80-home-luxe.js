@@ -1,4 +1,4 @@
-/* ===== Bayou Protocol mod: the Home screen ===== */
+/* ===== Bayou Tactical mod: the Home screen ===== */
 // A cinematic front end: the centre of the screen is a full-bleed feature reel (a slow crossfade with parallax)
 // of what the game is: five hand-built maps, Theater Mode (the 36 m Palace XL screens, the curved Velvet Room,
 // the Starlight 360° sphere), Bomb Defusal and Jailbreak, and the operators. Every slide is key art rendered in
@@ -17,12 +17,15 @@
 // Styles: src/styles/home-luxe.css.
 const __HX = { hoverAt: 0, lastHover: null, noise: null, raf: 0, mx: 0, my: 0, card: null, verb: null, verbCtx: null };
 const __HX_ART = {
-  op: 'game/menu/season-op.webp',
+  op: `game/menu/season-op${typeof __LOWMEM < 'u' && __LOWMEM ? '-m' : ''}.webp`,
   crate: 'game/menu/daily-crate.webp',
 };
 // the reel's key art, one per feature (map ids double as the Maps panel's art)
 const __HX_KEY = { fortress: 'reel-fortress', cinema: 'reel-cinema', prison: 'reel-prison', frostline: 'reel-frostline', ridgeback: 'reel-ridgeback' };
-const __hxImg = (k) => `game/menu/${k}.webp`;
+// phones, tablets and low-memory devices (__LOWMEM, 00c-mobile-memory.js): 1280 px copies of the art, and the
+// heavier motion (the slow push-in, the drifting flare, the embers) left out
+const __HX_LITE = typeof __LOWMEM < 'u' && !!__LOWMEM;
+const __hxImg = (k) => `game/menu/${k}${__HX_LITE && /^(reel-|season-op)/.test(k) ? '-m' : ''}.webp`;
 // decode the art up front (the first slides at once, the rest when the browser is idle), so nothing pops in
 function __hxPreload(list) {
   for (const u of list) {
@@ -824,9 +827,9 @@ function __HxHome() {
     { key: 'head', className: 'hx-head hx-e', style: { '--d': '.25s' } },
     E(
       'button',
-      { className: 'hx-brand', 'data-sfx': 'click', onClick: () => setTab('home'), 'aria-label': 'Bayou Protocol, Home' },
+      { className: 'hx-brand', 'data-sfx': 'click', onClick: () => setTab('home'), 'aria-label': 'Bayou Tactical, Home' },
       E(__HxMark, { size: 54 }),
-      E('span', { className: 'hx-word' }, E('b', null, 'BAYOU'), E('small', null, 'Tactical Protocol')),
+      E('span', { className: 'hx-word' }, E('b', null, 'BAYOU'), E('small', null, 'Tactical')),
     ),
     E(
       'nav',
@@ -1036,7 +1039,7 @@ function __HxHome() {
   const shown = [prevSlide, slide].filter((k, i, a) => k >= 0 && a.indexOf(k) === i);
   return E(
     'div',
-    { ref: root, className: `hx ${tab !== 'home' && !closing ? 'hx--panel' : ''}`, 'data-slide': R.id },
+    { ref: root, className: `hx ${tab !== 'home' && !closing ? 'hx--panel' : ''} ${__HX_LITE ? 'hx--lite' : ''}`, 'data-slide': R.id },
     E(__HxDefs, null),
     E(
       'div',

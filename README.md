@@ -31,6 +31,9 @@ src/
     00-environment-shims.js    Safe loading in sandboxed frames
     00-three.js                Hands the core's three.js classes to src/engine/three.js
     00b-movement.js            Movement tuning: speeds, sprint, acceleration, backpedal, tagging
+    00c-mobile-memory.js       Phones, tablets, low-memory devices: textures capped (512/1024 px, detail maps
+                               smaller), no match behind the menus, no background preloading; model files let go
+                               once built (all devices); after a crash, the next load starts at the lightest settings
     01-mouse-capture.js        Pointer lock handling and free-aim fallback
     02-weapon-models.js        Loader for the GLB weapon models
     03-ballistic-fx.js         Bullet streaks, muzzle flash, smoke, shell casings
@@ -132,6 +135,7 @@ src/
     81-net.js                  Real online play: the hub connection, matches browser to browser (WebRTC), servers
                                (browse, start, private by code), friends, chat, invites, join-in-progress, the
                                leaderboard; the social panel (F2) and window.__bpSocial. See docs/online.md
+    82-hosting.js              Keeps the game clear of Netlify's "Powered by Netlify" badge (a strip at the bottom)
 tools/
   build-characters.mjs       FBX characters + Mixamo animations -> optimised GLBs (public/game/characters)
   build-weapons.mjs          Animated first-person weapon GLBs -> optimised GLBs (public/game/models/weapons)

@@ -39,10 +39,18 @@ export class BayouHub extends DurableObject {
         body: JSON.stringify({ ttl: 86400 }),
       });
       const j = await r.json();
-      const list = [...stun, ...(Array.isArray(j.iceServers) ? j.iceServers : [j.iceServers]).filter(Boolean)];
+      // (Cloudflare's own advice: leave out the port-53 addresses, which browsers often time out on)
+      const turn = (Array.isArray(j.iceServers) ? j.iceServers : [j.iceServers])
+        .filter(Boolean)
+        .map((x) => ({ ...x, urls: [].concat(x.urls || []).filter((u) => !/:53(\?|$)/.test(u)) }))
+        .filter((x) => x.urls.length);
+      if (!turn.length) return ((this.turn = { at: Date.now() - 3300e3, list: stun }), stun);
+      const list = [...stun, ...turn];
       this.turn = { at: Date.now(), list };
       return list;
     } catch {
+      // (tried again in five minutes, not on every player's connection)
+      this.turn = { at: Date.now() - 3300e3, list: stun };
       return stun;
     }
   }

@@ -157,7 +157,7 @@ function __Home() {
             M.jsxs('div', {
               className: 'hm2-title',
               children: [
-                M.jsx('div', { className: 'lx-kicker', children: 'Season 1 · Southwest Houston' }),
+                M.jsx('div', { className: 'lx-kicker', children: 'Season 1 · Operation Blackout' }),
                 M.jsxs('h1', { children: ['Hold the line. ', M.jsx('em', { children: 'Clear the site.' })] }),
                 M.jsx('p', {
                   children:

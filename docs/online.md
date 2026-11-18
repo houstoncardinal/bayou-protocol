@@ -39,11 +39,21 @@
 
 The leaderboard is also served over HTTP at `https://bayou-net.<your-subdomain>.workers.dev/leaderboard`.
 
-### Optional: the free TURN relay
+### The free TURN relay
 
-In the Cloudflare dashboard, go to Realtime, then TURN, and create a TURN key. Then run
-`npx wrangler secret put TURN_KEY_ID` and `npx wrangler secret put TURN_KEY_TOKEN`. The hub then hands players
-short-lived relay credentials. The free tier covers 1,000 GB a month.
+For players whose networks block direct connections:
+
+1. In the Cloudflare dashboard, go to Realtime → TURN Server → Create (any name). It shows a Turn Token ID and an
+   API Token.
+2. Run `npm run turn:setup` and paste the two values. The script:
+   - checks the values with Cloudflare first, and changes nothing if they're wrong;
+   - stores them as the hub's secrets, so they stay on Cloudflare and never go in this repository;
+   - redeploys the hub;
+   - confirms that players now get relay addresses.
+
+The hub then gives every player short-lived relay credentials (24 hours, fetched once an hour). It leaves out the
+port-53 addresses, which browsers often time out on. It falls back to direct connections only if Cloudflare can't
+be reached.
 
 ## Free-plan limits
 

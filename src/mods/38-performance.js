@@ -161,3 +161,22 @@ const __PROF = { sim: 0, simN: 0, map: 0, mapN: 0 };
 typeof window < 'u' && (window.__bpProf = (reset) => (reset ? Object.assign(__PROF, { sim: 0, simN: 0, map: 0, mapN: 0 }) : { simMsPerTick: +(__PROF.sim / Math.max(1, __PROF.simN)).toFixed(3), ticks: __PROF.simN, mapMsPerFrame: +(__PROF.map / Math.max(1, __PROF.mapN)).toFixed(3), frames: __PROF.mapN }));
 // test hook: the current map's named areas (callouts)
 typeof window < 'u' && (window.__bpAreas = () => aw().areas.map((a) => ({ name: a.name, min: a.min, max: a.max })));
+// Transmission ("real" glass that refracts what's behind it) makes three.js render the whole scene a second time
+// every frame for what shows through it. One small prop with it (Frostline's portable generator) halved that
+// map's frame rate (37 fps → 71 at 1920 x 1080 when removed). Any material with transmission, in any map, is
+// drawn as plain see-through glass instead, from its first frame (the prison's kit already did this for its
+// lamps, 65-prison-view.js).
+if (typeof Ow < 'u') {
+  const prevBR = Ow.prototype.onBeforeRender;
+  Ow.prototype.onBeforeRender = function (r, s, c, g, mat) {
+    if (mat && mat.transmission > 0 && !mat.__bpNoTx) {
+      mat.__bpNoTx = 1;
+      mat.transmission = 0;
+      mat.transparent = !0;
+      mat.opacity = Math.min(mat.opacity ?? 1, 0.45);
+      mat.depthWrite = !1;
+      mat.needsUpdate = !0;
+    }
+    return prevBR.apply(this, arguments);
+  };
+}

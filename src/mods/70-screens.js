@@ -331,12 +331,15 @@ function __scrDomeEye(sc, t, s) {
 }
 // the dome when no film is up: a night sky (equirectangular), the film's title at the front
 function __scrDomeSky(title, sub) {
-  const cv = document.createElement('canvas');
-  cv.width = 2048;
-  cv.height = 1024;
+  // (drawn as 2048 x 1024; phones and low-memory devices get it at half size)
+  const k = __LOWMEM ? 0.5 : 1,
+    cv = document.createElement('canvas');
+  cv.width = 2048 * k;
+  cv.height = 1024 * k;
   const c = cv.getContext('2d'),
-    W = cv.width,
-    H = cv.height;
+    W = 2048,
+    H = 1024;
+  c.scale(k, k);
   const g = c.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#02030a');
   g.addColorStop(0.42, '#0a1230');

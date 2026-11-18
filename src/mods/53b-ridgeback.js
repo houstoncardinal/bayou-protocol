@@ -751,7 +751,7 @@ function __rbFrame(v, s) {
 function __rbPreload() {
     try {
       const z = Zw.getState(),
-        desk = !(window.matchMedia && matchMedia('(pointer: coarse)').matches) && (navigator.deviceMemory || 8) >= 4;
+        desk = !__LOWMEM && !(window.matchMedia && matchMedia('(pointer: coarse)').matches) && (navigator.deviceMemory || 8) >= 4;
       if (!desk || z.map !== 'ridgeback' || __RB.preloaded || __RB.view) return;
       __RB.preloaded = !0;
       __rbLoadData(() => {

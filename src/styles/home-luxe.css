@@ -2863,3 +2863,19 @@
     transition-duration: 0.01s !important;
   }
 }
+
+/* phones, tablets and low-memory devices: no slow push-in, flare or embers (the crossfade stays) */
+.hx--lite .hx-slide-img,
+.hx--lite .hx-glare,
+.hx--lite .hx-motes,
+.hx--lite .hx-grain {
+  animation: none !important;
+}
+.hx--lite .hx-glare,
+.hx--lite .hx-motes,
+.hx--lite .hx-grain {
+  display: none;
+}
+.hx--lite .hx-slide-img {
+  transform: scale(1.02);
+}

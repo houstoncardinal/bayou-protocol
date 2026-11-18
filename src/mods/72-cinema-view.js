@@ -1400,6 +1400,21 @@ function __cnDetail(root, m, models, ticks) {
   }
   // ------------------------------------------------ the projectors' beams, with dust in them
   const beamM = __cnAdd(new Ni({ vertexColors: !0, side: 2, fog: !1 }), 9);
+  // the beam shows only when you look back towards the projector: facing the screen (looking along the beam) it
+  // fades out completely, so it never greys the picture. Each vertex carries its beam's direction (bdir).
+  {
+    const fade = beamM.onBeforeCompile;
+    beamM.onBeforeCompile = (sh) => {
+      fade && fade(sh);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute vec3 bdir;\nvarying vec3 vBDir;\nvarying vec3 vBWorld;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvBDir = bdir;\nvBWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vBDir;\nvarying vec3 vBWorld;')
+        .replace('#include <opaque_fragment>', 'outgoingLight *= 1.0 - smoothstep(-0.55, 0.05, dot(normalize(vBWorld - cameraPosition), normalize(vBDir)));\n#include <opaque_fragment>');
+    };
+    beamM.customProgramCacheKey = () => 'cn-beam-backlook';
+  }
   const dustM = __cnAdd(new Dd({ color: '#8a8478', size: 0.014, sizeAttenuation: !0 }), 8);
   const dusts = [];
   for (const b of N.beams) {
@@ -1414,17 +1429,22 @@ function __cnDetail(root, m, models, ticks) {
       B0 = [[tx - sw, ty - sh, tz], [tx + sw, ty - sh, tz], [tx + sw, ty + sh, tz], [tx - sw, ty + sh, tz]],
       P = [],
       C = [],
-      I = [];
+      I = [],
+      D = [],
+      bl = Math.hypot(tx - fx, ty - fy, tz - fz) || 1,
+      bd = [(tx - fx) / bl, (ty - fy) / bl, (tz - fz) / bl];
     for (let i = 0; i < 4; i++) {
       const j = (i + 1) % 4,
         k = P.length / 3;
       P.push(...A0[i], ...A0[j], ...B0[j], ...B0[i]);
+      for (let v = 0; v < 4; v++) D.push(...bd);
       C.push(0.045, 0.047, 0.055, 0.045, 0.047, 0.055, 0.006, 0.006, 0.007, 0.006, 0.006, 0.007);
       I.push(k, k + 1, k + 2, k, k + 2, k + 3);
     }
     const g = new uw();
     g.setAttribute('position', new gi(new Float32Array(P), 3));
     g.setAttribute('color', new gi(new Float32Array(C), 3));
+    g.setAttribute('bdir', new gi(new Float32Array(D), 3));
     g.setIndex(I);
     g.computeBoundingSphere();
     const o = new Ow(g, beamM);

@@ -307,7 +307,9 @@ function __warmTick(g) {
   };
 }
 // ---------------------------------------------------------------- 5. fetch match assets in the menus
+// (not on phones and low-memory devices: there they load with the match, 00c-mobile-memory.js)
 typeof window < 'u' &&
+  !__LOWMEM &&
   __glbAfter(() => {
     const urls = [];
     // the prisoners only appear in Blackwater: they load with that map (50-prisoners.js)

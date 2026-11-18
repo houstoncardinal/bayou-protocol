@@ -43,7 +43,8 @@ function __radRender(s, m) {
     scene = s.scene,
     W = m.w,
     D = m.d,
-    ppm = Math.min(10, 1600 / Math.max(W, D)),
+    // (phones and low-memory devices: a smaller picture, still sharp in the radar's 180 px circle)
+    ppm = __LOWMEM ? Math.min(5, 700 / Math.max(W, D)) : Math.min(10, 1600 / Math.max(W, D)),
     pw = Math.round(W * ppm),
     ph = Math.round(D * ppm),
     cut = __RAD_CUT[m.id] ?? 3.6,

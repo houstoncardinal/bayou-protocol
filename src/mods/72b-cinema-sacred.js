@@ -184,6 +184,8 @@ function __sgMottle(c, w, h, n, a) {
 }
 // ---------------------------------------------------------------- the textures
 function __sgTex(w, h, draw, o = {}) {
+  // (phones and low-memory devices: half the size; every pattern is drawn to the size it's given)
+  __LOWMEM && ((w = Math.round(w / 2)), (h = Math.round(h / 2)));
   const cv = document.createElement('canvas');
   cv.width = w;
   cv.height = h;
