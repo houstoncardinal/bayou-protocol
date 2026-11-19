@@ -91,7 +91,13 @@ export default defineConfig({
   // (or net.config.json's "url": written when the hub is deployed, so every build finds it)
   define: { __BAYOU_NET__: JSON.stringify(process.env.BAYOU_NET_URL || netConfigURL()) },
   // map packages import 'three': give them the core's copy (src/engine/three.js), never a second one
-  resolve: { alias: [{ find: /^three$/, replacement: path.resolve(process.cwd(), 'src/engine/three.js') }] },
+  // (and 'postprocessing' -> the core's own copy too: src/engine/postprocessing.js)
+  resolve: {
+    alias: [
+      { find: /^three$/, replacement: path.resolve(process.cwd(), 'src/engine/three.js') },
+      { find: /^postprocessing$/, replacement: path.resolve(process.cwd(), 'src/engine/postprocessing.js') },
+    ],
+  },
   server: { host: true, port: 5173 },
   build: {
     target: 'es2020', chunkSizeWarningLimit: 6000, assetsInlineLimit: 0,

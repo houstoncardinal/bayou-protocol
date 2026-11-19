@@ -8,8 +8,9 @@
 // token as secrets: `npx wrangler secret put TURN_KEY_ID` and `npx wrangler secret put TURN_KEY_TOKEN`.
 import { DurableObject } from 'cloudflare:workers';
 import { NetHub } from './net-core.mjs';
+import { Reports, REPORT_MAX_BODY } from './reports-core.mjs';
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
 
 export class BayouHub extends DurableObject {
   constructor(ctx, env) {
@@ -24,6 +25,8 @@ export class BayouHub extends DurableObject {
       },
       { ice: () => this.iceServers() },
     );
+    // players' crash and performance reports (server/reports-core.mjs)
+    this.reports = new Reports({ get: (k) => st.get(k), put: (k, v) => st.put(k, v) });
   }
   async iceServers() {
     const stun = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
@@ -58,6 +61,18 @@ export class BayouHub extends DurableObject {
     await this.hub.purgeDemo();
     const url = new URL(req.url);
     if (url.pathname.endsWith('/leaderboard')) return Response.json(await this.hub.leaderboard(), { headers: CORS });
+    // a report from a player's browser (sent as text: browsers only beacon simple content types across sites)
+    if (url.pathname.endsWith('/report') && req.method === 'POST') {
+      const body = (await req.text()).slice(0, REPORT_MAX_BODY + 1),
+        r = await this.reports.add(body, req.headers.get('CF-Connecting-IP') || '');
+      return new Response(null, { status: r.ok ? 204 : 400, headers: CORS });
+    }
+    // the owner's view: /reports?key=<REPORT_KEY secret> (off until the secret is set)
+    if (url.pathname.endsWith('/reports')) {
+      const key = this.env.REPORT_KEY;
+      if (!key || url.searchParams.get('key') !== key) return new Response('Not found', { status: 404 });
+      return Response.json(await this.reports.summary(), { headers: { 'Cache-Control': 'no-store' } });
+    }
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Bayou Protocol online hub', { status: 200 });
     const [client, server] = Object.values(new WebSocketPair());
     server.accept();

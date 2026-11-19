@@ -29,6 +29,14 @@ globalThis.__BP_THREE = () => ({
   Fog: nd,
   PerspectiveCamera: ui,
   PMREMGenerator: e9,
+  // (for the ambient occlusion library, n8ao: src/mods/91-ao.js)
+  Vector4: oi,
+  DataTexture: Vg,
+  DepthTexture: Id,
+  OrthographicCamera: Cn,
+  ShaderMaterial: Qi,
+  WebGLRenderTarget: Ti,
+  Float32BufferAttribute: ow,
   // constants (three.js r169 values)
   FrontSide: 0,
   DoubleSide: 2,
@@ -39,4 +47,18 @@ globalThis.__BP_THREE = () => ({
   RepeatWrapping: 1e3,
   LinearMipmapLinearFilter: 1008,
   ACESFilmicToneMapping: 4,
+  REVISION: '169',
+  GLSL3: '300 es',
+  NearestFilter: 1003,
+  LinearFilter: 1006,
+  UnsignedIntType: 1014,
+  FloatType: 1015,
+  HalfFloatType: 1016,
+  UnsignedInt248Type: 1020,
+  RGBAFormat: 1023,
+  DepthFormat: 1026,
+  DepthStencilFormat: 1027,
+  RedFormat: 1028,
 });
+// the core's postprocessing Pass, for passes written against the 'postprocessing' package (src/engine/postprocessing.js)
+globalThis.__BP_PP = () => ({ Pass: QB });

@@ -1,6 +1,7 @@
 // Download a map's Poly Haven assets (all CC0) and build game-ready copies.
 //
 //   node tools/fetch-polyhaven.mjs [frostline|prison|cinema|fortress]   (default frostline; skips files already downloaded)
+//   node tools/fetch-polyhaven.mjs sky                                  (the outdoor skies: tools/fetch-sky.mjs)
 //
 // Sources (as downloaded, not shipped): assets-src/maps/<map>/
 // Output (shipped):                     public/game/maps/<map>/
@@ -167,6 +168,11 @@ const MAPS = {
   },
 };
 const MAP = process.argv[2] || 'frostline';
+// the outdoor skies and their lighting (src/mods/89-sky.js) have their own builder
+if (MAP === 'sky') {
+  await import('./fetch-sky.mjs');
+  process.exit(0);
+}
 if (!MAPS[MAP]) throw new Error('unknown map ' + MAP + ' (' + Object.keys(MAPS).join(', ') + ')');
 const { textures: TEXTURES, models: MODELS, skies: SKIES } = MAPS[MAP];
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');

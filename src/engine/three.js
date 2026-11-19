@@ -10,4 +10,7 @@ export const {
   BufferGeometry, BufferAttribute, Texture, MeshStandardMaterial, MeshBasicMaterial, DirectionalLight, HemisphereLight,
   PointLight, Fog, PerspectiveCamera, PMREMGenerator, FrontSide, DoubleSide, NoColorSpace, SRGBColorSpace,
   EquirectangularReflectionMapping, ClampToEdgeWrapping, RepeatWrapping, LinearMipmapLinearFilter, ACESFilmicToneMapping,
+  Vector4, DataTexture, DepthTexture, OrthographicCamera, ShaderMaterial, WebGLRenderTarget, Float32BufferAttribute,
+  REVISION, GLSL3, NearestFilter, LinearFilter, UnsignedIntType, FloatType, HalfFloatType, UnsignedInt248Type,
+  RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat,
 } = T;

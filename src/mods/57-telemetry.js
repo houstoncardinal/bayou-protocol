@@ -7,7 +7,13 @@
 // Nothing personal is sent: no name, no account, no IP handling here (your endpoint sees the request as any
 // server would). Without VITE_REPORT_URL this file does nothing but count frames for the summary.
 const __REP = {
-  url: import.meta.env.VITE_REPORT_URL || '',
+  // VITE_REPORT_URL if set; otherwise the online hub's /report (server/reports-core.mjs), but only on the
+  // published site: local and LAN testing never reports
+  url:
+    import.meta.env.VITE_REPORT_URL ||
+    (typeof location < 'u' && typeof __BAYOU_NET__ < 'u' && __BAYOU_NET__ && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/.test(location.hostname) && /^https:$/.test(location.protocol)
+      ? String(__BAYOU_NET__).replace(/^ws/, 'http').replace(/\/+$/, '') + '/report'
+      : ''),
   sent: 0,
   seen: new Set(),
   f: { n: 0, sum: 0, slow: 0, worst: 0, hist: new Uint32Array(64) }, // frame times, 2 ms buckets
@@ -18,7 +24,9 @@ function __repSend(kind, body) {
   if (!__REP.url || typeof navigator === 'undefined') return;
   const data = JSON.stringify({ kind, t: Date.now(), v: 1, ...body });
   try {
-    navigator.sendBeacon ? navigator.sendBeacon(__REP.url, new Blob([data], { type: 'application/json' })) : fetch(__REP.url, { method: 'POST', body: data, keepalive: !0, headers: { 'content-type': 'application/json' } });
+    // (as plain text: a beacon or fetch to another site with a JSON content type would need a preflight that
+    // beacons can't make; the hub parses the text as JSON)
+    navigator.sendBeacon ? navigator.sendBeacon(__REP.url, new Blob([data], { type: 'text/plain' })) : fetch(__REP.url, { method: 'POST', body: data, keepalive: !0, headers: { 'content-type': 'text/plain' } });
   } catch (e) {}
 }
 function __repGpu() {

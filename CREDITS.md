@@ -85,6 +85,18 @@ into each downloaded file. The same list is shown in the game under **About**.
   browser, check the current Sketchfab Standard terms for these two before publishing commercially.
 - **Rampart 7.62**: author and licence unknown; find the original before publishing, or replace it.
 
+## Outdoor skies and sky lighting (Poly Haven, CC0)
+
+The skies over Ridgeback Pass, Fortress, Frostline (dusk and night) and Blackwater, and the lighting made from them
+(`src/mods/89-sky.js`). Downloaded from [Poly Haven](https://polyhaven.com) (CC0) and built by `tools/fetch-sky.mjs`
+into `public/game/sky/`: a 4096 and a 2048 px WebP picture of each sky and a 1024 x 512 HDR lighting map (sun
+removed, ground added below the horizon); the night sky darkened with its stars kept.
+
+- Day: [kloofendal_48d_partly_cloudy_puresky](https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky)
+- Dusk: [qwantani_sunset_puresky](https://polyhaven.com/a/qwantani_sunset_puresky)
+- Night: [qwantani_moonrise_puresky](https://polyhaven.com/a/qwantani_moonrise_puresky)
+- Frostline by day: lighting map from [snowy_hillside](https://polyhaven.com/a/snowy_hillside) (the map's own sky picture)
+
 ## Frostline (Poly Haven, CC0)
 
 Downloaded and optimised by `tools/fetch-polyhaven.mjs`; all CC0 from [Poly Haven](https://polyhaven.com).

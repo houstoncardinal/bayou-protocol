@@ -34,16 +34,28 @@ function __claimOk(A, i, B, g, I) {
       if (Pg(eye, { x: p.x, y: p.y + y - (B.crouch || 0) * 0.45, z: p.z }, boxes)) return !0;
   return (w.pen || 0) >= 1 && d < 70;
 }
+// The host's check on a guest's reported movement (guests move their own player, for instant response, and
+// send where they are). Within 1.5 s of a spawn anything goes (the spawn itself is a jump across the map).
+// Otherwise:
+//   - across the ground: at most 14 m/s plus 0.6 m of slack per update; a longer step is cut to that length.
+//     (A step of 25 m or more used to pass untouched, which let a modified browser teleport anywhere; it
+//     is now held back to the last accepted position like any other overlong step.)
+//   - upwards: at most 12 m/s plus 0.5 m of slack (a jump leaves the ground at about 6 m/s, a ladder climbs
+//     at 3 m/s): flying is cut. Falling is not limited (a long drop is fast).
 function __clampMove(A, p, o, dt) {
   if (A.t - (p.spawnedAt ?? -9) < 1.5) return;
   const dx = p.pos.x - o.x,
     dz = p.pos.z - o.z,
     d = Math.hypot(dx, dz),
-    mx = 14 * Math.max(dt, 1 / 60) + 0.6;
-  if (d > mx && d < 25) {
+    t = Math.max(dt, 1 / 60),
+    mx = 14 * t + 0.6;
+  if (d > mx) {
     const k = mx / d;
     ((p.pos.x = o.x + dx * k), (p.pos.z = o.z + dz * k));
   }
+  const up = (p.pos.y ?? 0) - (o.y ?? 0),
+    my = 12 * t + 0.5;
+  up > my && (p.pos.y = o.y + my);
 }
 function __tSite(w) {
   const last = w.__lastSite;
