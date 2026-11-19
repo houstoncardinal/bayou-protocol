@@ -316,320 +316,200 @@ function __BuyMenu() {
   });
 }
 // ---------- end of match ----------
+// ---------- end of match ----------
+// One clean panel: the result and the score; your line (kills, deaths, assists, K/D, headshots) with the XP and rank
+// you earned; the two teams' tables. A bar along the bottom that is always on screen: offline, the next match (the
+// next map in the rotation, same mode, side and loadout) starts by itself after 15 seconds, or at once with
+// Continue; Play again replays this map; Change setup and Main menu leave. Online, the host starts the next match.
+const __ES_NEXT = 15;
+function __esRotation() {
+  const ids = BD.map((m) => m.id).filter((id) => typeof __HX_KEY < 'u' && __HX_KEY[id]);
+  return ids.length ? ids : BD.map((m) => m.id).filter((id) => id !== 'range');
+}
+function __esNextMap(cur) {
+  const r = __esRotation(),
+    i = r.indexOf(cur);
+  return r[(i + 1) % r.length] || cur;
+}
 function __EndScreen() {
   const z = Zw();
   KI(4);
   const A = eA.state,
-    me = eA.human();
+    me = eA.human(),
+    online = !!eA.net,
+    curMap = A ? aw().id : null,
+    nextId = curMap ? __esNextMap(curMap) : null,
+    nextName = ((nextId && BD.find((m) => m.id === nextId)) || {}).name || '',
+    [left, setLeft] = S.useState(__ES_NEXT),
+    [hold, setHold] = S.useState(!1);
+  const go = (mapId) => {
+    const o = eA.lastOptions;
+    if (!o) return void (z.setup({ profileRev: z.profileRev + 1 }), z.setScreen('setup'));
+    eA.start(mapId ? { ...o, map: mapId } : o);
+    z.setup(mapId ? { profileRev: z.profileRev + 1, map: mapId } : { profileRev: z.profileRev + 1 });
+    z.setScreen('playing');
+    rc();
+  };
+  // the countdown to the next match (offline; paused while you hold it)
+  S.useEffect(() => {
+    if (online || hold) return;
+    if (left <= 0) return void go(nextId);
+    const t = setTimeout(() => setLeft((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, hold, online]);
+  // Enter: continue
+  S.useEffect(() => {
+    if (online) return;
+    const k = (e) => e.code === 'Enter' && (e.preventDefault(), go(nextId));
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [online, nextId]);
   if (!A) return null;
   const solo = A.mode === 'ffa' || A.mode === 'gungame',
     W = A.score.CT > A.score.T ? 'CT' : A.score.T > A.score.CT ? 'T' : null,
     champ = A.players.find((o) => o.id === A.winnerId),
     won = solo ? A.winnerId === (me == null ? void 0 : me.id) : !!me && me.team === W,
-    draw = !solo && !W;
-  const rep = awA(A);
-  const sc = (p) => p.score + p.kills * 20,
+    draw = !solo && !W,
+    rep = awA(A),
+    sc = (p) => p.score + p.kills * 20,
     mvp = [...A.players].sort((a, b) => sc(b) - sc(a))[0],
     prof = Es(),
     lvl = BQ(prof.xp),
     a0 = oo(lvl),
     a1x = oo(lvl + 1),
-    pct = lvl >= cc ? 100 : Math.round(((prof.xp - a0) / (a1x - a0)) * 100);
-  const acc = pw && pw.shots ? Math.round((pw.hits / pw.shots) * 100) : 0,
-    hs = pw && pw.kills ? Math.round((pw.headshots / pw.kills) * 100) : 0,
-    again = () => {
-      (eA.lastOptions && eA.start(eA.lastOptions),
-        z.setScreen('playing'),
-        z.setup({ profileRev: z.profileRev + 1 }),
-        rc());
-    };
-  const row = (p, i) =>
+    pct = lvl >= cc ? 100 : Math.round(((prof.xp - a0) / (a1x - a0)) * 100),
+    hs = pw && pw.kills ? Math.round((pw.headshots / pw.kills) * 100) : 0;
+  const h = (t, p, ...c) => M.jsx(t, { ...(p || {}), children: c.length <= 1 ? c[0] : c });
+  const row = (p) =>
     M.jsxs(
       'div',
       {
-        className: `es-row ${me && p.id === me.id ? 'is-me' : ''} ${p.alive ? '' : ''}`,
+        className: 'esx-row' + (me && p.id === me.id ? ' is-me' : ''),
         children: [
-          M.jsx('span', { className: 'es-rank', children: i + 1 }),
-          M.jsxs('span', {
-            className: 'es-name',
-            children: [
-              M.jsx(hQ, { look: p.look, size: 22 }),
-              M.jsx('b', { children: p.name }),
-              p.id === mvp.id && M.jsx('em', { children: 'MVP' }),
-            ],
-          }),
-          M.jsx('span', { children: p.kills }),
-          M.jsx('span', { children: p.deaths }),
-          M.jsx('span', { children: p.assists }),
-          M.jsx('span', { children: (p.kills / Math.max(1, p.deaths)).toFixed(2) }),
-          M.jsx('span', { className: 'es-score', children: Math.round(p.score) }),
+          M.jsxs('span', { className: 'esx-name', children: [M.jsx(hQ, { look: p.look, size: 20 }), M.jsx('b', { children: p.name }), p.id === mvp.id && M.jsx('em', { children: 'MVP' })] }),
+          h('span', null, p.kills),
+          h('span', null, p.deaths),
+          h('span', null, p.assists),
+          h('span', { className: 'esx-score' }, Math.round(p.score)),
         ],
       },
       p.id,
     );
-  const head = M.jsxs('div', {
-    className: 'es-row es-thead',
-    children: [
-      M.jsx('span', { children: '#' }),
-      M.jsx('span', { className: 'es-name', children: 'Player' }),
-      M.jsx('span', { children: 'K' }),
-      M.jsx('span', { children: 'D' }),
-      M.jsx('span', { children: 'A' }),
-      M.jsx('span', { children: 'K/D' }),
-      M.jsx('span', { children: 'Score' }),
-    ],
-  });
-  const team = (X) => {
-    const ps = A.players.filter((p) => p.team === X).sort((a, b) => sc(b) - sc(a));
-    return M.jsxs(
+  const head = M.jsxs('div', { className: 'esx-row esx-head', children: [h('span', { className: 'esx-name' }, 'Player'), h('span', null, 'K'), h('span', null, 'D'), h('span', null, 'A'), h('span', { className: 'esx-score' }, 'Score')] });
+  const table = (title, color, list, score, win) =>
+    M.jsxs(
       'section',
       {
-        className: `es-team ${W === X ? 'is-win' : ''}`,
-        style: { '--tc': ii[X].main },
+        className: 'esx-team' + (win ? ' is-win' : ''),
+        style: { '--tc': color },
         children: [
-          M.jsxs('header', {
-            children: [
-              M.jsx('b', { children: ii[X].name }),
-              M.jsx('span', { className: 'es-tscore', children: Math.floor(A.score[X]) }),
-              W === X && M.jsx('em', { children: 'Winner' }),
-            ],
-          }),
+          M.jsxs('header', { children: [h('b', null, title), win && h('em', null, 'Winner'), score !== null && h('span', null, score)] }),
           head,
-          M.jsx('div', { className: 'es-rows', style: { '--n': Math.max(5, ps.length) }, children: ps.map(row) }),
+          M.jsx('div', { className: 'esx-rows', children: list.map(row) }),
         ],
       },
-      X,
+      title,
     );
-  };
-  const all = [...A.players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
+  const byScore = (X) => A.players.filter((p) => p.team === X).sort((a, b) => sc(b) - sc(a)),
+    all = [...A.players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths),
+    kd = me ? (me.kills / Math.max(1, me.deaths)).toFixed(2) : '0',
+    rank = rep && rep.srDelta !== void 0 ? __rankOf(rep.sr ?? 800) : null,
+    unl = (rep && rep.unlocked) || [];
   return M.jsx('div', {
-    className: `es-wrap ${won ? 'is-won' : draw ? 'is-draw' : 'is-lost'}`,
+    className: `esx-wrap ${won ? 'is-won' : draw ? 'is-draw' : 'is-lost'}`,
     children: M.jsxs('div', {
-      className: 'es',
+      className: 'esx',
       children: [
+        // the result
         M.jsxs('div', {
-          className: 'es-hero',
+          className: 'esx-top',
           children: [
             M.jsxs('div', {
-              className: 'es-meta',
-              children: [__modeName(A), ' · ', aw().name, eA.net ? ' · Online' : ' · Offline'],
-            }),
-            M.jsx('h1', { children: draw ? 'Draw' : won ? 'Victory' : 'Defeat' }),
-            M.jsx('div', {
-              className: 'es-big',
-              children: solo
-                ? M.jsxs('span', { children: [(champ == null ? void 0 : champ.name) ?? 'Nobody', ' wins'] })
-                : M.jsxs(M.Fragment, {
-                    children: [
-                      M.jsx('span', { style: { color: ii.CT.light }, children: Math.floor(A.score.CT) }),
-                      M.jsx('i', { children: ':' }),
-                      M.jsx('span', { style: { color: ii.T.light }, children: Math.floor(A.score.T) }),
-                    ],
-                  }),
-            }),
-            me &&
-              M.jsxs('div', {
-                className: 'es-you',
-                children: [
-                  [
-                    ['Kills', me.kills],
-                    ['Deaths', me.deaths],
-                    ['Assists', me.assists],
-                    ['Accuracy', acc + '%'],
-                    ['Headshots', hs + '%'],
-                    ['Score', Math.round(me.score)],
-                    ...(Hs(A) ? [['Earned', '$' + (me.earned ?? 0).toLocaleString()]] : []),
-                  ].map(([k, v]) =>
-                    M.jsxs('div', { children: [M.jsx('b', { children: v }), M.jsx('span', { children: k })] }, k),
-                  ),
-                ],
-              }),
-            M.jsxs('div', {
-              className: 'es-mvp',
               children: [
-                M.jsx(hQ, { look: mvp.look, size: 44 }),
-                M.jsxs('div', {
-                  children: [
-                    M.jsx('small', { children: 'Match MVP' }),
-                    M.jsx('b', { children: mvp.name }),
-                    M.jsxs('span', {
-                      children: [
-                        mvp.kills,
-                        ' kills · ',
-                        mvp.deaths,
-                        ' deaths',
-                      ],
-                    }),
-                  ],
-                }),
+                h('div', { className: 'esx-meta' }, [__modeName(A), aw().name, online ? 'Online' : 'Offline'].join('  ·  ')),
+                h('h1', null, draw ? 'Draw' : won ? 'Victory' : 'Defeat'),
               ],
             }),
-            (() => {
-              const kd = me
-                  ? (me.kills +
-                      0.5 * me.assists +
-                      2 * ((rep && rep.stats && rep.stats.plants) || 0)) /
-                      (me.deaths + 1) +
-                    (acc >= 30 ? 0.3 : 0)
-                  : 0,
-                grade = kd >= 3 ? 'S' : kd >= 2 ? 'A' : kd >= 1.2 ? 'B' : kd >= 0.7 ? 'C' : 'D';
-              const best = (f, min = 1) => {
-                  const s = [...A.players].sort((a, b) => f(b) - f(a))[0];
-                  return s && f(s) >= min ? s : null;
-                },
-                acs = [];
-              const tf = best((p) => p.kills, 3);
-              tf && acs.push(['Top Fragger', tf.name]);
-              const tp = best((p) => p.assists, 2);
-              tp && acs.push(['Team Player', tp.name]);
-              const un = [...A.players].filter((p) => p.kills >= 2).sort((a, b) => a.deaths - b.deaths)[0];
-              un && acs.push(['Hardest to Kill', un.name]);
-              if (me) {
-                acc >= 35 && pw.shots >= 20 && acs.push(['Sharpshooter', 'You']);
-                hs >= 40 && me.kills >= 3 && acs.push(['Headhunter', 'You']);
-                rep && rep.stats && rep.stats.bestStreak >= 5 && acs.push(['Unstoppable', 'You']);
-              }
-              return M.jsxs(M.Fragment, {
-                children: [
-                  M.jsxs('div', {
-                    className: 'es-reward',
-                    children: [
-                      M.jsxs('div', {
-                        className: `es-grade g-${grade}`,
-                        children: [M.jsx('b', { children: grade }), M.jsx('span', { children: 'Rating' })],
-                      }),
-                      M.jsxs('div', {
-                        className: 'es-xpsum',
-                        children: [
-                          M.jsxs('b', { children: ['+', ((rep && rep.total) || 0).toLocaleString(), ' XP'] }),
-                          M.jsx('span', {
-                            children:
-                              rep && rep.levelAfter > rep.levelBefore
-                                ? `Level up! ${rep.levelBefore} → ${rep.levelAfter}`
-                                : `${IG(lvl)} · Level ${lvl}`,
-                          }),
-                          M.jsx('i', { children: M.jsx('u', { style: { width: pct + '%' } }) }),
-                          M.jsx('small', {
-                            children:
-                              lvl >= cc ? 'Max level' : `${(a1x - prof.xp).toLocaleString()} XP to level ${lvl + 1}`,
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-                  rep &&
-                    rep.srDelta !== void 0 &&
-                    (() => {
-                      const r = __rankOf(rep.sr ?? 800);
-                      return M.jsxs('div', {
-                        className: 'es-rank2',
-                        children: [
-                          M.jsxs('b', { children: [r.name, ' ', r.div] }),
-                          M.jsxs('span', { children: [Math.round(rep.sr), ' SR'] }),
-                          M.jsxs('em', {
-                            className: rep.srDelta >= 0 ? 'up' : 'down',
-                            children: [rep.srDelta >= 0 ? '+' : '', rep.srDelta],
-                          }),
-                          rep.seasonGained > 0 && M.jsxs('i', { children: ['Season tier +', rep.seasonGained] }),
-                        ],
-                      });
-                    })(),
-                  rep &&
-                    rep.lines &&
-                    M.jsx('div', {
-                      className: 'es-lines',
-                      children: rep.lines
-                        .slice()
-                        .sort((a, b) => b.xp - a.xp)
-                        .slice(0, 6)
-                        .map((l) =>
-                          M.jsxs(
-                            'div',
-                            {
-                              children: [
-                                M.jsx('span', { children: l.label }),
-                                M.jsxs('b', { children: ['+', l.xp.toLocaleString()] }),
-                              ],
-                            },
-                            l.label,
-                          ),
-                        ),
-                    }),
-                  rep &&
-                    rep.unlocked &&
-                    rep.unlocked.length > 0 &&
-                    M.jsx('div', {
-                      className: 'es-unlocks',
-                      children: rep.unlocked.map((u) =>
-                        M.jsxs('span', { children: ['Unlocked: ', u.name] }, u.id + u.level),
-                      ),
-                    }),
-                  acs.length > 0 &&
-                    M.jsx('div', {
-                      className: 'es-acs',
-                      children: acs
-                        .slice(0, 5)
-                        .map(([k, v]) =>
-                          M.jsxs(
-                            'div',
-                            { children: [M.jsx('small', { children: k }), M.jsx('b', { children: v })] },
-                            k,
-                          ),
-                        ),
-                    }),
-                ],
-              });
-            })(),
-            M.jsx('div', {
-              className: 'es-actions',
-              children: eA.net
-                ? M.jsxs(M.Fragment, {
-                    children: [
-                      M.jsx('span', { className: 'es-note', children: 'Next match starts in a few seconds…' }),
-                      M.jsx('button', {
-                        className: 'es-btn',
-                        onClick: () => {
-                          (eA.stop(), z.setup({ profileRev: z.profileRev + 1 }), z.setScreen('online'));
-                        },
-                        children: 'Leave lobby',
-                      }),
-                    ],
-                  })
-                : M.jsxs(M.Fragment, {
-                    children: [
-                      M.jsx('button', {
-                        className: 'es-btn ghost',
-                        onClick: () => {
-                          (eA.stop(), z.setScreen('menu'));
-                        },
-                        children: 'Main menu',
-                      }),
-                      M.jsx('button', {
-                        className: 'es-btn ghost',
-                        onClick: () => {
-                          (z.setup({ profileRev: z.profileRev + 1 }), z.setScreen('setup'));
-                        },
-                        children: 'Change setup',
-                      }),
-                      M.jsx('button', { className: 'es-btn go', onClick: again, children: 'Play again' }),
-                    ],
-                  }),
-            }),
+            solo
+              ? h('div', { className: 'esx-champ' }, (champ ? champ.name : 'Nobody') + ' wins')
+              : M.jsxs('div', {
+                  className: 'esx-score-big',
+                  children: [
+                    M.jsxs('div', { style: { '--tc': ii.CT.light }, children: [h('small', null, 'CT'), h('b', null, Math.floor(A.score.CT))] }),
+                    h('i', null, ':'),
+                    M.jsxs('div', { style: { '--tc': ii.T.light }, children: [h('small', null, 'T'), h('b', null, Math.floor(A.score.T))] }),
+                  ],
+                }),
           ],
         }),
-        M.jsx('div', {
-          className: `es-board ${solo ? 'is-solo' : ''}`,
-          children: solo
-            ? M.jsxs('section', {
-                className: 'es-team',
-                style: { '--tc': '#ffcf5a' },
+        // your match
+        me &&
+          M.jsxs('div', {
+            className: 'esx-you',
+            children: [
+              M.jsx('div', {
+                className: 'esx-stats',
                 children: [
-                  M.jsx('header', { children: M.jsx('b', { children: 'Leaderboard' }) }),
-                  head,
-                  M.jsx('div', { className: 'es-rows', style: { '--n': all.length }, children: all.map(row) }),
+                  ['Kills', me.kills],
+                  ['Deaths', me.deaths],
+                  ['Assists', me.assists],
+                  ['K/D', kd],
+                  ['Headshots', hs + '%'],
+                ].map(([k, v]) => M.jsxs('div', { children: [h('b', null, v), h('span', null, k)] }, k)),
+              }),
+              M.jsxs('div', {
+                className: 'esx-prog',
+                children: [
+                  M.jsxs('div', {
+                    className: 'esx-xp',
+                    children: [
+                      h('b', null, '+' + ((rep && rep.total) || 0).toLocaleString() + ' XP'),
+                      h('span', null, rep && rep.levelAfter > rep.levelBefore ? `Level ${rep.levelBefore} → ${rep.levelAfter}` : `Level ${lvl}`),
+                      rank && h('em', { className: rep.srDelta >= 0 ? 'up' : 'down' }, `${rank.name} ${rank.div}  ${rep.srDelta >= 0 ? '+' : ''}${rep.srDelta} SR`),
+                    ],
+                  }),
+                  M.jsx('i', { className: 'esx-bar', children: M.jsx('u', { style: { width: pct + '%' } }) }),
+                  unl.length > 0 && h('small', { className: 'esx-unl' }, 'Unlocked: ' + unl.slice(0, 3).map((u) => u.name).join(', ') + (unl.length > 3 ? ` and ${unl.length - 3} more` : '')),
+                ],
+              }),
+            ],
+          }),
+        // the teams
+        M.jsx('div', {
+          className: 'esx-board' + (solo ? ' is-solo' : ''),
+          children: solo ? table('Leaderboard', '#ffcf5a', all, null, !1) : [table(ii.CT.name, ii.CT.main, byScore('CT'), Math.floor(A.score.CT), W === 'CT'), table(ii.T.name, ii.T.main, byScore('T'), Math.floor(A.score.T), W === 'T')],
+        }),
+        // what happens next
+        M.jsx('div', {
+          className: 'esx-foot',
+          children: online
+            ? M.jsxs(M.Fragment, {
+                children: [
+                  h('div', { className: 'esx-next' }, h('span', null, 'Next match starts in a few seconds')),
+                  h('div', { className: 'esx-btns' }, h('button', { className: 'esx-btn', onClick: () => (eA.stop(), z.setup({ profileRev: z.profileRev + 1 }), z.setScreen('online')) }, 'Leave lobby')),
                 ],
               })
-            : [team('CT'), team('T')],
+            : M.jsxs(M.Fragment, {
+                children: [
+                  M.jsxs('div', {
+                    className: 'esx-next',
+                    children: [
+                      h('span', null, hold ? 'Next match paused' : `Next: ${nextName} in ${left}s`),
+                      M.jsx('i', { className: 'esx-count', children: M.jsx('u', { style: { width: (hold ? 0 : (left / __ES_NEXT) * 100) + '%' } }) }),
+                    ],
+                  }),
+                  M.jsxs('div', {
+                    className: 'esx-btns',
+                    children: [
+                      h('button', { className: 'esx-btn ghost', onClick: () => (eA.stop(), z.setScreen('menu')) }, 'Main menu'),
+                      h('button', { className: 'esx-btn ghost', onClick: () => (z.setup({ profileRev: z.profileRev + 1 }), z.setScreen('setup')) }, 'Change setup'),
+                      h('button', { className: 'esx-btn ghost', onClick: () => setHold((v) => !v) }, hold ? 'Resume' : 'Wait'),
+                      h('button', { className: 'esx-btn ghost', onClick: () => go(null) }, 'Play again'),
+                      h('button', { className: 'esx-btn go', onClick: () => go(nextId) }, 'Continue'),
+                    ],
+                  }),
+                ],
+              }),
         }),
       ],
     }),
