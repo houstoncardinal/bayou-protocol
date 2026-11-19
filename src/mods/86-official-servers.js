@@ -1,5 +1,5 @@
 /* ===== Bayou Tactical mod: official servers ===== */
-// Five permanent servers, one per map, across every online mode. They are always in the server lists (the
+// Five permanent servers, one per map, across the online modes. They are always in the server lists (the
 // Servers panel, the Multiplayer screen's live lobbies) even when nobody is in them, and quick play goes to the
 // matching one when no other lobby is running.
 //
@@ -15,7 +15,7 @@ const __OFFICIAL = [
   { lb: 'cds.tdm.ridgeback.bayou1', title: 'Bayou #1', mode: 'tdm', map: 'ridgeback' },
   { lb: 'cds.bomb.fortress.bayou2', title: 'Bayou #2', mode: 'bomb', map: 'fortress' },
   { lb: 'cds.ffa.frostline.bayou3', title: 'Bayou #3', mode: 'ffa', map: 'frostline' },
-  { lb: 'cds.jb.prison.bayou4', title: 'Bayou #4', mode: 'jb', map: 'prison' },
+  { lb: 'cds.gungame.prison.bayou4', title: 'Bayou #4', mode: 'gungame', map: 'prison' },
   { lb: 'cds.tdm.cinema.bayou5', title: 'Bayou #5', mode: 'tdm', map: 'cinema' },
 ];
 const __OFFICIAL_BY = new Map(__OFFICIAL.map((o) => [o.lb, o]));

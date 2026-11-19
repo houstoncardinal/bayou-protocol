@@ -319,14 +319,15 @@ function __fhMap(A) {
     set: (v) => (base = v),
   });
   A.__fh = { dc, db, lc, lb, holes, nBoxes: A.boxes.length - n0 };
-  // bots open doors they walk into (the core's r1, replaced by 67-jailbreak.js): not these two
+  // bots open doors they walk into (the core's r1, replaced by 67-jailbreak.js): not the house's (the cabin's,
+  // the bookcase, the kitchen fridge's: 65b-frostline-wonderland.js)
   if (!__FH.r1) {
     __FH.r1 = !0;
     const prevR1 = r1;
     r1 = function (st) {
       const m = aw(),
         F = m.__fh,
-        mine = F ? [m.doors[F.dc], m.doors[F.db]].filter((d) => d && !d.open) : [];
+        mine = F ? m.doors.filter((d) => d && d.__fhDoor && !d.open) : [];
       for (const d of mine) d.open = !0;
       try {
         return prevR1.apply(this, arguments);
@@ -610,7 +611,7 @@ function __fhSurf(x, y, zz) {
   const v = __fhVolAt(x, y, zz, 0.05, 0.3);
   if (!v) return null;
   if (v.shaft) return 'metal';
-  return v.st === 'kitchen' || v.st === 'tunnel' || v.st === 'chamber' || v.st === 'stone' ? 'tile' : 'wood';
+  return v.st === 'kitchen' || v.st === 'tunnel' || v.st === 'chamber' || v.st === 'stone' || v.st === 'wonder' ? 'tile' : 'wood';
 }
 // the location readout (the core's areas are flat rectangles: below ground they would name the lane above)
 function __fhAreaAt(p) {

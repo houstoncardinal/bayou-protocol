@@ -42,8 +42,12 @@ function __claimOk(A, i, B, g, I) {
 //     is now held back to the last accepted position like any other overlong step.)
 //   - upwards: at most 12 m/s plus 0.5 m of slack (a jump leaves the ground at about 6 m/s, a ladder climbs
 //     at 3 m/s): flying is cut. Falling is not limited (a long drop is fast).
+//   - one exception: a portal on Frostline (the kitchen fridge and the Wonderland's gate and clouds,
+//     65b-frostline-wonderland.js). The jump is accepted only when the last accepted position was at that portal
+//     (and the fridge's doors are open) and the new one is at its arrival; checked here, on the host.
 function __clampMove(A, p, o, dt) {
   if (A.t - (p.spawnedAt ?? -9) < 1.5) return;
+  if (typeof __fhPortalOk === 'function' && __fhPortalOk(A, o, p.pos)) return;
   const dx = p.pos.x - o.x,
     dz = p.pos.z - o.z,
     d = Math.hypot(dx, dz),

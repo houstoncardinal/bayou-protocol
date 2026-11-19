@@ -39,6 +39,8 @@ export const SCREENS = [
   // the Starlight is a 360° dome: it plays 360° and VR video (YouTube's, or 360°/180° files)
   { id: 'lounge', name: 'The Starlight', group: 'cinema', dome: true, showing: () => ({ ...yt('7AkbUfZjS5k', 'Virtual Nature 360° · Nature Meditation', 'ECOVR'), projection: '360' }) },
   { id: 'prison', name: 'Blackwater Dayroom TV', group: 'other', showing: mv },
+  // Frostline: the home cinema in the secret condo behind the kitchen fridge (65b-frostline-wonderland.js)
+  { id: 'condo', name: 'Frostline Condo Cinema', group: 'other', showing: () => yt('WhWc3b3KhnY', 'Spring', 'Blender Studio') },
 ];
 const SCREEN_BY_ID = new Map(SCREENS.map((s) => [s.id, s]));
 

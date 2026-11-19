@@ -71,7 +71,7 @@ function __moneyCap() {
   Object.assign(oU, { hr: 50 });
   Object.assign(sBA, { hr: ['Respawn', 'Team', '$100K'] });
   Object.assign(CBA, { hr: ['#c9a227', '#1f1705'] });
-  gF.some(([k]) => k === 'hr') || gF.push(['hr', 'Start with $100,000 and buy any gun or attachment from the first second, no rank locks. Respawn team fight, first to the kill limit. Any map.']);
+  gF.some(([k]) => k === 'hr') || gF.push(['hr', 'Start with $100,000 and buy any gun or attachment, no rank locks. Respawn team fight on any map.']);
   CN.includes('hr') || CN.push('hr');
   try {
     const st = Zw.getState();

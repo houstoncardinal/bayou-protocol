@@ -673,7 +673,7 @@ typeof window < 'u' &&
       const id = e.type === 'throw' ? e.who : e.type === 'hit' ? e.victim : null;
       if (id == null) continue;
       const u = __UB.get(id) || {};
-      e.type === 'throw' ? (u.toss = now) : (u.hit = now);
+      e.type === 'throw' ? (u.toss = now) : ((u.hit = now), (u.dmg = (e.dmg || 25) * (e.headshot ? 1.5 : 1)));
       __UB.set(id, u);
     }
   });
@@ -750,8 +750,9 @@ function __locoAfter(s, v, K, dt) {
       want[st.one.name] = [w, f0 + (f1 - f0) * k];
     }
   }
-  // hit flinch: a short jolt, half strength (the aim does not leave the target)
-  if (v.alive && ev.hit && now - ev.hit < 0.42) want.UpHit = [1, (now - ev.hit) / 0.42];
+  // hit flinch: a jolt as strong as the hit: a graze barely moves you, a magnum round or a headshot rocks the
+  // whole upper body (about half strength for an ordinary rifle hit, so the aim does not leave the target)
+  if (v.alive && ev.hit && now - ev.hit < 0.42) want.UpHit = [Math.min(2.2, 0.45 + (ev.dmg || 25) / 45), (now - ev.hit) / 0.42];
   // firing: the recoil loop while the trigger is held
   if (v.alive && gun && S && S.t - v.lastShotAt < 0.14 && !want.UpReload && !want.UpReloadLow) want.UpFire = [1.4, (now * 4) % 1];
   // for the weapon hold (__gunHold): the arms belong to the clip while reloading or throwing; when it fired
@@ -1018,7 +1019,18 @@ const __GH_POSE = {
     ready: { dp: 0.72, dy: 0.1, roll: 0, at: [-0.17, -0.2, 0.27] },
     sprint: { dp: 0.95, dy: 0.15, roll: 0, at: [-0.15, -0.24, 0.2] },
   },
+  // one hand (a revolver): aiming, the shooting arm reaching out almost straight (as one-handed shooters hold
+  // it: the locked arm takes the recoil) with the sights up in line with the right eye, a slight cant inwards;
+  // otherwise held low and to the side, muzzle down; sprinting, the arm hanging with the gun pointed at the ground
+  pistol1: {
+    aim: { dp: 0, dy: 0.02, roll: 0.06, at: [-0.09, -0.02, 0.5] },
+    ready: { dp: 0.85, dy: -0.05, roll: 0, at: [0.02, -0.3, 0.2] },
+    sprint: { dp: 1.15, dy: -0.08, roll: 0, at: [0.04, -0.38, 0.1] },
+  },
 };
+// guns held in one hand (94-new-guns.js adds the revolver): the free arm hangs at the side and swings with the
+// stride instead of supporting the gun; reloads still use both hands (the clip's reload)
+const __GH_ONE = new Set();
 // the eased aim amount (Ou.update) and a blend between the low-ready and aiming values of something
 function __ghAk(ik, aiming) {
   return ik.__ak === void 0 ? +!!aiming : ik.__ak;
@@ -1122,7 +1134,7 @@ function __gunHold(ik, o, aiming) {
   const pistol = ik.gun.grip.pistol || qO[wpn] === 'pistol',
     C = pistol && !ik.gun.grip.pistol ? ik.gun.pgrip || (ik.gun.pgrip = { grip: new U(0, -0.055, 0.022), fore: new U(0, -0.085, 0.03), pistol: !0, stock: 0 }) : ik.gun.grip,
     dt = ik.__dt || 0.016,
-    cls = C.pistol ? 'pistol' : 'long';
+    cls = C.pistol ? (__GH_ONE.has(wpn) ? 'pistol1' : 'pistol') : 'long';
   // the core leans the upper body to the aim; do that first (as __gunInHands does)
   const ak = __ghAk(ik, aiming),
     D = __ghMix(Math.min(ik.__p, 0) * 0.3 - 0.08, ik.__p, ak),
@@ -1154,8 +1166,11 @@ function __gunHold(ik, o, aiming) {
   hp.w += (wantW - hp.w) * (1 - Math.exp(-dt * (wantW > hp.w ? 9 : 14)));
   const W = hp.w;
   // recoil: a short kick back and up after each shot
+  // (a one-handed magnum: the muzzle flips higher and the arm takes longer to bring it back down)
   const ago = st ? st.shotAgo : 9,
-    kick = ago < 0.12 ? Math.sin((ago / 0.12) * Math.PI) * (C.pistol ? 1 : 0.6) : 0;
+    one = __GH_ONE.has(wpn),
+    kd = one ? 0.22 : 0.12,
+    kick = ago < kd ? Math.sin((ago / kd) * Math.PI) * (C.pistol ? (one ? 2.3 : 1) : 0.6) : 0;
   // the aim frame at the right shoulder
   body.updateMatrixWorld(!0);
   const { f, u, r } = __ghFrame(ik, body, par, aiming),
@@ -1205,7 +1220,23 @@ function __gunHold(ik, o, aiming) {
     wristR = __ghWrist(R, palmR, FR, NR);
   __ghSolveArm(R, wristR, new U().copy(u).multiplyScalar(-1).addScaledVector(r, 0.45 + 0.3 * ak).addScaledVector(f, -0.25), qR);
   C.pistol ? __ghCurl(R, __GH_CURL.pistolR, null, 1) : __ghCurl(R, __GH_CURL.rifleR, ago < 0.25 || aiming ? __GH_CURL.fireR : null, 1);
-  if (L && L.arm) {
+  if (L && L.arm && cls === 'pistol1') {
+    // the free arm hangs: the wrist below the shoulder and a touch forward, elbow softly bent backwards, fingers
+    // down and loosely curled, palm towards the thigh; it swings forward and back with the stride (counter to
+    // the legs), barely at all standing still
+    const up = __GH.up,
+      fh = f.clone().setY(0).normalize(),
+      rh = new U().crossVectors(fh, up).normalize(),
+      ls = L.arm.getWorldPosition(new U()),
+      t = performance.now() / 1e3,
+      mv = st && st.moving ? Math.min(1, (st.speed || 0) / 4) : 0,
+      sway = Math.sin(t * (st && st.run ? 9.2 : 6.4)) * (0.03 + 0.09 * mv) * (mv > 0 ? 1 : 0.12),
+      wristH = ls.clone().addScaledVector(up, -0.5).addScaledVector(rh, -0.07).addScaledVector(fh, 0.05 + sway),
+      FH = up.clone().multiplyScalar(-1).addScaledVector(fh, 0.12 + sway).normalize(),
+      NH = rh.clone();
+    __ghSolveArm(L, wristH, fh.clone().multiplyScalar(-1).addScaledVector(rh, -0.25), __ghHandQ(L, FH, NH, new Kw()));
+    __ghCurl(L, { Index: [0.3, 0.35, 0.25], Middle: [0.4, 0.45, 0.3], Ring: [0.45, 0.5, 0.3], Pinky: [0.5, 0.5, 0.3], Thumb: [0.2, 0.15, 0.1] }, null, 1);
+  } else if (L && L.arm) {
     let qL, palmL, pole, FL, NL;
     if (C.pistol) {
       // support hand (thumbs forward): the palm on the grip's open left side, below the slide, its fingers

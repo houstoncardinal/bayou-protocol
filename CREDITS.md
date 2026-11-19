@@ -13,13 +13,14 @@ into each downloaded file. The same list is shown in the game under **About**.
 | Kodiak 7.62 (AK) | [FPS Character Animation Pack Ak-47](https://sketchfab.com/3d-models/fps-character-animation-pack-ak-47-b95778a564094fc3a49d1d6a3b6a30ab) | Cristian David Duque Camacho ([DuqueCD7](https://sketchfab.com/DuqueCD7)) | CC BY 4.0 | Textures resized/WebP, geometry compressed; third-person gun taken from the same file |
 | Sentinel M4A1 (arms and carbine) | fps animated carbine | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | Textures resized/WebP, geometry compressed |
 | Phantom 12.7 (arms and rifle) | sniper animated | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
-| First-person arms (Warden, Talon, Rampart, Bastion) | Arms6 | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
+| First-person arms (Warden, Talon, Bastion) | Arms6 | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Hornet .45 | [fps animated smg](https://sketchfab.com/3d-models/fps-animated-smg-ea3dad7478624495a5a46f40127b0579) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | Textures resized/WebP, geometry compressed, animation cut into clips |
 | Mauler 12 | [shotgun animated](https://sketchfab.com/3d-models/shotgun-animated-226237e0f49c4f69a9fc5a78df6a236c) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Kestrel 9 | [fps pistol Animated](https://sketchfab.com/3d-models/fps-pistol-animated-a8cdd6c2e936484aaf67e1786c8320d9) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Anvil 7.62 | [lmg animated](https://sketchfab.com/3d-models/lmg-animated-3446e01368544efaaceb4635232b6d46) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above; belt rounds held still outside reloads |
 | Knife | [knife Animated](https://sketchfab.com/3d-models/knife-animated-f3140db917cc43389c14b5b2536c1dc8) | DJMaesen ([bumstrum](https://sketchfab.com/bumstrum)) | CC BY 4.0 | As above |
 | Striker 17 | [G17 Pistol - Animated](https://sketchfab.com/3d-models/g17-pistol-animated-7723ab14e70446ef8e06a134984f287f) | [user77](https://sketchfab.com/user77) | CC BY 4.0 | As above |
+| Rattler .44 | [Revolver](https://sketchfab.com/3d-models/revolver-547cbf7f50b042c987c9f88a8b8eb65e) | [DTry101](https://sketchfab.com/DTry) | CC BY 4.0 | Weapon light and display rounds removed, textures resized/WebP, geometry compressed (tools/build-new-guns.mjs) |
 
 ### Weapons (gun models)
 
@@ -29,7 +30,6 @@ into each downloaded file. The same list is shown in the game under **About**.
 | Bastion 7.62 | [FN SCAR-17](https://sketchfab.com/3d-models/fn-scar-17-0ea3b7e8ae73434fa42e6409d6e072b7) | witt-commando(RC-3106) ([gsilvacordova](https://sketchfab.com/gsilvacordova)) | CC BY 4.0 | Optimised |
 | Talon 5.56 | [low-poly G95 A1](https://sketchfab.com/3d-models/low-poly-g95-a1-6e66f2cb28234868b06940669c7d388a) | D_U ([DU1701](https://sketchfab.com/DU1701)) | CC BY 4.0 | Re-finished for the game |
 | Warden 9 | [Beretta APX A1 Full Size Tactical Green](https://sketchfab.com/3d-models/beretta-apx-a1-full-size-tactical-green-a0a53ee7b4d640818d61a268fbba7618) | [geyges](https://sketchfab.com/geyges) | Sketchfab Standard | Optimised |
-| Rampart 7.62 | A SCAR rifle model (materials `SCAR_Body_Mat`, `SCAR_Buttock_Mat`) | **Not recorded**: the file carries no author or source. Add the credit here and in `src/mods/46-credits.js` | Unknown | Optimised |
 | Frag grenade | [FPS Guns 4K - Frag Granade](https://sketchfab.com/3d-models/fps-guns-4k-frag-granade-5344d03d1fd44aefb317e858f71570e0) | Heart State Games® ([heartstategames](https://sketchfab.com/heartstategames)) | CC BY-ND 4.0 | None (no-derivatives licence: excluded from the model optimiser) |
 
 ### Characters and animation
@@ -83,7 +83,6 @@ into each downloaded file. The same list is shown in the game under **About**.
 - **Sketchfab Standard** (Warden 9, cacti): licensed per download from Sketchfab; it allows use in
   a game but not redistributing the model files on their own. Because a web game serves its model files to the
   browser, check the current Sketchfab Standard terms for these two before publishing commercially.
-- **Rampart 7.62**: author and licence unknown; find the original before publishing, or replace it.
 
 ## Outdoor skies and sky lighting (Poly Haven, CC0)
 
@@ -107,6 +106,7 @@ The firs are the fir pack credited above.
 - Models: [rock_face_02](https://polyhaven.com/a/rock_face_02), [wooden_crate_02](https://polyhaven.com/a/wooden_crate_02), [old_military_crate](https://polyhaven.com/a/old_military_crate), [barrel_03](https://polyhaven.com/a/barrel_03), [metal_jerrycan](https://polyhaven.com/a/metal_jerrycan), [portable_generator](https://polyhaven.com/a/portable_generator), [portable_searchlight](https://polyhaven.com/a/portable_searchlight), [dead_tree_trunk](https://polyhaven.com/a/dead_tree_trunk), [street_lamp_02](https://polyhaven.com/a/street_lamp_02), [wooden_lantern_01](https://polyhaven.com/a/wooden_lantern_01), [barrel_stove](https://polyhaven.com/a/barrel_stove), [stone_fire_pit](https://polyhaven.com/a/stone_fire_pit), [wooden_barrels_01](https://polyhaven.com/a/wooden_barrels_01), [cardboard_box_01](https://polyhaven.com/a/cardboard_box_01), [ammo_box](https://polyhaven.com/a/ammo_box), [wooden_crate_01](https://polyhaven.com/a/wooden_crate_01), [tree_stump_01](https://polyhaven.com/a/tree_stump_01), [wooden_bucket_01](https://polyhaven.com/a/wooden_bucket_01)
 - The Christmas decorations (baubles, lights, presents, wreaths, candy canes, snowmen, cabins, flames) are modelled in code in `src/mods/63-frostline-christmas.js` and `64-frostline-rooms.js`.
 - The house under the cabin (`src/mods/65a-frostline-cabin.js`) furnishes its rooms with Poly Haven models already in the game for the cinema (`public/game/maps/cinema/models/`, credited under Bayou Palace Cinemas): [Sofa_01](https://polyhaven.com/a/Sofa_01), [ArmChair_01](https://polyhaven.com/a/ArmChair_01), [coffee_table_round_01](https://polyhaven.com/a/coffee_table_round_01), [side_table_01](https://polyhaven.com/a/side_table_01), [ClassicConsole_01](https://polyhaven.com/a/ClassicConsole_01), [potted_plant_02](https://polyhaven.com/a/potted_plant_02), [marble_bust_01](https://polyhaven.com/a/marble_bust_01), [brass_vase_01](https://polyhaven.com/a/brass_vase_01), [ornate_mirror_01](https://polyhaven.com/a/ornate_mirror_01), [Chandelier_02](https://polyhaven.com/a/Chandelier_02). Its wallpaper, tiles, marble, rugs, paintings and enamel signs are drawn in code.
+- The secret condo behind the kitchen fridge (`src/mods/65b-frostline-wonderland.js`): the view from the Overlook's glass wall is [Alps Field](https://polyhaven.com/a/alps_field) by Andreas Mischok (tonemapped panorama, `public/game/maps/frostline/condo-view.webp`); it reuses the cinema's textures (marble_01, herringbone_parquet, poly_wool_herringbone, leather_red_02, rosewood_veneer1, quatrefoil_jacquard_fabric) and models (the house's, plus [covered_car](https://polyhaven.com/a/covered_car), [steel_frame_shelves_02](https://polyhaven.com/a/steel_frame_shelves_02), [industrial_storage_cart](https://polyhaven.com/a/industrial_storage_cart), [mid_century_lounge_chair](https://polyhaven.com/a/mid_century_lounge_chair), [bar_chair_round_01](https://polyhaven.com/a/bar_chair_round_01)). The Kaleidoscope, the fridge's window and the portals are shaders.
 
 ## Blackwater Penitentiary (Poly Haven, CC0)
 

@@ -106,14 +106,15 @@ function __fxShot(g, j, Z, local) {
     const f = __fx.flashes[__fx.nf++ % __fx.flashes.length];
     f.s.position.set(mz.x, mz.y, mz.z);
     const k =
-      (w.special === 'rocket' ? 2.2 : w.pellets > 1 ? 1.5 : w.damage > 40 ? 1.25 : 1) * (0.8 + Math.random() * 0.4);
+      (w.special === 'rocket' ? 2.2 : j.weapon === 'rattler' ? 2.1 : w.pellets > 1 ? 1.5 : w.damage > 40 ? 1.25 : 1) * (0.8 + Math.random() * 0.4);
     f.s.scale.setScalar(0.42 * k);
     f.s.material.rotation = Math.random() * 6.28;
     f.s.material.opacity = 1;
     f.s.visible = !0;
     f.life = f.max = 0.045 + Math.random() * 0.02;
   }
-  if (w.mag > 0 && w.pellets === 1 && w.special !== 'rocket' && !local) {
+  // (a revolver keeps its empty cases in the cylinder)
+  if (w.mag > 0 && w.pellets === 1 && w.special !== 'rocket' && j.weapon !== 'rattler' && !local) {
     const c = __fx.cas[__fx.nc++ % __fx.cas.length];
     c.m.position.set(mz.x - u.x * 0.55 + r.x * 0.05, mz.y + 0.04, mz.z - u.z * 0.55 + r.z * 0.05);
     c.v.set(
@@ -132,8 +133,8 @@ function __fxShot(g, j, Z, local) {
     s.s.position.set(mz.x + u.x * 0.1, mz.y, mz.z + u.z * 0.1);
     s.v.set(u.x * 0.6 + (Math.random() - 0.5) * 0.2, 0.35, u.z * 0.6 + (Math.random() - 0.5) * 0.2);
     s.life = s.max = 0.55 + Math.random() * 0.3;
-    s.s.scale.setScalar(0.12);
-    s.s.material.opacity = 0.35;
+    s.s.scale.setScalar(j.weapon === 'rattler' ? 0.22 : 0.12);
+    s.s.material.opacity = j.weapon === 'rattler' ? 0.5 : 0.35;
     s.s.visible = !0;
   }
 }

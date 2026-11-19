@@ -1214,3 +1214,286 @@
     transition-duration: 0.01s !important;
   }
 }
+
+/* ---------------------------------------------------------------- mode cards, v2: aligned on every screen
+   Every card is the same width (selection and hover no longer widen a card: they lift it, light its frame and
+   zoom its art), and its text block has a fixed shape: one row of tags, a one-line title, and a description
+   area exactly three lines tall, all pinned to the bottom. So every title sits on exactly the same line.
+   Sizes come from the card's own width (container query units), so the row fits any screen: on narrow cards
+   the description gives way to the title. Phones keep the stacked layout (max-width rules above). */
+.mx .po-modes {
+  padding: 10px clamp(30px, 3vw, 44px) 12px !important; /* room for the slant: top corners lean out ~26 px */
+  gap: clamp(10px, 1vw, 16px) !important;
+  align-items: stretch;
+}
+.mx .po-mode {
+  container-type: inline-size;
+  flex: 1 1 0 !important;
+}
+.mx .po-mode:hover,
+.mx .po-mode[aria-pressed='true'] {
+  flex-grow: 1 !important;
+}
+.mx .po-mode:hover {
+  transform: skewX(-6deg) translateY(-8px);
+}
+.mx .po-mode[aria-pressed='true'],
+.mx .po-mode[aria-pressed='true']:hover {
+  transform: skewX(-6deg); /* (the chosen card stays level: its frame and glow mark it, and its title stays in line) */
+}
+/* a thin accent in the mode's own colour along the top, and a richer shade behind the text */
+.mx .po-mode::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--a, #6d8cff), transparent 85%);
+  opacity: 0.9;
+}
+.mx .po-mode[aria-pressed='true']::before {
+  background: linear-gradient(90deg, #f0c870, rgba(240, 200, 112, 0.2) 85%);
+}
+.mx .po-mode-art::after {
+  background:
+    linear-gradient(180deg, rgba(3, 5, 12, 0) 34%, rgba(3, 5, 12, 0.55) 58%, rgba(3, 5, 12, 0.96) 100%),
+    linear-gradient(90deg, rgba(3, 5, 12, 0.35), transparent 60%) !important;
+}
+.mx .po-mode-body {
+  display: grid !important;
+  grid-template-rows: auto auto auto;
+  align-content: end;
+  row-gap: clamp(6px, 3cqw, 12px);
+  padding: 0 clamp(16px, 8cqw, 30px) clamp(18px, 8cqw, 28px) clamp(18px, 9cqw, 32px) !important;
+}
+.mx .po-mode-tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 6px;
+  overflow: hidden;
+  margin: 0 !important;
+  height: 22px;
+}
+.mx .po-mode-tags i,
+.mx .po-mode-tags span,
+.mx .po-mode-tags em {
+  flex: none;
+  font-style: normal;
+  font-size: clamp(9px, 3.3cqw, 11px) !important;
+  line-height: 22px !important;
+  padding: 0 8px !important;
+  letter-spacing: 0.14em;
+  border-radius: 2px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.mx .po-mode-body b {
+  display: block;
+  margin: 0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(20px, 11.5cqw, 46px) !important;
+  line-height: 1 !important;
+  height: 1em;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+}
+.mx .po-mode-body small {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0 !important;
+  font-size: clamp(11.5px, 4.2cqw, 14.5px) !important;
+  line-height: 1.45 !important;
+  height: calc(3 * 1.45em);
+  color: rgba(230, 236, 250, 0.86);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+/* narrow cards (small laptops, tablets in landscape): the title and tags only */
+@container (max-width: 210px) {
+  .mx .po-mode-body small {
+    display: none !important;
+  }
+}
+/* the stacked phone layout: no lift (the cards are full width), and the description may use two lines */
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1199px) {
+  .mx .po-modes {
+    padding: 0 18px !important;
+  }
+  .mx .po-mode:hover,
+  .mx .po-mode[aria-pressed='true'] {
+    transform: skewX(-6deg);
+  }
+  .mx .po-mode-body b {
+    font-size: clamp(24px, 7.5cqw, 40px) !important;
+  }
+  .mx .po-mode-body small {
+    -webkit-line-clamp: 2;
+    height: calc(2 * 1.45em);
+    font-size: clamp(12px, 2.6cqw, 14px) !important;
+  }
+}
+
+/* ---------------------------------------------------------------- loadout, v2: guns you can see
+   The gun cards were five or six to a row with pictures about 130 x 50 px. Now:
+   - the preview stays in view while the gun list scrolls beside it
+   - gun cards three to a row (a card's width decides how many fit), each picture about four times
+     the area (the pictures are rendered at 960 x 280, so they stay sharp)
+   - one card style for primaries and sidearms; sidearms get a full row of their own, tacticals a row below
+   - a locked gun is dimmed with its unlock level on a badge; the chosen one has a gold frame; keyboard focus
+     is visible */
+.mx .po-loadout {
+  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.2fr) !important;
+  gap: clamp(14px, 1.4vw, 24px) !important;
+  align-items: start !important;
+}
+.mx .po-armory {
+  position: sticky !important;
+  top: 12px;
+}
+.mx .po-rack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.mx .po-rack .po-sub {
+  margin: 0 0 10px !important;
+}
+.mx .po-guns,
+.mx .po-guns.po-guns--two {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(210px, 16vw, 300px), 1fr)) !important;
+  gap: clamp(8px, 0.8vw, 14px) !important;
+}
+.mx .po-guncard {
+  padding: 12px 14px 14px !important;
+  gap: 6px;
+  min-height: 0 !important;
+}
+.mx .po-guncard .po-gun {
+  aspect-ratio: 16 / 6.2 !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55));
+  transition: transform 0.45s var(--mx-spring);
+}
+.mx .po-guncard:hover:not(:disabled) .po-gun,
+.mx .po-guncard[aria-pressed='true'] .po-gun {
+  transform: scale(1.06);
+}
+.mx .po-guncard-name b {
+  font-size: clamp(15px, 1.15vw, 19px) !important;
+  letter-spacing: 0.06em !important;
+}
+.mx .po-guncard-name small {
+  font-size: 12px !important;
+  color: rgba(214, 222, 240, 0.66) !important;
+}
+.mx .po-guncard[aria-pressed='true'] {
+  box-shadow:
+    inset 0 0 0 2px rgba(240, 200, 112, 0.9),
+    0 0 26px -8px rgba(240, 200, 112, 0.7) !important;
+}
+.mx .po-guncard:focus-visible {
+  outline: 2px solid #f0c870 !important;
+  outline-offset: 2px;
+}
+/* locked: dimmed picture, the unlock level on a badge in the corner */
+.mx .po-guncard:disabled {
+  cursor: not-allowed;
+}
+.mx .po-guncard:disabled .po-gun {
+  filter: grayscale(0.9) brightness(0.62) !important;
+  opacity: 0.85;
+}
+.mx .po-guncard-lock {
+  top: 10px !important;
+  right: 12px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #f0c870 !important;
+}
+/* sidearms: a full row of their own; tacticals: a row of three below */
+.mx .po-row2 {
+  display: flex !important;
+  flex-direction: column;
+  gap: 18px !important;
+}
+.mx .po-tacs {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: clamp(8px, 0.8vw, 14px) !important;
+}
+.mx .po-tacs > * {
+  padding: 12px 16px !important;
+  min-height: 64px;
+}
+/* the preview: a bigger picture, finish swatches you can hit */
+.mx .po-gun--hero {
+  aspect-ratio: 16 / 6 !important;
+  margin: 6px -6px 4px !important;
+}
+.mx .po-camos {
+  gap: 10px !important;
+  flex-wrap: wrap;
+}
+.mx .po-camo {
+  width: 44px !important;
+  height: 44px !important;
+}
+/* one column (phones and narrow tablets): the preview stops following, cards two to a row */
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1199px) {
+  .mx .po-loadout {
+    grid-template-columns: 1fr !important;
+  }
+  .mx .po-armory {
+    position: relative !important;
+    top: 0;
+  }
+  .mx .po-guns,
+  .mx .po-guns.po-guns--two {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  }
+}
+/* phones: the guns first, each list a row you swipe (cards snap into place), the chosen gun's details below */
+@media (max-width: 700px) {
+  .mx .po-rack {
+    order: -1;
+    min-width: 0;
+  }
+  .mx .po-guns,
+  .mx .po-guns.po-guns--two {
+    display: grid !important;
+    grid-template-columns: none !important;
+    grid-auto-flow: column;
+    grid-auto-columns: 62%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .mx .po-guns::-webkit-scrollbar {
+    display: none;
+  }
+  .mx .po-guncard {
+    scroll-snap-align: start;
+  }
+  .mx .po-gun--hero {
+    aspect-ratio: 16 / 5 !important;
+  }
+}

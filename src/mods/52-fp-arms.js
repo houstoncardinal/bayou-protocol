@@ -13,6 +13,9 @@
 //   - the shoulders sit low and behind the eye, both on one chest, so the arms come in from the bottom
 //     corners of the screen like real arms
 const __FA = { url: './game/models/weapons/arms6.glb', g: null, loading: !1, err: null, n: 0, last: null };
+// guns fired with one hand (the revolver: 94-new-guns.js adds it): the free arm hangs relaxed at the side, below
+// the view, its fingers loosely curled, instead of wrapping the gun
+const __FA_ONE = new Set();
 function __faLoad() {
   if (__FA.loading || typeof window > 'u') return;
   __FA.loading = !0;
@@ -201,7 +204,9 @@ function __faPose(A, ctx, cam) {
   const eye = cam ? H.worldToLocal(cam.getWorldPosition(new U())) : new U(wR.x - 0.12, wR.y + 0.2, wR.z + 0.25),
     sh = eye.clone().add(new U(0.02, -0.3, 0.1)),
     wristR0 = wR.clone().sub(FR.clone().multiplyScalar(0.02)),
-    wristL0 = wL.clone().sub(FL.clone().multiplyScalar(0.02));
+    wristL0 = A.one ? sh.clone().add(new U(-0.27, -0.6, 0.05)) : wL.clone().sub(FL.clone().multiplyScalar(0.02));
+  // one-handed: the free hand hangs, fingers down, palm towards the thigh
+  A.one && ((FL = new U(0.06, -1, 0.04).normalize()), (PL = new U(1, 0, 0)));
   for (const [s, wr] of [
     ['L', wristL0],
     ['R', wristR0],
@@ -217,7 +222,7 @@ function __faPose(A, ctx, cam) {
   A.root.updateMatrixWorld(!0);
   // wrist targets: the core's frame is at the palm; the wrist is behind it along the fingers
   __faSolve(A, 'R', wristR0, new U(0.7, -1, 0.25), FR, PR);
-  __faSolve(A, 'L', wristL0, new U(-0.8, -1, 0.1), FL, PL);
+  __faSolve(A, 'L', wristL0, A.one ? new U(-0.25, 0, 1) : new U(-0.8, -1, 0.1), FL, PL);
   // trigger: squeeze on every shot (a short pull and release)
   const me = eA.human && eA.human();
   if (me && me.lastShotAt !== A.lastShot) A.lastShot !== null && (A.trig = 1), (A.lastShot = me.lastShotAt);
@@ -231,9 +236,12 @@ function __faPose(A, ctx, cam) {
     ring: [1.3, 1.25, 0.8],
     pink: [1.35, 1.2, 0.8],
     // pistols: the thumb lies forward along the frame (under the support thumb); rifles: over the grip
-    thumb: ctx.left ? [0.35, 0.55, 0.45] : __FA_PL.thumbR,
+    // (one hand on a revolver: the thumb wraps down round the grip's left side, over the middle finger)
+    thumb: ctx.left ? [0.35, 0.55, 0.45] : A.one ? [0.6, 0.75, 0.6] : __FA_PL.thumbR,
   });
-  ctx.left
+  A.one
+    ? __faCurl(A, 'L', { point: [0.25, 0.3, 0.2], middle: [0.35, 0.4, 0.25], ring: [0.4, 0.45, 0.25], pink: [0.45, 0.45, 0.25], thumb: [0.2, 0.15, 0.1] })
+    : ctx.left
     ? __faCurl(A, 'L', { point: [0.85, 0.75, 0.5], middle: [1.0, 0.85, 0.55], ring: [1.05, 0.9, 0.55], pink: [1.1, 0.9, 0.55], thumb: [0.4, 0.4, 0.3] })
     : __faCurl(A, 'L', { point: __FA_PL.curl, middle: __FA_PL.curl, ring: __FA_PL.curl, pink: __FA_PL.curl, thumb: __FA_PL.thumbL });
   A.mesh.skeleton && A.mesh.skeleton.update();
@@ -263,6 +271,7 @@ function __faPose(A, ctx, cam) {
         ctx = __faStrip(g, gunSet),
         A = __faMakeArms();
       g.add(A.holder);
+      A.one = __FA_ONE.has(w);
       A.mesh.onBeforeRender = (r, sc, cam) => {
         try {
           __faPose(A, ctx, cam);

@@ -1,4 +1,5 @@
 /* ===== Bayou Protocol mod: focused mode list ===== */
+// (Gun Ladder is added back, with its name, by 92-pacing.js; Domination, Tag Hunt and Hot Zone stay out.)
 (function () {
   for (const k of ['dom', 'kc', 'hp', 'gungame']) delete Eg[k];
   delete Eg.ctf;
@@ -12,6 +13,7 @@
   CN.splice(0, CN.length, 'tdm', 'ffa', 'bomb');
   try {
     const st = Zw.getState();
-    st.setup({ scores: { ...oU, ...st.scores }, mode: order.includes(st.mode) ? st.mode : 'tdm' });
+    // (a saved mode added back by a later mod, Gun Ladder or High Roller, is kept: only retired ones reset)
+    st.setup({ scores: { ...oU, ...st.scores }, mode: [...order, 'gungame', 'hr'].includes(st.mode) ? st.mode : 'tdm' });
   } catch (e) {}
 })();

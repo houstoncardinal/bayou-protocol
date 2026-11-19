@@ -9,7 +9,7 @@ const DEFAULT_EPOCH = Date.UTC(2026, 0, 1); // start time of the built-in progra
 const CINEMA = ['t1', 't2', 't3', 't4', 't5', 'lounge'];
 const GROUPS = [
   { title: 'Bayou Palace Cinemas', sub: 'Six theaters: Palace XL 1-4, the Velvet Room, and the Starlight, a 360° dome', ids: CINEMA },
-  { title: 'Other maps', sub: 'Screens elsewhere in Bayou Protocol', ids: ['prison'] },
+  { title: 'Other maps', sub: 'Screens elsewhere in Bayou Protocol', ids: ['prison', 'condo'] },
 ];
 const META = {
   t1: { no: '1', where: 'Auditorium 1' },
@@ -19,6 +19,7 @@ const META = {
   t5: { no: '5', where: 'Premium · Auditorium 5' },
   lounge: { no: '360°', where: '360° dome · 360 & VR video' },
   prison: { no: 'TV', where: 'Blackwater Prison' },
+  condo: { no: 'HC', where: 'Frostline · secret condo' },
 };
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -763,7 +764,7 @@ function screenOptions(sel) {
   };
   return `<option value=""${!sel ? ' selected' : ''}>Don't schedule</option>
     <optgroup label="Bayou Palace Cinemas">${CINEMA.map(opt).join('')}</optgroup>
-    <optgroup label="Other maps">${opt('prison')}</optgroup>`;
+    <optgroup label="Other maps">${opt('prison')}${opt('condo')}</optgroup>`;
 }
 
 function renderProposal() {

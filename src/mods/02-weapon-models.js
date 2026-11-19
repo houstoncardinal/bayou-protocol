@@ -113,19 +113,8 @@ const __XG = {
     fb: 'ak47',
     gold: !0,
   },
-  rampart: {
-    id: 'rampart',
-    url: './game/models/weapon-rampart.glb',
-    rotY: Math.PI,
-    rotX: -0.075,
-    len: 0.9,
-    grip: 0.334,
-    gripTop: 0.31,
-    gz: 0.045,
-    fore: 0.67,
-    sight: 0.86,
-    fb: 'br',
-  },
+  // (the Rampart 7.62 is retired: 93-arsenal.js)
+
 };
 function __xgPrep(scene, c) {
   scene.updateMatrixWorld(!0);

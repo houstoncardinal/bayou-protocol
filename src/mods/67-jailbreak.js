@@ -525,9 +525,8 @@ function __jbAnimate(g, dt, cam) {
   Object.assign(oU, { jb: 8 });
   Object.assign(sBA, { jb: ['Rounds', 'Buy', 'Rescue'] });
   Object.assign(CBA, { jb: ['#c8642a', '#1c120a'] });
-  gF.some(([k]) => k === 'jb') || gF.push(['jb', 'Blackwater Penitentiary only. The crew cuts the cell locks and leads the inmates out to the getaway van; the guards hold them. One life a round, a buy menu.']);
-  CN.includes('jb') || CN.push('jb');
-  // Jailbreak needs the prison: choosing it picks the map, and another map turns it back into Bomb Defusal
+  // Jailbreak is no longer offered (the owner's choice): not in the offline or online mode lists. Its code stays,
+  // so an old link or a lobby from an older version still runs; a saved choice of it becomes Bomb Defusal.
   try {
     const st = Zw.getState(),
       orig = st.setup;
@@ -536,12 +535,12 @@ function __jbAnimate(g, dt, cam) {
         const cur = Zw.getState(),
           mode = p.mode ?? cur.mode,
           map = p.map ?? cur.map;
-        if (p.mode === 'jb' && map !== 'prison') p = { ...p, map: 'prison' };
-        else if (p.map && p.map !== 'prison' && mode === 'jb') p = { ...p, mode: 'bomb' };
+        mode === 'jb' && (p = { ...p, mode: 'bomb' });
         return orig(p);
       },
     });
     st.scores && st.scores.jb === void 0 && orig({ scores: { ...st.scores, jb: 8 } });
+    st.mode === 'jb' && orig({ mode: 'bomb' });
   } catch (e) {}
 })();
 // dev hooks: the inmates' states; force a state (dev testing)

@@ -40,6 +40,7 @@ const __SCR_DEF = {
   t5: { name: 'The Velvet Room', showing: { kind: 'youtube', videoId: 'WhWc3b3KhnY', title: 'Spring', channel: 'Blender Studio' } },
   lounge: { name: 'The Starlight', showing: { kind: 'youtube', videoId: '7AkbUfZjS5k', title: 'Virtual Nature 360° · Nature Meditation', channel: 'ECOVR', projection: '360' } },
   prison: { name: 'Blackwater Dayroom TV', showing: { kind: 'file', url: __SCR_OGSB, title: 'OGSB Young — Only Thing That Matters To You', channel: 'OGSB Young' } },
+  condo: { name: 'Frostline Condo Cinema', showing: { kind: 'youtube', videoId: 'WhWc3b3KhnY', title: 'Spring', channel: 'Blender Studio' } },
 };
 const __scrNow = () => Date.now() + __SCR.skew;
 // the showing a screen should play (the document's, else the default)

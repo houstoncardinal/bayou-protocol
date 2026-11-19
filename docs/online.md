@@ -40,7 +40,7 @@ they're empty (`src/mods/86-official-servers.js`):
 | Bayou #1 | Team Deathmatch | Ridgeback Pass |
 | Bayou #2 | Bomb Defusal | Fortress |
 | Bayou #3 | Free-for-All | Frostline |
-| Bayou #4 | Jailbreak | Blackwater Penitentiary |
+| Bayou #4 | Gun Ladder | Blackwater Penitentiary |
 | Bayou #5 | Team Deathmatch | Bayou Palace Cinemas |
 
 They cost nothing to run. Each is a fixed match room: the first player to join an empty one hosts it (bots fill the
