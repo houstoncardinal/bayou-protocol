@@ -46,13 +46,13 @@ const __RL = {
   err: null,
 };
 const __rlOff = (k) => typeof window < 'u' && (window.__fxOff || '').includes(k);
-// Not yet verified in a browser (the test machine ran out of memory mid-test): off unless switched on with
-// localStorage.setItem('bp-realism', '1') and a reload.
+// On (Medium and High; Low has none of it). localStorage.setItem('bp-realism', '0') and a reload switch it off
+// entirely (the shaders unchanged), window.__fxOff any part of it live.
 const __RL_ON = (() => {
   try {
-    return typeof localStorage < 'u' && localStorage.getItem('bp-realism') === '1';
+    return !(typeof localStorage < 'u' && localStorage.getItem('bp-realism') === '0');
   } catch (e) {
-    return !1;
+    return !0;
   }
 })();
 // ---------------------------------------------------------------- the shaders every lit material uses

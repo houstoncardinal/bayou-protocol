@@ -652,6 +652,8 @@ function __fdDetail(root, m, models, ticks) {
     hook.position.set(0, 10.5, 0);
     trol.add(hook);
     gant.add(trol);
+    // moving parts (the pipeline freezes every other matrix after the build)
+    gant.userData.dyn = !0;
     root.add(gant);
   }
   // ================================================= moving: B's ladle, the pour
@@ -674,8 +676,10 @@ function __fdDetail(root, m, models, ticks) {
     Lg.box('paint', -0.12, 0.45, -1.56, 0.12, 0.65, 1.56, yellow);
     Lg.build(lad, pm, 'foundry_ladle_');
     lad.position.set(CX + 0.2, 6.65, CZ);
+    lad.userData.dyn = !0;
     root.add(lad);
     stream.visible = !1;
+    stream.userData.dyn = !0;
     stream.name = 'foundry_pour';
     root.add(stream);
     pourLight.position.set(CX, 4.0, CZ);
@@ -740,4 +744,4 @@ function __fdDetail(root, m, models, ticks) {
   });
   return { tris: Math.round(tris + farTris), ms: Math.round(performance.now() - t0), lamps: R.lamps.length };
 }
-typeof window < 'u' && (window.__bpFoundry = () => ({ stats: __PR.stats, map: aw().id }));
+typeof window < 'u' && (window.__bpFoundry = () => ({ stats: __PR.stats, map: aw().id, ready: __PR.ready, loading: __PR.loading, kit: __PR.kit && (__PR.kit.id || __PR.kit) }));

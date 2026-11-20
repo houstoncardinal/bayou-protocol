@@ -468,6 +468,10 @@ function __prBuildView(m) {
     S.useEffect(() => {
       __PR.subs.add(setRev);
       on && __prLoad(kit);
+      // the load can finish between this view's first render and this subscription (the loading screen
+      // preloads the kit): that signal was missed, and the view never built (bare props floating in the sky).
+      // Catch up with whatever has happened since.
+      setRev(__PR.rev);
       return () => __PR.subs.delete(setRev);
     }, [on, kit]);
     const root = S.useMemo(() => {
