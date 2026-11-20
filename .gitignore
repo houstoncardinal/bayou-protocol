@@ -21,3 +21,7 @@ assets-src/_retired/
 
 # Cloudflare wrangler local state
 .wrangler/
+# the Industrial texture packs as delivered (310 MB of 2048 px PNGs; the converted copies in
+# public/game/maps/foundry/tex are committed, rebuilt by tools/build-industrial.mjs)
+assets-src/Industrial_Pack_Part1_Concrete_Masonry_Ground/
+assets-src/Industrial_Pack_Part2_Metal_Wood/

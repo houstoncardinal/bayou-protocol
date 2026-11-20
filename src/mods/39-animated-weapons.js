@@ -742,6 +742,8 @@ function __brassTick(dt) {
       c.v.multiplyScalar(0.62);
       c.w.multiplyScalar(0.55);
       c.b++;
+      // its ring on the floor (99-gun-feel.js)
+      typeof __gfBrass < 'u' && __gfBrass(p, Math.abs(vn), c.t);
       // resting on a floor: lie on its side
       if (n.y > 0.6 && (c.v.length() < 0.45 || c.b > 5)) {
         c.rest = !0;

@@ -762,8 +762,27 @@
    "gain": 1,
    "source": "pack"
   },
-  "weapon.rattler.close": {"files": ["weapons/deagle/close_01", "weapons/deagle/close_02", "weapons/deagle/close_03", "weapons/deagle/close_04", "weapons/deagle/close_05"], "gain": 1.55, "source": "pack: the .50 magnum recordings, louder (the Rattler .44)"},
-  "weapon.rattler.far": {"files": ["weapons/deagle/far_1", "weapons/deagle/far_2", "weapons/deagle/far_3", "weapons/deagle/far_4"], "gain": 1.5, "source": "pack: the .50 magnum recordings, louder (the Rattler .44)"},
+  "weapon.rattler.close": {
+   "files": [
+    "weapons/deagle/close_01",
+    "weapons/deagle/close_02",
+    "weapons/deagle/close_03",
+    "weapons/deagle/close_04",
+    "weapons/deagle/close_05"
+   ],
+   "gain": 1.55,
+   "source": "pack: the .50 magnum recordings, louder (the Rattler .44)"
+  },
+  "weapon.rattler.far": {
+   "files": [
+    "weapons/deagle/far_1",
+    "weapons/deagle/far_2",
+    "weapons/deagle/far_3",
+    "weapons/deagle/far_4"
+   ],
+   "gain": 1.5,
+   "source": "pack: the .50 magnum recordings, louder (the Rattler .44)"
+  },
   "weapon.suppressed.deagle": {
    "files": [
     "weapons/deagle/suppressed_1",
@@ -839,6 +858,13 @@
     "weapons/dryfire_1"
    ],
    "gain": 0.8,
+   "source": "pack"
+  },
+  "weapon.mauler.cycle": {
+   "files": [
+    "reload/shotgun_1"
+   ],
+   "gain": 0.75,
    "source": "pack"
   }
  },

@@ -79,20 +79,56 @@ function __sndPick(key) {
   return __SND.buf.get(f);
 }
 // play one layer through the world voice chain; returns true if a sample played
+// opts: rate, pitchVar, delay, reverb, travel, maxDist, occlude, plus
+//   eq:   [[type, frequency, gain dB, Q], ...] filters in series (a gun's voicing)
+//   haas: your own gun in stereo (its upper band, delayed differently left and right, beside the dry centre)
+// Returns the playing voice ({ s, v }) or true when culled (still handled), false when there is no sample.
 function __sndPlay(key, pos, gain = 1, opts = {}) {
   if (!key || !$i) return !1;
   const b = __sndPick(key);
   if (!b) return !1;
-  const g = gain * (__SND.man.sounds[key].gain ?? 1) * (1 + (Math.random() * 2 - 1) * 0.06),
-    v = xw(pos, g, { reverb: opts.reverb ?? 0.15, travel: opts.travel, maxDist: opts.maxDist ?? 120, occlude: opts.occlude });
+  const rate = (opts.rate ?? 1) * (1 + (Math.random() * 2 - 1) * (opts.pitchVar ?? 0.035)),
+    delay = opts.delay ?? 0,
+    g = gain * (__SND.man.sounds[key].gain ?? 1) * (1 + (Math.random() * 2 - 1) * 0.06),
+    v = xw(pos, g, { reverb: opts.reverb ?? 0.15, travel: opts.travel, maxDist: opts.maxDist ?? 120, occlude: opts.occlude, life: b.duration / rate + delay + 0.35 });
   if (!v) return !0; // culled by distance or voice budget: still counts as handled
   const s = $i.createBufferSource();
   s.buffer = b;
-  s.playbackRate.value = (opts.rate ?? 1) * (1 + (Math.random() * 2 - 1) * (opts.pitchVar ?? 0.035));
-  s.connect(v.in);
-  s.start(v.t + (opts.delay ?? 0));
+  s.playbackRate.value = rate;
+  let out = s;
+  if (opts.eq)
+    for (const [type, f, db, q] of opts.eq) {
+      const F = $i.createBiquadFilter();
+      F.type = type;
+      F.frequency.value = f;
+      db !== void 0 && (F.gain.value = db);
+      q !== void 0 && (F.Q.value = q);
+      out.connect(F);
+      out = F;
+    }
+  out.connect(v.in);
+  if (opts.haas && !pos) {
+    const I = $i,
+      hp = I.createBiquadFilter(),
+      m = I.createChannelMerger(2),
+      gl = I.createGain(),
+      gr = I.createGain(),
+      dl = I.createDelay(0.05),
+      dr = I.createDelay(0.05);
+    hp.type = 'highpass';
+    hp.frequency.value = 700;
+    dl.delayTime.value = 0.009;
+    dr.delayTime.value = 0.013;
+    gl.gain.value = 0.32;
+    gr.gain.value = -0.32;
+    out.connect(hp);
+    hp.connect(dl).connect(gl).connect(m, 0, 0);
+    hp.connect(dr).connect(gr).connect(m, 0, 1);
+    m.connect(v.in);
+  }
+  s.start(v.t + delay);
   __SND.stats[key] = (__SND.stats[key] || 0) + 1;
-  return !0;
+  return { s, v };
 }
 const __near = (d) => 1 - __smoothS(12, 70, d),
   __smoothS = (a, b, x) => {
@@ -109,14 +145,53 @@ const __SH = {
       pos = self ? null : B.from,
       id = B.weapon,
       cl = __wClass(id),
-      d = __dist(pos);
+      d = __dist(pos),
+      W = gw[id] || {},
+      V = (typeof __GF_VOICE < 'u' && __GF_VOICE[id]) || null;
     if (id === 'knife' || id === 'grenade') return !1;
+    // a shotgun sends one shot event per pellet: one report per trigger pull (it was nine)
+    if ((W.pellets || 1) > 1) {
+      const k = 'pp' + B.shooter,
+        t = performance.now();
+      if (t - (__SND[k] || 0) < 30) return !0;
+      __SND[k] = t;
+    }
+    const indoor = pos ? RE(pos) : In.indoor,
+      // each shot a little different: a 0-3 ms start, the top end ±1.5 dB, plus the gun's own voicing
+      vary = () => [...((V && V.eq) || []), ['highshelf', 4000, (Math.random() * 2 - 1) * 1.5]],
+      vrate = (V && V.rate) || 1,
+      jit = Math.random() * 0.003;
+    // bullets passing close: the supersonic crack and the whiz (recorded if there is one, made here if not)
+    const I = A.players.find((p) => p.id === A.humanId);
+    if (!self && I && I.alive && performance.now() - (__SND.whiz || 0) > 90) {
+      const n = Hi(I),
+        e = Iz(B.from, B.to, n);
+      if (e.d < 2.4 && e.d > 0.12 && Math.hypot(B.to.x - n.x, B.to.z - n.z) > 1) {
+        const wk = __sndKey('whiz');
+        (wk ? __sndPlay(wk, e.at, 0.9, { maxDist: 8 }) : typeof __gfWhiz < 'u' && (__gfWhiz(e.at, id, e.d), !0)) && (__SND.whiz = performance.now());
+      }
+    }
     if (B.suppressed) {
       const k = __sndKey('weapon.suppressed.' + id, 'weapon.suppressed.' + cl);
       if (!k) return !1;
-      __sndPlay(k, pos, 0.9, { travel: !0, maxDist: 60, reverb: 0.1 });
+      // the suppressor's pop, and under it the gun itself, muffled (a suppressed rifle is still loud: the
+      // Bastion and the Phantom were 13-16 dB under every other rifle, a tiny pop for a 12.7 mm round)
+      __sndPlay(k, pos, 0.9, { travel: !0, maxDist: 90, reverb: indoor ? 0.3 : 0.1, delay: jit });
+      const close = __sndKey('weapon.' + id + '.close', 'weapon.' + cl + '.close'),
+        big = cl === 'sniper' ? 0.63 : cl === 'rifle' || cl === 'lmg' ? 0.45 : 0.22;
+      close &&
+        __sndPlay(close, pos, big * (self ? 1 : 0.95), {
+          travel: !0,
+          maxDist: cl === 'sniper' ? 180 : 120,
+          reverb: indoor ? (self ? 0.45 : 0.3) : 0.12,
+          delay: jit,
+          rate: vrate,
+          pitchVar: 0.02,
+          eq: [['lowpass', 3800, 0, 0.9], ['highshelf', 2500, -10], ['lowshelf', 120, 3], ...vary()],
+          haas: self,
+        });
       const cyc = __sndKey('weapon.' + id + '.cycle');
-      cyc && __sndPlay(cyc, pos, self ? 0.6 : 0.4, { maxDist: 30, delay: 0.55, pitchVar: 0.01 });
+      cyc && d < 30 && __sndPlay(cyc, pos, self ? 0.3 : 0.22, { maxDist: 30, delay: id === 'mauler' ? 0.42 : 0.55, pitchVar: 0.01 });
       return !0;
     }
     const close = __sndKey('weapon.' + id + '.close', 'weapon.' + cl + '.close');
@@ -129,23 +204,25 @@ const __SH = {
     __SND['ls' + B.shooter] = now;
     const far = __sndKey('weapon.' + id + '.far', 'weapon.' + cl + '.far'),
       k = __near(d);
-    __sndPlay(close, pos, cg * (self ? 1 : 0.95) * (far ? k : 1), { travel: !0, maxDist: 400, reverb: 0.08, pitchVar: 0.025 });
-    far && k < 0.98 && __sndPlay(far, pos, cg * (1 - k), { travel: !0, maxDist: 400, reverb: 0.05, pitchVar: 0.02 });
-    const indoor = pos ? RE(pos) : In.indoor,
-      tail = __sndKey('weapon.' + id + '.tail.' + (indoor ? 'in' : 'out'), 'weapon.' + cl + '.tail.' + (indoor ? 'in' : 'out'));
-    // in sustained fire the room tails would pile up into a wash: keep them low until the burst ends
-    tail && __sndPlay(tail, pos, cg * (auto ? 0.28 : 0.75), { travel: !0, maxDist: 400, reverb: 0.02, occlude: !1, delay: 0.015 });
+    // not decoded yet (the first seconds of a match): let the synthesised shot play instead of silence
+    if (!__sndPlay(close, pos, cg * (self ? 1 : 0.95) * (far ? k : 1), { travel: !0, maxDist: 400, reverb: indoor ? (self ? 0.5 : 0.32) : 0.08, pitchVar: 0.025, rate: vrate, delay: jit, eq: vary(), haas: self })) return !1;
+    far && k < 0.98 && __sndPlay(far, pos, cg * (1 - k), { travel: !0, maxDist: 400, reverb: indoor ? 0.25 : 0.05, pitchVar: 0.02, rate: vrate });
+    const tail = __sndKey('weapon.' + id + '.tail.' + (indoor ? 'in' : 'out'), 'weapon.' + cl + '.tail.' + (indoor ? 'in' : 'out'));
+    // one room tail per burst: each shot cuts the one before and starts its own, so in sustained fire you hear
+    // the shots, and when the burst ends its full tail (they were piling up into a wash)
+    if (tail) {
+      const pt = __SND['tl' + B.shooter];
+      if (pt && pt.v && auto)
+        try {
+          pt.v.in.gain.setTargetAtTime(0, $i.currentTime, 0.03);
+        } catch (e) {}
+      const r = __sndPlay(tail, pos, cg * 0.75, { travel: !0, maxDist: 400, reverb: 0.02, occlude: !1, delay: 0.015, rate: vrate });
+      __SND['tl' + B.shooter] = r && r.v ? r : null;
+    } else if (indoor && typeof __gfRoomTail < 'u') __gfRoomTail(pos, cl, self);
     const cyc = __sndKey('weapon.' + id + '.cycle');
-    cyc && d < 30 && __sndPlay(cyc, pos, self ? 0.6 : 0.4, { maxDist: 30, delay: 0.55, pitchVar: 0.01 });
+    cyc && d < 30 && __sndPlay(cyc, pos, self ? 0.5 : 0.35, { maxDist: 30, delay: id === 'mauler' ? 0.42 : 0.55, pitchVar: 0.01 });
     const mech = __sndKey('weapon.' + id + '.mech', 'weapon.' + cl + '.mech');
     mech && d < 10 && __sndPlay(mech, pos, self ? 0.55 : 0.35, { maxDist: 12, delay: 0.02 });
-    // bullet passing close to the listener
-    const I = A.players.find((p) => p.id === A.humanId);
-    if (!self && I && I.alive && performance.now() - (__SND.whiz || 0) > 90) {
-      const n = Hi(I),
-        e = Iz(B.from, B.to, n);
-      e.d < 2.2 && e.d > 0.15 && Math.hypot(B.to.x - n.x, B.to.z - n.z) > 1 && __sndPlay(__sndKey('whiz'), e.at, 0.9, { maxDist: 8 }) && (__SND.whiz = performance.now());
-    }
     return !0;
   },
   impact(B) {
@@ -173,10 +250,18 @@ const __SH = {
     const b = __sndPick(k),
       want = gw[n.id].reload || 2.5;
     // stretch slightly so the clip sound lines up with this weapon's reload time
-    return __sndPlay(k, VI(B.who) ? null : yo(A, B.who), VI(B.who) ? 0.7 : 0.5, { maxDist: 30, rate: b ? Math.max(0.85, Math.min(1.2, b.duration / want)) : 1, pitchVar: 0.01 });
+    // a long clip is sped up a little to fit; a short one (a pistol's) plays at its own pitch, not dragged down
+    return __sndPlay(k, VI(B.who) ? null : yo(A, B.who), VI(B.who) ? 0.7 : 0.5, { maxDist: 30, rate: b ? Math.max(1, Math.min(1.2, b.duration / want)) : 1, pitchVar: 0.01 });
   },
-  empty() {
-    return __sndPlay(__sndKey('dryfire'), null, 0.5);
+  // the click of an empty gun: where that player is (it played in your ears for anyone), deeper for bigger guns
+  empty(B, A) {
+    const who = B && B.who,
+      self = who === void 0 || VI(who),
+      p = !self && A && A.players.find((e) => e.id === who),
+      w = p && p.weapons && p.weapons[p.active],
+      cl = __wClass((w && w.id) || ''),
+      rate = { rifle: 0.85, lmg: 0.75, shotgun: 0.7, sniper: 0.8, smg: 0.95 }[cl] || 1;
+    return __sndPlay(__sndKey('dryfire'), self ? null : yo(A, who), self ? 0.5 : 0.4, { maxDist: 15, rate });
   },
   step(B, A) {
     const who = A.players.find((p) => p.id === B.who),

@@ -61,10 +61,31 @@ xw = function (w, A, i = {}) {
     if (n > (i.maxDist ?? 160)) return null;
   }
   const gain = Number.isFinite(A) ? A : 0;
-  // priority: your own sounds first, then loud and near sounds
-  const prio = w ? gain / (1 + n / 12) : 10 + gain;
+  // priority: your own sounds above most (but not so far above that a long burst of your own fire shuts out
+  // the footsteps and shots you need to hear), then loud and near sounds
+  const prio = w ? gain / (1 + n / 12) : 3 + gain;
+  // your own sounds: at most 16 at once (a long burst replaces its oldest layers, not other people's sounds)
+  if (!w) {
+    let own = 0,
+      old = -1;
+    for (let k = 0; k < __AUD.voices.length; k++) {
+      const x = __AUD.voices[k];
+      if (!x.own || x.prio < 0) continue;
+      own++;
+      (old < 0 || x.end < __AUD.voices[old].end) && (old = k);
+    }
+    if (own >= 16 && old >= 0) {
+      const x = __AUD.voices[old];
+      try {
+        x.nodes[0].gain.setTargetAtTime(0, now, 0.012);
+      } catch {}
+      x.end = Math.min(x.end, now + 0.06);
+      x.prio = -1;
+    }
+  }
   const live = __AUD.voices.length;
-  if (live >= __AUD.maxVoices && !__audDrop(prio)) return null;
+  // 12 of the slots are kept for other people's sounds (their steps, shots, bullets passing)
+  if ((live >= __AUD.maxVoices || (!w && live >= __AUD.maxVoices - 12)) && !__audDrop(prio)) return null;
   const B = I.createGain(),
     nodes = [B];
   let g = now + 0.005,
@@ -117,7 +138,8 @@ xw = function (w, A, i = {}) {
     D.connect(l).connect(Jj);
     nodes.push(o, l);
   }
-  __AUD.voices.push({ end: g + __AUD.life, prio, nodes, hrtf });
+  // held for as long as the sound lasts (a 0.1 s shot was holding a slot for 4.5 s)
+  __AUD.voices.push({ end: g + Math.min(__AUD.life, i.life ?? __AUD.life), prio, nodes, hrtf, own: !w });
   return { in: B, t: g, dist: n, occluded: e };
 };
 // The core's ramp helpers throw on a zero/negative target (exponential ramps need > 0); clamp instead
