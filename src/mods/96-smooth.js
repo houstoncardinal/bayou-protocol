@@ -35,19 +35,55 @@ function __smoothHook(gl) {
     return coreRender.apply(this, arguments);
   };
 }
+// The first-person view is a scene of its own inside the root scene, with its own lights, hidden while the world
+// is drawn. A compile for the world collects lights from the whole root, so with the view showing (between frames)
+// its lights were counted too, and the world's shaders came out for a light count it is never drawn with. World
+// compiles (here, the loading screen's, 42-smooth's and 54-speed's) run with it hidden for that moment.
+function __withoutVm(scene, fn) {
+  const vm = typeof window < 'u' && window.__vmScene;
+  if (!vm || vm === scene || !vm.visible) return fn();
+  let inside = !1;
+  for (let v = vm.parent; v; v = v.parent) if (v === scene) inside = !0;
+  if (!inside) return fn();
+  vm.visible = !1;
+  try {
+    return fn();
+  } finally {
+    vm.visible = !0;
+  }
+}
+function __hasLight(o) {
+  let f = !1;
+  o.traverse((x) => x.isLight && (f = !0));
+  return f;
+}
+function __lightFree(o, out = []) {
+  for (const c of o.children) c.isLight ? 0 : __hasLight(c) ? __lightFree(c, out) : out.push(c);
+  return out;
+}
 function __smoothCompile(gl, obj, camera, scene) {
   if (!gl || !obj || !camera || !scene || !gl.compileAsync) return;
   __SMOOTH.kpc === void 0 && (__SMOOTH.kpc = !!(gl.extensions && gl.extensions.has('KHR_parallel_shader_compile')));
   const prev = gl.getRenderTarget(),
-    run = () => (__SMOOTH.kpc ? gl.compileAsync(obj, camera, scene).catch(() => {}) : gl.compile(obj, camera, scene));
+    // (three.js counts the lights of both the object and the scene: an object holding lights (the sun's group)
+    // had them counted twice, and its shaders came out for a count never drawn; such an object is compiled in
+    // light-free parts)
+    parts = obj !== scene && __hasLight(obj) ? __lightFree(obj) : [obj],
+    run = () => __withoutVm(scene, () => { for (const o of parts) __SMOOTH.kpc ? gl.compileAsync(o, camera, scene).catch(() => {}) : gl.compile(o, camera, scene); });
   try {
     obj.updateMatrixWorld && obj.updateMatrixWorld(!0);
-    if (__SMOOTH.rt) {
+    // the world is drawn only into the effect chain's target, the first-person view only to the screen: each
+    // compiled for its own (both for both was a second, unused set of every shader: slow on phones)
+    const vm = typeof window < 'u' && window.__vmScene,
+      first = !!vm && (scene === vm || obj === vm);
+    if (__SMOOTH.rt && !first) {
       gl.setRenderTarget(__SMOOTH.rt);
       run();
     }
-    gl.setRenderTarget(null);
-    run();
+    if (first || !__SMOOTH.rt) {
+      gl.setRenderTarget(null);
+      run();
+    }
     __SMOOTH.n++;
   } catch (e) {
     __SMOOTH.err = String(e && e.stack);
@@ -65,7 +101,20 @@ function __smoothScan(st) {
   if (!__SMOOTH.kpc) return void (__SMOOTH.kpc === void 0 && (__SMOOTH.kpc = !!(gl.extensions && gl.extensions.has('KHR_parallel_shader_compile'))));
   const seen = __SMOOTH.seen,
     todo = [];
-  for (const top of sc.children) {
+  // (the first-person view is a scene of its own, drawn with its own lights, somewhere under the root: compiled
+  // with the world, its lights were added to the world's and every shader came out for a light count never
+  // drawn. A subtree holding it is opened up and its other branches compiled one by one.)
+  const vm = typeof window < 'u' && window.__vmScene,
+    holds = (o) => {
+      for (let v = vm; v; v = v.parent) if (v === o) return !0;
+      return !1;
+    },
+    tops = [];
+  const open = (o) => {
+    for (const c of o.children) c === vm || c.isScene ? 0 : vm && holds(c) ? open(c) : tops.push(c);
+  };
+  open(sc);
+  for (const top of tops) {
     let fresh = !1;
     top.traverse((o) => {
       const m = o.material;

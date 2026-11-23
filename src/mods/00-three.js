@@ -59,6 +59,51 @@ globalThis.__BP_THREE = () => ({
   DepthFormat: 1026,
   DepthStencilFormat: 1027,
   RedFormat: 1028,
+  // (for three.js's KTX2 loader: GPU-compressed textures, src/mods/01b-ktx2.js)
+  CompressedTexture: sd,
+  CompressedArrayTexture: gS,
+  CompressedCubeTexture: nS,
+  Data3DTexture: DZ,
+  FileLoader: Rn,
+  Loader: _B,
+  NearestMipmapNearestFilter: 1004,
+  LinearSRGBColorSpace: 'srgb-linear',
+  UnsignedByteType: 1009,
+  UnsignedShortType: 1012,
+  UnsignedInt5999Type: 35902,
+  UnsignedInt101111Type: 35899,
+  RGBFormat: 1022,
+  RGFormat: 1030,
+  RGB_S3TC_DXT1_Format: 33776,
+  RGBA_S3TC_DXT1_Format: 33777,
+  RGBA_S3TC_DXT5_Format: 33779,
+  RGB_PVRTC_4BPPV1_Format: 35840,
+  RGBA_PVRTC_4BPPV1_Format: 35842,
+  RGBA_PVRTC_2BPPV1_Format: 35843,
+  RGB_ETC1_Format: 36196,
+  RGB_ETC2_Format: 37492,
+  RGBA_ETC2_EAC_Format: 37496,
+  R11_EAC_Format: 37488,
+  SIGNED_R11_EAC_Format: 37489,
+  RG11_EAC_Format: 37490,
+  SIGNED_RG11_EAC_Format: 37491,
+  RGBA_ASTC_4x4_Format: 37808,
+  RGBA_ASTC_6x6_Format: 37812,
+  RGBA_BPTC_Format: 36492,
+  RGB_BPTC_UNSIGNED_Format: 36495,
+  RED_RGTC1_Format: 36283,
+  SIGNED_RED_RGTC1_Format: 36284,
+  RED_GREEN_RGTC2_Format: 36285,
+  SIGNED_RED_GREEN_RGTC2_Format: 36286,
+  // (its colour-space helpers, examples/jsm/math/ColorSpaces.js)
+  Matrix3: kw,
+  // (r169's has no .spaces table, which the newer helpers read; ours inherits everything else from the core's)
+  ColorManagement: ti.spaces ? ti : Object.assign(Object.create(ti), { spaces: { srgb: {}, 'srgb-linear': {} } }),
+  SRGBTransfer: 'srgb',
+  LinearTransfer: 'linear',
 });
+// (r169's file loader lacks two settings the newer KTX2 loader calls: request priority and a cache switch; they
+// change nothing here, so they are accepted and ignored)
+typeof Rn < 'u' && (Rn.prototype.setPriority || (Rn.prototype.setPriority = function () { return this; }), Rn.prototype.setCache || (Rn.prototype.setCache = function () { return this; }));
 // the core's postprocessing Pass, for passes written against the 'postprocessing' package (src/engine/postprocessing.js)
 globalThis.__BP_PP = () => ({ Pass: QB });

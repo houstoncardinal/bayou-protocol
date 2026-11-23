@@ -1655,3 +1655,120 @@
   .esx-top h1 { font-size: 36px; }
   .esx-row { padding: 6px 4px; }
 }
+
+/* ---------------------------------------------------------------- phones and tablets: every control reachable
+   (touch only: html.swat-touch comes from src/mods/15-mobile.js; desktop is unchanged) */
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1199px) {
+  /* the core's "fit the page to the window" zoom shrank a whole iPad page to 62% (25 px buttons, 7 px text);
+     the touch layout scrolls instead */
+  html.swat-touch .lx-page {
+    zoom: 1 !important;
+  }
+  html.swat-touch .mx-ib {
+    width: 44px;
+    height: 44px;
+  }
+  /* the "Home" crumb: a bigger hit area without moving anything */
+  html.swat-touch .mx-crumb button {
+    padding: 13px 10px;
+    margin: -13px -10px;
+  }
+  html.swat-touch .mx .po-steps button {
+    min-height: 44px;
+  }
+  html.swat-touch .lx-seg button {
+    min-height: 44px;
+  }
+  html.swat-touch .po-maphero .lx-btn {
+    min-height: 44px !important;
+  }
+  /* toggles: 26 px tall, so the hit area reaches past the drawn switch */
+  html.swat-touch .lx-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -10px -6px;
+  }
+  /* sliders: a 3 px track was the whole hit area; the box grows, the drawn track stays thin */
+  html.swat-touch .mx .lx-range,
+  html.swat-touch .pm-wrap .lx-range {
+    height: 31px !important;
+    padding: 14px 0;
+    background-clip: content-box !important;
+  }
+  html.swat-touch .lx-range::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+  }
+}
+/* the setup bar (Back, Next, Deploy) on 320-380 px phones: Deploy was cut off at the right edge */
+@media (max-width: 380px) {
+  .mx .mx-actionbar:has(.po-summary) {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    gap: 6px !important;
+  }
+  .mx .mx-actionbar:has(.po-summary) .lx-btn {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .mx .mx-actionbar:has(.po-summary) .lx-btn--quiet {
+    flex: none;
+    width: 44px;
+    padding: 0 !important;
+    justify-content: center;
+    gap: 0;
+    font-size: 0 !important;
+  }
+  .mx .mx-actionbar:has(.po-summary) .lx-btn--go {
+    flex: none;
+    padding: 8px 14px 8px 12px;
+    font-size: 17px;
+  }
+  .mx .mx-actionbar:has(.po-summary) .lx-btn--go svg {
+    display: none;
+  }
+}
+/* end of match on a phone: the panel was as wide as its widest row (score, five stats, five buttons), so the
+   score, Continue and Resume were cut off at the right */
+@media (max-width: 560px) {
+  .esx-wrap {
+    padding: max(10px, var(--lx-safe-t, 0px)) 10px max(10px, var(--lx-safe-b, 0px));
+  }
+  /* and too tall for a small phone: the whole panel scrolls, the bar with the buttons stays pinned at its foot */
+  .esx {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .esx-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: rgb(15, 17, 21);
+  }
+  .esx-top {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .esx-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+  }
+  .esx-board {
+    overflow: visible;
+  }
+  .esx-row {
+    grid-template-columns: minmax(0, 1fr) 28px 28px 28px 48px;
+    gap: 4px;
+  }
+  .esx-btns .esx-btn {
+    flex: 1 1 calc(33% - 8px);
+    height: 44px;
+    padding: 0 10px;
+  }
+  .esx-btns .esx-btn.go {
+    flex-grow: 2;
+  }
+}

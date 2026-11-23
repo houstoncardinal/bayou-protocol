@@ -74,27 +74,56 @@ function __spdWarm(st) {
     __SWARM.done.add(o);
     left--;
     __SWARM.n++;
-    const prevTM = gl.toneMapping;
+    const prevTM = gl.toneMapping,
+      prevRT = gl.getRenderTarget();
     try {
       scene === vm && (vm.environment = st.scene.environment);
       tm != null && (gl.toneMapping = tm);
+      // for where it is drawn: the first-person view to the screen, the world into the effect chain's target
+      // (compiled for the screen, characters and guns got shaders never used: slow on phones)
+      gl.setRenderTarget(scene !== vm && typeof __SMOOTH < 'u' && __SMOOTH.rt ? __SMOOTH.rt : null);
       o.updateMatrixWorld(!0);
-      gl.compileAsync(o, st.camera, scene).catch(() => {});
+      __withoutVm(scene, () => { for (const x of __hasLight(o) ? __lightFree(o) : [o]) gl.compileAsync(x, st.camera, scene).catch(() => {}); });
     } catch (e) {
     } finally {
       gl.toneMapping = prevTM;
+      gl.setRenderTarget(prevRT);
     }
   }
+}
+// No match at all (phones run none behind the menus) and not the operator studio: the 3D view is behind opaque
+// menu pages, so nothing is drawn on the main renderer, from its very first frame (setting the frame loop to
+// 'demand' still drew that first frame: the whole effect chain compiled, some 55 shaders, a second each on an
+// iPhone). Its shaders compile under the match's loading screen. Menu previews use a renderer of their own.
+function __spdIdle() {
+  try {
+    return !eA.state && Zw.getState().screen !== 'studio';
+  } catch (e) {
+    return !1;
+  }
+}
+function __spdIdleGuard(gl) {
+  if (!gl || gl.__bpIdleGuard) return;
+  gl.__bpIdleGuard = 1;
+  const r = gl.render;
+  gl.render = function () {
+    if (__spdIdle()) return;
+    return r.apply(this, arguments);
+  };
 }
 function __spdTick() {
   const g = typeof __R3F < 'u' && __R3F;
   if (!g) return;
+  // (no match at all, as on phones, which run none behind the menus: the 3D view was still drawn every frame
+  // behind the opaque menu pages, effects and all, compiling some 55 shaders in the first seconds (a second each
+  // on an iPhone: the menus stuttered). It is drawn only when asked now ('idle'); the operator studio keeps its
+  // frames. A match's shaders compile under its loading screen.)
   const st = g.get ? g.get() : g,
-    want = eA.attract ? 'menu' : eA.paused ? 'pause' : '';
+    want = eA.attract ? 'menu' : !eA.state && Zw.getState().screen !== 'studio' ? 'idle' : eA.paused ? 'pause' : '';
   if (want !== __SPD.mode) {
     __SPD.mode = want;
     st.setFrameloop(want ? 'demand' : 'always');
-    st.gl.shadowMap.autoUpdate = want !== 'menu';
+    st.gl.shadowMap.autoUpdate = want !== 'menu' && want !== 'idle';
     st.gl.shadowMap.needsUpdate = !0;
     // into a match: the resolution this machine settled on the last time it played this map at this quality
     // (full resolution the first time); dynamic resolution takes over from there. Leaving a match: remember
@@ -115,7 +144,7 @@ function __spdTick() {
         localStorage.setItem('bp-dyn-v1', JSON.stringify(L));
       } catch (e) {}
       __SPD.dynKey = '';
-      want === 'menu' && (eA.__dynStart = 0);
+      (want === 'menu' || want === 'idle') && (eA.__dynStart = 0);
     }
   }
   if (!want) {

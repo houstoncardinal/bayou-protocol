@@ -498,6 +498,9 @@ function __jbAnimate(g, dt, cam) {
       [rev, setRev] = S.useState(__PRS.rev);
     S.useEffect(() => {
       __PRS.subs.add(setRev);
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__PRS.rev);
       return () => __PRS.subs.delete(setRev);
     }, []);
     const group = S.useMemo(() => {

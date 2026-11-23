@@ -232,7 +232,20 @@ function __scrStill(sc, s, cb) {
       void 0,
       () => (next ? next() : cb(null)),
     );
-  tryLoad('maxresdefault', () => tryLoad('hqdefault', null));
+  // a film with no full-size still is remembered, so the missing one is not asked for (a 404) every time
+  let small = !1;
+  try {
+    small = (localStorage.getItem('bp-yt-small') || '').split(',').includes(s.videoId);
+  } catch (e) {}
+  small
+    ? tryLoad('hqdefault', null)
+    : tryLoad('maxresdefault', () => {
+        try {
+          const L = (localStorage.getItem('bp-yt-small') || '').split(',').filter(Boolean);
+          L.includes(s.videoId) || localStorage.setItem('bp-yt-small', [...L.slice(-40), s.videoId].join(','));
+        } catch (e) {}
+        tryLoad('hqdefault', null);
+      });
 }
 // ---------------------------------------------------------------- the Starlight's dome
 // def.dome: { cx, cz, base, eye, rx, rz, top, front, door: { yaw, half, h } }: half an ellipsoid over the floor
@@ -1139,6 +1152,9 @@ function __scrToast(name, title, channel) {
       if (!on) return;
       __SCR.subs.add(setRev);
       __scrFetch();
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__SCR.rev);
       return () => __SCR.subs.delete(setRev);
     }, [on]);
     // the screens, once per map

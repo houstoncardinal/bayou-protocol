@@ -30,6 +30,8 @@ export interface LoadOptions {
   /** Recommended: enables sharp textures at grazing angles (anisotropy) and image-based lighting from the sky. */
   renderer?: THREE.WebGLRenderer;
   quality?: Quality;
+  /** Overrides for the chosen preset's distances (tree0, tree1, rock0, decorFar, grassFar...). */
+  preset?: Partial<Record<'tree0' | 'tree1' | 'rock0' | 'decorFar' | 'grassFar' | 'decorDensity' | 'grassDensity' | 'terrainLodDist', number>>;
   atmosphere?: boolean;               // sun, sky light, fog, sky background. Default true
   shadows?: boolean;                  // sun shadows. Default: quality === 'high'
   tunnelLights?: 'all' | 'few' | 'none';
@@ -148,7 +150,8 @@ class InstancedLOD {
 
 export async function loadRidgebackPass(opts: LoadOptions): Promise<LoadedMap> {
   const { scene, world, RAPIER, loadGLB } = opts;
-  const q = opts.quality ?? 'high'; const Q = QUALITY[q];
+  // (opts.preset: the game's own distances over the chosen preset: its phone profile, 53b-ridgeback.js)
+  const q = opts.quality ?? 'high'; const Q = { ...QUALITY[q], ...(opts.preset ?? {}) };
   if (opts.renderer) maxAniso = Math.min(16, opts.renderer.capabilities.getMaxAnisotropy());
   const resolve = opts.resolve ?? ((p: string) => (RIDGEBACK_ASSETS.files as Record<string, AssetRef>)[p]);
   const loadJSON = opts.loadJSON ?? (async <T,>(r: unknown) => (typeof r === 'string' ? await (await fetch(r)).json() : r) as T);

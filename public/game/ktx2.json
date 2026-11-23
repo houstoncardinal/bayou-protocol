@@ -1,0 +1,488 @@
+{
+ "v": 1,
+ "caps": {
+  "color": 1024,
+  "aux": 512
+ },
+ "models": [
+  "characters/counter-terrorists/Ch15_nonPBR.glb",
+  "characters/counter-terrorists/Ch18_nonPBR.glb",
+  "characters/counter-terrorists/Ch35_nonPBR.glb",
+  "characters/counter-terrorists/Ch36_desert_operator.glb",
+  "characters/masks/balaclava.glb",
+  "characters/prisoners/Ch08_nonPBR.glb",
+  "characters/terrorists/Ch10_nonPBR.glb",
+  "characters/terrorists/The_Boss.glb",
+  "characters/terrorists/gasmask_2.glb",
+  "characters/terrorists/terrorist-djmaesen.glb",
+  "maps/cinema/models/ArmChair_01.glb",
+  "maps/cinema/models/CashRegister_01.glb",
+  "maps/cinema/models/Chandelier_02.glb",
+  "maps/cinema/models/ClassicConsole_01.glb",
+  "maps/cinema/models/CoffeeCart_01.glb",
+  "maps/cinema/models/Sofa_01.glb",
+  "maps/cinema/models/bar_chair_round_01.glb",
+  "maps/cinema/models/brass_vase_01.glb",
+  "maps/cinema/models/cardboard_box_01.glb",
+  "maps/cinema/models/coffee_table_round_01.glb",
+  "maps/cinema/models/covered_car.glb",
+  "maps/cinema/models/fancy_picture_frame_01.glb",
+  "maps/cinema/models/industrial_storage_cart.glb",
+  "maps/cinema/models/marble_bust_01.glb",
+  "maps/cinema/models/metal_trash_can.glb",
+  "maps/cinema/models/mid_century_lounge_chair.glb",
+  "maps/cinema/models/modern_ceiling_lamp_01.glb",
+  "maps/cinema/models/ornate_mirror_01.glb",
+  "maps/cinema/models/outdoor_table_chair_set_01.glb",
+  "maps/cinema/models/painted_wooden_bench.glb",
+  "maps/cinema/models/planter_box_01.glb",
+  "maps/cinema/models/potted_plant_02.glb",
+  "maps/cinema/models/potted_plant_04.glb",
+  "maps/cinema/models/side_table_01.glb",
+  "maps/cinema/models/steel_frame_shelves_02.glb",
+  "maps/cinema/models/street_lamp_01.glb",
+  "maps/fortress/models/Lantern_01.glb",
+  "maps/fortress/models/coast_rocks_05.glb",
+  "maps/fortress/models/coastal_cliff_02.glb",
+  "maps/fortress/models/coastal_cliff_04.glb",
+  "maps/fortress/models/fern_02.glb",
+  "maps/fortress/models/island_tree_01.glb",
+  "maps/fortress/models/island_tree_02.glb",
+  "maps/fortress/models/island_tree_03.glb",
+  "maps/fortress/models/pachira_aquatica_01.glb",
+  "maps/fortress/models/planter_pot_clay.glb",
+  "maps/fortress/models/shrub_02.glb",
+  "maps/fortress/models/shrub_04.glb",
+  "maps/frostline/models/ammo_box.glb",
+  "maps/frostline/models/barrel_03.glb",
+  "maps/frostline/models/barrel_stove.glb",
+  "maps/frostline/models/cardboard_box_01.glb",
+  "maps/frostline/models/dead_tree_trunk.glb",
+  "maps/frostline/models/metal_jerrycan.glb",
+  "maps/frostline/models/old_military_crate.glb",
+  "maps/frostline/models/portable_generator.glb",
+  "maps/frostline/models/portable_searchlight.glb",
+  "maps/frostline/models/rock_face_02.glb",
+  "maps/frostline/models/stone_fire_pit.glb",
+  "maps/frostline/models/street_lamp_02.glb",
+  "maps/frostline/models/tree_stump_01.glb",
+  "maps/frostline/models/wooden_barrels_01.glb",
+  "maps/frostline/models/wooden_bucket_01.glb",
+  "maps/frostline/models/wooden_crate_01.glb",
+  "maps/frostline/models/wooden_crate_02.glb",
+  "maps/frostline/models/wooden_lantern_01.glb",
+  "maps/prison/models/Television_01.glb",
+  "maps/prison/models/WetFloorSign_01.glb",
+  "maps/prison/models/barrel_03.glb",
+  "maps/prison/models/bolt_cutters_01.glb",
+  "maps/prison/models/concrete_road_barrier.glb",
+  "maps/prison/models/fire_hydrant.glb",
+  "maps/prison/models/hanging_industrial_lamp.glb",
+  "maps/prison/models/korean_fire_extinguisher_01.glb",
+  "maps/prison/models/metal_office_desk.glb",
+  "maps/prison/models/mounted_fluorescent_lights.glb",
+  "maps/prison/models/security_camera_01.glb",
+  "maps/prison/models/security_light.glb",
+  "maps/prison/models/steel_frame_shelves_01.glb",
+  "maps/prison/models/trashbag.glb",
+  "maps/prison/models/utility_box_02.glb",
+  "maps/prison/models/wheelchair_01.glb",
+  "maps/ridgeback_pass/environment/backdrop.glb",
+  "maps/ridgeback_pass/environment/sky.glb",
+  "maps/ridgeback_pass/environment/water_creek.glb",
+  "maps/ridgeback_pass/grass/grass_clumps.glb",
+  "maps/ridgeback_pass/materials/terrain_materials_hq.glb",
+  "maps/ridgeback_pass/materials/terrain_materials_lq.glb",
+  "maps/ridgeback_pass/props/bark_debris_01.glb",
+  "maps/ridgeback_pass/props/boulder_01.glb",
+  "maps/ridgeback_pass/props/boulder_01_lod1.glb",
+  "maps/ridgeback_pass/props/coast_rocks_05.glb",
+  "maps/ridgeback_pass/props/coast_rocks_05_lod1.glb",
+  "maps/ridgeback_pass/props/dead_tree_trunk.glb",
+  "maps/ridgeback_pass/props/dead_tree_trunk_02.glb",
+  "maps/ridgeback_pass/props/dead_tree_trunk_02_lod1.glb",
+  "maps/ridgeback_pass/props/dead_tree_trunk_lod1.glb",
+  "maps/ridgeback_pass/props/dry_branches_medium_01.glb",
+  "maps/ridgeback_pass/props/fern_02.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_03.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_03_lod1.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_04.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_04_lod1.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_05.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_05_lod1.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_06.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulder_06_lod1.glb",
+  "maps/ridgeback_pass/props/namaqualand_boulders_01.glb",
+  "maps/ridgeback_pass/props/namaqualand_rocks_01.glb",
+  "maps/ridgeback_pass/props/pine_roots.glb",
+  "maps/ridgeback_pass/props/rock_07.glb",
+  "maps/ridgeback_pass/props/rock_09.glb",
+  "maps/ridgeback_pass/props/rock_moss_set_01.glb",
+  "maps/ridgeback_pass/props/rock_moss_set_01_lod1.glb",
+  "maps/ridgeback_pass/props/rock_moss_set_02.glb",
+  "maps/ridgeback_pass/props/rock_moss_set_02_lod1.glb",
+  "maps/ridgeback_pass/props/root_cluster_01.glb",
+  "maps/ridgeback_pass/props/root_cluster_01_lod1.glb",
+  "maps/ridgeback_pass/props/root_cluster_02.glb",
+  "maps/ridgeback_pass/props/shrub_02.glb",
+  "maps/ridgeback_pass/props/shrub_03.glb",
+  "maps/ridgeback_pass/props/shrub_04.glb",
+  "maps/ridgeback_pass/props/single_root.glb",
+  "maps/ridgeback_pass/props/stone_01.glb",
+  "maps/ridgeback_pass/props/tree_stump_01.glb",
+  "maps/ridgeback_pass/props/tree_stump_01_lod1.glb",
+  "maps/ridgeback_pass/props/tree_stump_02.glb",
+  "maps/ridgeback_pass/props/tree_stump_02_lod1.glb",
+  "maps/ridgeback_pass/props/wooden_axe.glb",
+  "maps/ridgeback_pass/props/wooden_barrels_01.glb",
+  "maps/ridgeback_pass/props/wooden_bucket_01.glb",
+  "maps/ridgeback_pass/props/wooden_crate_01.glb",
+  "maps/ridgeback_pass/props/wooden_crate_02.glb",
+  "maps/ridgeback_pass/props/wooden_lantern_01.glb",
+  "maps/ridgeback_pass/props/wooden_military_crate.glb",
+  "maps/ridgeback_pass/structures/structures.glb",
+  "maps/ridgeback_pass/trees/bush_fir_a_bb.glb",
+  "maps/ridgeback_pass/trees/bush_fir_a_lod0.glb",
+  "maps/ridgeback_pass/trees/bush_fir_a_lod1.glb",
+  "maps/ridgeback_pass/trees/bush_pine_a_bb.glb",
+  "maps/ridgeback_pass/trees/bush_pine_a_lod0.glb",
+  "maps/ridgeback_pass/trees/bush_pine_a_lod1.glb",
+  "maps/ridgeback_pass/trees/fir_a_bb.glb",
+  "maps/ridgeback_pass/trees/fir_a_lod0.glb",
+  "maps/ridgeback_pass/trees/fir_a_lod1.glb",
+  "maps/ridgeback_pass/trees/fir_b_bb.glb",
+  "maps/ridgeback_pass/trees/fir_b_lod0.glb",
+  "maps/ridgeback_pass/trees/fir_b_lod1.glb",
+  "maps/ridgeback_pass/trees/firsap_a_bb.glb",
+  "maps/ridgeback_pass/trees/firsap_a_lod0.glb",
+  "maps/ridgeback_pass/trees/firsap_a_lod1.glb",
+  "maps/ridgeback_pass/trees/firsap_b_bb.glb",
+  "maps/ridgeback_pass/trees/firsap_b_lod0.glb",
+  "maps/ridgeback_pass/trees/firsap_b_lod1.glb",
+  "maps/ridgeback_pass/trees/pine_a_bb.glb",
+  "maps/ridgeback_pass/trees/pine_a_lod0.glb",
+  "maps/ridgeback_pass/trees/pine_a_lod1.glb",
+  "maps/ridgeback_pass/trees/pine_b_bb.glb",
+  "maps/ridgeback_pass/trees/pine_b_lod0.glb",
+  "maps/ridgeback_pass/trees/pine_b_lod1.glb",
+  "maps/ridgeback_pass/trees/pinesap_a_bb.glb",
+  "maps/ridgeback_pass/trees/pinesap_a_lod0.glb",
+  "maps/ridgeback_pass/trees/pinesap_a_lod1.glb",
+  "maps/ridgeback_pass/tunnels/tunnels.glb",
+  "models/grenade-frag.glb",
+  "models/knife.glb",
+  "models/props/crate-box.glb",
+  "models/props/crates-barrels.glb",
+  "models/props/secure-crates.glb",
+  "models/props/tnt-crate.glb",
+  "models/rig-kodiak-arms.glb",
+  "models/veg/cacti.glb",
+  "models/veg/conifer.glb",
+  "models/veg/daisies.glb",
+  "models/veg/fir-pack.glb",
+  "models/weapon-midas.glb",
+  "models/weapon-rattler.glb",
+  "models/weapon-warden.glb",
+  "models/weapons/anvil.glb",
+  "models/weapons/arms6.glb",
+  "models/weapons/carbine.glb",
+  "models/weapons/hornet.glb",
+  "models/weapons/kestrel.glb",
+  "models/weapons/mauler.glb",
+  "models/weapons/sniper.glb",
+  "models/weapons/striker.glb"
+ ],
+ "tex": {
+  "maps/cinema/tex/dark_wooden_planks_diff": {
+   "mean": 0.06867
+  },
+  "maps/cinema/tex/dark_wooden_planks_nor": {},
+  "maps/cinema/tex/dark_wooden_planks_rough": {},
+  "maps/cinema/tex/herringbone_parquet_diff": {
+   "mean": 0.18582
+  },
+  "maps/cinema/tex/herringbone_parquet_nor": {},
+  "maps/cinema/tex/herringbone_parquet_rough": {},
+  "maps/cinema/tex/leather_red_02_diff": {
+   "mean": 0.03153
+  },
+  "maps/cinema/tex/leather_red_02_nor": {},
+  "maps/cinema/tex/leather_red_02_rough": {},
+  "maps/cinema/tex/marble_01_diff": {
+   "mean": 0.3546
+  },
+  "maps/cinema/tex/marble_01_nor": {},
+  "maps/cinema/tex/marble_01_rough": {},
+  "maps/cinema/tex/marble_mosaic_tiles_diff": {
+   "mean": 0.16919
+  },
+  "maps/cinema/tex/marble_mosaic_tiles_nor": {},
+  "maps/cinema/tex/marble_mosaic_tiles_rough": {},
+  "maps/cinema/tex/poly_wool_herringbone_diff": {
+   "mean": 0.18349
+  },
+  "maps/cinema/tex/poly_wool_herringbone_nor": {},
+  "maps/cinema/tex/poly_wool_herringbone_rough": {},
+  "maps/cinema/tex/quatrefoil_jacquard_fabric_diff": {
+   "mean": 0.02758
+  },
+  "maps/cinema/tex/quatrefoil_jacquard_fabric_nor": {},
+  "maps/cinema/tex/quatrefoil_jacquard_fabric_rough": {},
+  "maps/cinema/tex/rosewood_veneer1_diff": {
+   "mean": 0.04813
+  },
+  "maps/cinema/tex/rosewood_veneer1_nor": {},
+  "maps/cinema/tex/rosewood_veneer1_rough": {},
+  "maps/cinema/tex/terrazzo_tiles_diff": {
+   "mean": 0.17249
+  },
+  "maps/cinema/tex/terrazzo_tiles_nor": {},
+  "maps/cinema/tex/terrazzo_tiles_rough": {},
+  "maps/cinema/tex/velour_velvet_diff": {
+   "mean": 0.09347
+  },
+  "maps/cinema/tex/velour_velvet_nor": {},
+  "maps/cinema/tex/velour_velvet_rough": {},
+  "maps/cinema/tex/white_stucco_diff": {
+   "mean": 0.66511
+  },
+  "maps/cinema/tex/white_stucco_nor": {},
+  "maps/cinema/tex/white_stucco_rough": {},
+  "maps/cinema/tex/wood_plank_wall_diff": {
+   "mean": 0.0338
+  },
+  "maps/cinema/tex/wood_plank_wall_nor": {},
+  "maps/cinema/tex/wood_plank_wall_rough": {},
+  "maps/fortress/tex/castle_wall_varriation_diff": {
+   "mean": 0.22078
+  },
+  "maps/fortress/tex/castle_wall_varriation_nor": {},
+  "maps/fortress/tex/castle_wall_varriation_rough": {},
+  "maps/fortress/tex/clay_roof_tiles_02_diff": {
+   "mean": 0.11535
+  },
+  "maps/fortress/tex/clay_roof_tiles_02_nor": {},
+  "maps/fortress/tex/clay_roof_tiles_02_rough": {},
+  "maps/fortress/tex/cobblestone_square_diff": {
+   "mean": 0.19836
+  },
+  "maps/fortress/tex/cobblestone_square_nor": {},
+  "maps/fortress/tex/cobblestone_square_rough": {},
+  "maps/fortress/tex/grassy_cobblestone_diff": {
+   "mean": 0.14406
+  },
+  "maps/fortress/tex/grassy_cobblestone_nor": {},
+  "maps/fortress/tex/grassy_cobblestone_rough": {},
+  "maps/fortress/tex/medieval_blocks_05_diff": {
+   "mean": 0.25678
+  },
+  "maps/fortress/tex/medieval_blocks_05_nor": {},
+  "maps/fortress/tex/medieval_blocks_05_rough": {},
+  "maps/fortress/tex/plaster_stone_wall_01_diff": {
+   "mean": 0.2658
+  },
+  "maps/fortress/tex/plaster_stone_wall_01_nor": {},
+  "maps/fortress/tex/plaster_stone_wall_01_rough": {},
+  "maps/fortress/tex/red_sandstone_pavement_diff": {
+   "mean": 0.10508
+  },
+  "maps/fortress/tex/red_sandstone_pavement_nor": {},
+  "maps/fortress/tex/red_sandstone_pavement_rough": {},
+  "maps/foundry/tex/asphalt_worn_diff": {
+   "mean": 0.02551
+  },
+  "maps/foundry/tex/asphalt_worn_nor": {},
+  "maps/foundry/tex/asphalt_worn_rough": {},
+  "maps/foundry/tex/brick_industrial_diff": {
+   "mean": 0.0413
+  },
+  "maps/foundry/tex/brick_industrial_nor": {},
+  "maps/foundry/tex/brick_industrial_rough": {},
+  "maps/foundry/tex/ceramic_tiles_dirty_diff": {
+   "mean": 0.49112
+  },
+  "maps/foundry/tex/ceramic_tiles_dirty_nor": {},
+  "maps/foundry/tex/ceramic_tiles_dirty_rough": {},
+  "maps/foundry/tex/cinderblock_painted_diff": {
+   "mean": 0.28659
+  },
+  "maps/foundry/tex/cinderblock_painted_nor": {},
+  "maps/foundry/tex/cinderblock_painted_rough": {},
+  "maps/foundry/tex/concrete_epoxy_floor_diff": {
+   "mean": 0.11166
+  },
+  "maps/foundry/tex/concrete_epoxy_floor_nor": {},
+  "maps/foundry/tex/concrete_epoxy_floor_rough": {},
+  "maps/foundry/tex/concrete_floor_warehouse_diff": {
+   "mean": 0.14918
+  },
+  "maps/foundry/tex/concrete_floor_warehouse_nor": {},
+  "maps/foundry/tex/concrete_floor_warehouse_rough": {},
+  "maps/foundry/tex/concrete_wall_cast_diff": {
+   "mean": 0.19283
+  },
+  "maps/foundry/tex/concrete_wall_cast_nor": {},
+  "maps/foundry/tex/concrete_wall_cast_rough": {},
+  "maps/foundry/tex/corrugated_metal_galvanized_diff": {
+   "mean": 0.144
+  },
+  "maps/foundry/tex/corrugated_metal_galvanized_nor": {},
+  "maps/foundry/tex/corrugated_metal_galvanized_rough": {},
+  "maps/foundry/tex/diamond_plate_steel_diff": {
+   "mean": 0.06818
+  },
+  "maps/foundry/tex/diamond_plate_steel_nor": {},
+  "maps/foundry/tex/diamond_plate_steel_rough": {},
+  "maps/foundry/tex/gravel_dirt_ground_diff": {
+   "mean": 0.05651
+  },
+  "maps/foundry/tex/gravel_dirt_ground_nor": {},
+  "maps/foundry/tex/gravel_dirt_ground_rough": {},
+  "maps/foundry/tex/hazard_stripes_steel_diff": {
+   "mean": 0.11222
+  },
+  "maps/foundry/tex/hazard_stripes_steel_nor": {},
+  "maps/foundry/tex/hazard_stripes_steel_rough": {},
+  "maps/foundry/tex/metal_bar_grating_diff": {
+   "mean": 0.00491
+  },
+  "maps/foundry/tex/metal_bar_grating_mask": {},
+  "maps/foundry/tex/metal_bar_grating_nor": {},
+  "maps/foundry/tex/metal_bar_grating_rough": {},
+  "maps/foundry/tex/painted_metal_chipped_diff": {
+   "mean": 0.04413
+  },
+  "maps/foundry/tex/painted_metal_chipped_nor": {},
+  "maps/foundry/tex/painted_metal_chipped_rough": {},
+  "maps/foundry/tex/rusted_steel_plate_diff": {
+   "mean": 0.03652
+  },
+  "maps/foundry/tex/rusted_steel_plate_nor": {},
+  "maps/foundry/tex/rusted_steel_plate_rough": {},
+  "maps/foundry/tex/steel_panel_riveted_diff": {
+   "mean": 0.07739
+  },
+  "maps/foundry/tex/steel_panel_riveted_nor": {},
+  "maps/foundry/tex/steel_panel_riveted_rough": {},
+  "maps/foundry/tex/wood_pallet_planks_diff": {
+   "mean": 0.08194
+  },
+  "maps/foundry/tex/wood_pallet_planks_nor": {},
+  "maps/foundry/tex/wood_pallet_planks_rough": {},
+  "maps/frostline/tex/blue_metal_plate_diff": {
+   "mean": 0.0385
+  },
+  "maps/frostline/tex/blue_metal_plate_nor": {},
+  "maps/frostline/tex/blue_metal_plate_rough": {},
+  "maps/frostline/tex/brown_planks_05_diff": {
+   "mean": 0.30627
+  },
+  "maps/frostline/tex/brown_planks_05_nor": {},
+  "maps/frostline/tex/brown_planks_05_rough": {},
+  "maps/frostline/tex/rock_face_diff": {
+   "mean": 0.06909
+  },
+  "maps/frostline/tex/rock_face_nor": {},
+  "maps/frostline/tex/rock_face_rough": {},
+  "maps/frostline/tex/roof_planks_diff": {
+   "mean": 0.08205
+  },
+  "maps/frostline/tex/roof_planks_nor": {},
+  "maps/frostline/tex/roof_planks_rough": {},
+  "maps/frostline/tex/rustic_stone_wall_diff": {
+   "mean": 0.14101
+  },
+  "maps/frostline/tex/rustic_stone_wall_nor": {},
+  "maps/frostline/tex/rustic_stone_wall_rough": {},
+  "maps/frostline/tex/snow_02_diff": {
+   "mean": 0.3867
+  },
+  "maps/frostline/tex/snow_02_nor": {},
+  "maps/frostline/tex/snow_02_rough": {},
+  "maps/frostline/tex/weathered_plank_siding_diff": {
+   "mean": 0.04811
+  },
+  "maps/frostline/tex/weathered_plank_siding_nor": {},
+  "maps/frostline/tex/weathered_plank_siding_rough": {},
+  "maps/prison/tex/asphalt_02_diff": {
+   "mean": 0.10001
+  },
+  "maps/prison/tex/asphalt_02_nor": {},
+  "maps/prison/tex/asphalt_02_rough": {},
+  "maps/prison/tex/brown_mud_dry_diff": {
+   "mean": 0.11374
+  },
+  "maps/prison/tex/brown_mud_dry_nor": {},
+  "maps/prison/tex/brown_mud_dry_rough": {},
+  "maps/prison/tex/concrete_floor_worn_001_diff": {
+   "mean": 0.09239
+  },
+  "maps/prison/tex/concrete_floor_worn_001_nor": {},
+  "maps/prison/tex/concrete_floor_worn_001_rough": {},
+  "maps/prison/tex/concrete_wall_008_diff": {
+   "mean": 0.24039
+  },
+  "maps/prison/tex/concrete_wall_008_nor": {},
+  "maps/prison/tex/concrete_wall_008_rough": {},
+  "maps/prison/tex/corrugated_iron_diff": {
+   "mean": 0.4407
+  },
+  "maps/prison/tex/corrugated_iron_nor": {},
+  "maps/prison/tex/corrugated_iron_rough": {},
+  "maps/prison/tex/garage_floor_diff": {
+   "mean": 0.16103
+  },
+  "maps/prison/tex/garage_floor_nor": {},
+  "maps/prison/tex/garage_floor_rough": {},
+  "maps/prison/tex/granite_wall_diff": {
+   "mean": 0.12339
+  },
+  "maps/prison/tex/granite_wall_nor": {},
+  "maps/prison/tex/granite_wall_rough": {},
+  "maps/prison/tex/green_metal_rust_diff": {
+   "mean": 0.05786
+  },
+  "maps/prison/tex/green_metal_rust_nor": {},
+  "maps/prison/tex/green_metal_rust_rough": {},
+  "maps/prison/tex/large_grey_tiles_diff": {
+   "mean": 0.21805
+  },
+  "maps/prison/tex/large_grey_tiles_nor": {},
+  "maps/prison/tex/large_grey_tiles_rough": {},
+  "maps/prison/tex/metal_plate_diff": {
+   "mean": 0.0292
+  },
+  "maps/prison/tex/metal_plate_nor": {},
+  "maps/prison/tex/metal_plate_rough": {},
+  "maps/prison/tex/painted_brick_diff": {
+   "mean": 0.30485
+  },
+  "maps/prison/tex/painted_brick_nor": {},
+  "maps/prison/tex/painted_brick_rough": {},
+  "maps/prison/tex/painted_plaster_wall_diff": {
+   "mean": 0.38373
+  },
+  "maps/prison/tex/painted_plaster_wall_nor": {},
+  "maps/prison/tex/painted_plaster_wall_rough": {},
+  "maps/prison/tex/red_brick_03_diff": {
+   "mean": 0.10042
+  },
+  "maps/prison/tex/red_brick_03_nor": {},
+  "maps/prison/tex/red_brick_03_rough": {},
+  "maps/prison/tex/rubber_tiles_diff": {
+   "mean": 0.01126
+  },
+  "maps/prison/tex/rubber_tiles_nor": {},
+  "maps/prison/tex/rubber_tiles_rough": {},
+  "maps/prison/tex/sparse_grass_diff": {
+   "mean": 0.04505
+  },
+  "maps/prison/tex/sparse_grass_nor": {},
+  "maps/prison/tex/sparse_grass_rough": {},
+  "maps/prison/tex/tarred_gravel_diff": {
+   "mean": 0.04214
+  },
+  "maps/prison/tex/tarred_gravel_nor": {},
+  "maps/prison/tex/tarred_gravel_rough": {}
+ }
+}

@@ -2621,3 +2621,47 @@ html.swat-short .hm-grid > :not(:first-child) {
 .pm-body .lx-seg button { padding: 7px 11px; white-space: nowrap; font-size: 13px; }
 .pm-nav { scrollbar-width: thin; }
 .pm-item { min-height: 40px; }
+
+/* ---------------- phones and tablets: HUD controls clear of the read-outs, every control thumb-sized ---------------- */
+/* the score capsule clears the notch / status bar like the radar and the buttons do */
+.fps-root--touch .absolute.left-1\/2.top-3 {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+}
+/* the right-hand cluster ignored the home indicator: its bottom row sat in the swipe-up strip */
+.fps-root--touch .tc-right {
+  translate: 0 calc(-1 * env(safe-area-inset-bottom, 0px));
+}
+.fps-root--touch .tc-top .tc-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  /* Menu, Scoreboard and Buy were drawn under the score capsule (30 px each): a column down the right edge below it */
+  .fps-root--touch .tc-top {
+    top: calc(50px + env(safe-area-inset-top, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    flex-direction: column;
+  }
+  /* reload, crouch and melee covered the ammo counter and the tap-to-switch dock: the cluster sits above that row */
+  .fps-root--touch .tc-right {
+    translate: 0 calc(-52px - env(safe-area-inset-bottom, 0px));
+  }
+  .fps-root--touch .tc-dock {
+    max-width: calc(50% - 8px);
+  }
+  /* and the wallet (buy time) rises with it, clear of the melee button */
+  .fps-root--touch .hud-wallet {
+    bottom: calc(98px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+html.swat-touch .sb2-x {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+html.swat-touch .sb2-cats button {
+  min-height: 44px;
+}
+html.swat-touch .pm-wrap .pm-item {
+  min-height: 44px;
+}

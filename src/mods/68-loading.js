@@ -207,6 +207,7 @@ function __ldShow(m) {
 }
 function __ldHide() {
   __LD.state = 'shown';
+  __LD.hold = !1;
   __LD.paused && ((eA.paused = !1), (__LD.paused = !1));
   const el = __LD.cover;
   if (!el) return;
@@ -216,6 +217,10 @@ function __ldHide() {
 }
 // each frame (inside the canvas): start the cover for a new match, check readiness, compile, reveal
 function __ldTick(s) {
+  __ldHook(s);
+  __LD.scene = s.scene;
+  __LD.cam = s.camera;
+  __ldAttract(s);
   const st = eA.state,
     playing = st && !eA.attract && Zw.getState().screen === 'playing';
   if (!playing) {
@@ -227,6 +232,7 @@ function __ldTick(s) {
     __LD.match = st;
     __LD.state = 'loading';
     __ldShow(aw());
+    __LD.hold = __ldHoldable();
   }
   if (__LD.state !== 'loading') return;
   const now = performance.now(),
@@ -246,18 +252,124 @@ function __ldTick(s) {
   if (now - __LD.t0 > 30000) return __ldHide();
   if (__LD.ready) return;
   if (!quiet || !view || __LD.compiling) return;
-  // compile every material in the scene before the first frame is shown
   __LD.compiling = !0;
-  const fin = () => {
-    let n = 0;
-    const two = () => (++n < 3 ? requestAnimationFrame(two) : ((__LD.ready = !0), __ldHide()));
-    requestAnimationFrame(two);
-  };
+  // the maps that are held: compiled for the real target, textures uploaded; the others as before. Never more
+  // than 8 s (a compile that never reports back must not keep the cover up)
+  const job = __LD.hold ? __ldCompile(s) : s.gl.compileAsync ? s.gl.compileAsync(s.scene, s.camera).catch(() => {}) : (s.gl.compile(s.scene, s.camera), Promise.resolve());
+  Promise.race([job, new Promise((r) => setTimeout(r, 8000))]).then(() => {
+    __LD.hold = !1;
+    // the world drawn under the cover now (its shadows' own shaders compile here, unseen), and the radar's
+    // picture taken before the cover lifts (taken in the first second of play, its shaders froze the game
+    // for half a second): at most 3 s
+    const t1 = performance.now(),
+      wait = () => {
+        const m = aw(),
+          radar = typeof __RAD > 'u' || !m || m.__terrain || __RAD.cache.has(__radKey(m));
+        if (!radar && performance.now() - t1 < 3000) return void requestAnimationFrame(wait);
+        let n = 0;
+        const two = () => (++n < 3 ? requestAnimationFrame(two) : ((__LD.ready = !0), __ldHide()));
+        requestAnimationFrame(two);
+      };
+    requestAnimationFrame(wait);
+  });
+}
+// Compile every material in the scene before it is first drawn, for the target the world is really drawn into
+// (the effect chain's) and for the screen, in parallel off the main thread (KHR_parallel_shader_compile); then
+// upload its textures (hidden things' too) a few a frame. Resolves when done (never rejects).
+function __ldCompile(s) {
+  const gl = s.gl,
+    upload = () =>
+      new Promise((res) => {
+        const tex = new Set();
+        // hidden things too (the bomb, until it is dropped or planted: its first showing stalled ~0.4 s)
+        s.scene[typeof localStorage < 'u' && localStorage.getItem('bp-texwarm') === '0' ? 'traverseVisible' : 'traverse']((o) => {
+          for (const mt of [].concat(o.material || []))
+            if (mt) for (const k in mt) mt[k] && mt[k].isTexture && mt[k].image && tex.add(mt[k]);
+        });
+        const list = [...tex],
+          step = () => {
+            const t0 = performance.now();
+            while (list.length && performance.now() - t0 < 8)
+              try {
+                gl.initTexture(list.pop());
+              } catch (e) {}
+            list.length ? requestAnimationFrame(step) : res();
+          };
+        __LD.uploads = list.length;
+        requestAnimationFrame(step);
+      });
   try {
-    s.gl.compileAsync ? s.gl.compileAsync(s.scene, s.camera).then(fin, fin) : (s.gl.compile(s.scene, s.camera), fin());
+    if (!gl.compileAsync) return gl.compile(s.scene, s.camera), Promise.resolve();
+    const prev = gl.getRenderTarget(),
+      // the effect chain's target (any render target gives the same shaders as it: linear colour, no tone
+      // mapping); before the first match it is not known yet, and a 1 x 1 stand-in does
+      rt = (typeof __SMOOTH < 'u' && __SMOOTH.rt) || __LD.rt1 || (__LD.rt1 = new Ti(1, 1, { type: 1016 })),
+      jobs = [],
+      // the world, and the first-person view (gun and arms, its own scene)
+      vm = !eA.attract && typeof window < 'u' && window.__vmScene;
+    gl.setRenderTarget(rt);
+    jobs.push(__withoutVm(s.scene, () => gl.compileAsync(s.scene, s.camera)));
+    vm && jobs.push(gl.compileAsync(vm, s.camera, vm));
+    // (the world is only ever drawn into the effect chain's target: its screen versions were compiled for
+    // nothing, a whole second set; on an iPhone, where shaders compile one at a time, that was most of a
+    // minute. The first-person view is drawn to the screen.)
+    gl.setRenderTarget(null);
+    vm && jobs.push(gl.compileAsync(vm, s.camera, vm));
+    gl.setRenderTarget(prev);
+    return Promise.all(jobs).then(upload, upload).catch(() => {});
   } catch (e) {
-    fin();
+    return Promise.resolve();
   }
+}
+// The menus' live background (the map chosen in match setup, playing behind the panels) was compiled the same
+// way as a match used to be: drawn at once, every new shader compiled mid-frame, the menus frozen for up to a
+// second or two when a map was picked. It is now held (not drawn) until its map is in and compiled, then shown.
+function __ldAttract(s) {
+  const st = eA.state,
+    now = performance.now();
+  if (!st || !eA.attract || !__ldHoldable()) return;
+  if (__LD.amatch !== st) (__LD.amatch = st), (__LD.aReady = !1), (__LD.aBusy = !1), (__LD.aT0 = now);
+  if (__LD.aReady || __LD.aBusy) return;
+  const want = __LD_VIEW[aw().id];
+  let view = !want;
+  if (want) s.scene.traverse((o) => o.name === want && (view = !0));
+  const quiet = !__ldBusy() && now - __LD.quietAt > 350;
+  // ready to compile, or 15 s gone (then shown whatever the state)
+  if (!(quiet && view) && now - __LD.aT0 < 15000) return;
+  __LD.aBusy = !0;
+  Promise.race([__ldCompile(s), new Promise((r) => setTimeout(r, 8000))]).then(() => ((__LD.aReady = !0), (__LD.aBusy = !1)));
+}
+// While the cover is up the world is not drawn (it is under the cover): drawing it compiled every new shader and
+// uploaded every new texture in the middle of a frame, freezing the loading screen for seconds. The effect chain
+// carries on.
+// Only the maps drawn by the map pipeline (65-prison-view.js: Foundry, Fortress, Blackwater, the Palace) are held:
+// Frostline and Ridgeback build parts of themselves from drawn frames and keep the old way.
+function __ldHoldable() {
+  try {
+    const m = aw();
+    return !!(m && typeof __prKit < 'u' && __prKit(m));
+  } catch (e) {
+    return !1;
+  }
+}
+function __ldHook(s) {
+  const gl = s.gl;
+  if (!gl || gl.__ldHold) return;
+  gl.__ldHold = 1;
+  const coreRender = gl.render;
+  gl.render = function (scene, cam) {
+    // a match that has just started is held from its very first frame (before this file's per-frame check has
+    // run for it, that frame compiled the whole world's shaders at once: a two-second freeze on Deploy); the
+    // menus' background match until its map is compiled
+    const st = eA.state,
+      ok = __ldHoldable(),
+      fresh = ok && st && !eA.attract && st !== __LD.match,
+      menu = ok && st && eA.attract && (st !== __LD.amatch || !__LD.aReady),
+      vm = typeof window < 'u' && window.__vmScene;
+    // (by scene: a new match brings its own camera; probes and the radar wait for the cover to go anyway)
+    if ((fresh || menu || (__LD.hold && __LD.state === 'loading')) && (scene === __LD.scene || (!menu && vm && scene === vm))) return;
+    return coreRender.apply(this, arguments);
+  };
 }
 {
   const prevTrees = kwA;
@@ -287,4 +399,4 @@ function __ldTick(s) {
     setTimeout(() => pre(Zw.getState().map), 1500);
   } catch (e) {}
 }
-typeof window < 'u' && (window.__bpLoading = () => ({ state: __LD.state, pending: __LD.pending, glq: typeof __GLQ < 'u' ? [__GLQ.active, __GLQ.q.length] : null, ms: Math.round(performance.now() - __LD.t0), compiling: __LD.compiling }));
+typeof window < 'u' && (window.__bpLoading = () => ({ state: __LD.state, hold: !!__LD.hold, uploads: __LD.uploads, pending: __LD.pending, glq: typeof __GLQ < 'u' ? [__GLQ.active, __GLQ.q.length] : null, ms: Math.round(performance.now() - __LD.t0), compiling: __LD.compiling }));

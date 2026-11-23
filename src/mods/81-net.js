@@ -294,6 +294,16 @@ function __netGameRoom(name) {
     others = new Map(), // peer -> presence
     links = new Map(), // peer -> link
     mine = { hu: __NET.id, hn: __netName().slice(0, 20) };
+  // The fast lane: the match's per-tick state (the core's netcode: p = your player, h = the host's match state,
+  // c / a = your recent hit claims and actions, pt = send time) goes on a second data channel that is unordered
+  // and never resent. Each of those messages is whole (the core re-sends the last couple of seconds of events with
+  // sequence numbers every tick), so a lost one is simply replaced 33 ms later; on the reliable channel one lost
+  // packet held every newer update back until it was resent: a stall of a round trip or more, felt as rubber-
+  // banding on phone Wi-Fi and mobile data. Everything else (who you are, your look, settings, the 2 s full
+  // snapshot) stays reliable. Used with a player whose game has it (a hello on the reliable channel says so).
+  const FAST = ['p', 'h', 'c', 'a', 'pt'],
+    fastIn = new Map(); // peer -> last fast sequence applied
+  let fastSeq = 0;
   let dirty = {},
     snap = null,
     queued = !1,
@@ -353,6 +363,23 @@ function __netGameRoom(name) {
   }
   function receive(from, x) {
     if (!x || typeof x !== 'object') return;
+    if (x.hello) {
+      // (a new link: its sender's fast sequence starts again)
+      const L = links.get(from);
+      L && (L.peerU = !0);
+      fastIn.delete(from);
+      return;
+    }
+    if (x.u) {
+      // fast lane: newer than the last applied, or dropped (an older one arriving late)
+      if (x.u <= (fastIn.get(from) || 0) || !x.v) return;
+      fastIn.set(from, x.u);
+      __NET.fastRx = (__NET.fastRx || 0) + 1;
+      const p = { ...(others.get(from) || {}) };
+      for (const [k, v] of Object.entries(x.v)) v === null ? delete p[k] : (p[k] = v);
+      others.set(from, Object.freeze(p));
+      return void changed();
+    }
     if (x.f) others.set(from, Object.freeze({ ...x.f }));
     else if (x.d) {
       const p = { ...(others.get(from) || {}) };
@@ -362,6 +389,7 @@ function __netGameRoom(name) {
     changed();
   }
   function drop(peer) {
+    fastIn.delete(peer);
     const L = links.get(peer);
     L && L.close();
     links.delete(peer);
@@ -373,9 +401,12 @@ function __netGameRoom(name) {
     if (links.has(peer)) return links.get(peer);
     const pc = new RTCPeerConnection({ iceServers: __NET.ice }),
       dc = pc.createDataChannel('p', { negotiated: !0, id: 0, ordered: !0 }),
+      du = pc.createDataChannel('u', { negotiated: !0, id: 1, ordered: !1, maxRetransmits: 0 }),
       L = {
         pc,
         dc,
+        du,
+        peerU: !1,
         relay: !1,
         open: !1,
         lastRelay: 0,
@@ -412,6 +443,12 @@ function __netGameRoom(name) {
       L.open = !0;
       L.relay = !1;
       dc.send(JSON.stringify({ f: mine }));
+      dc.send(JSON.stringify({ hello: 1 }));
+    };
+    du.onmessage = (e) => {
+      try {
+        receive(peer, JSON.parse(e.data));
+      } catch {}
     };
     dc.onclose = () => (L.open = !1);
     dc.onmessage = (e) => {
@@ -439,8 +476,24 @@ function __netGameRoom(name) {
     if (!full && !Object.keys(d).length) return;
     dirty = {};
     full && (fullAt = t);
-    const x = full ? { f: mine } : { d };
+    const x = full ? { f: mine } : { d },
+      fastNow = FAST.some((k) => k in d),
+      rel = {};
+    for (const k in d) FAST.includes(k) || (rel[k] = d[k]);
+    let xf = null;
+    if (fastNow) {
+      const v = {};
+      for (const k of FAST) v[k] = k in mine ? mine[k] : null;
+      xf = JSON.stringify({ u: ++fastSeq, v });
+    }
     for (const L of links.values()) {
+      if (L.open && L.peerU && L.du && L.du.readyState === 'open' && L.dc.readyState === 'open') {
+        try {
+          full ? L.send(x) : Object.keys(rel).length && L.send({ d: rel });
+          xf && (L.du.send(xf), (__NET.fastTx = (__NET.fastTx || 0) + 1));
+        } catch {}
+        continue;
+      }
       if (L.relay && !L.open) {
         if (t - L.lastRelay < 50 && !full) {
           Object.assign(dirty, d);
@@ -632,7 +685,9 @@ const __bpSocial = {
   openServers: () => __netUI().show('servers'),
   openLeaderboard: () => __netUI().show('leaderboard'),
 };
-typeof window < 'u' && ((window.__bpSocial = __bpSocial), (window.__bpNet = () => ({ url: __NET.url, ready: __NET.ready, id: __NET.id, peer: __NET.peer, lobby: __NET.lobby.size, rooms: [...__NET.rooms.keys()], links: [...__NET.rooms.values()].map((r) => r.name) })));
+// (dev server only: a game room by name, for testing the links between two pages)
+import.meta.env.DEV && typeof window < 'u' && (window.__bpNetRoomTest = (name) => __netGameRoom(name));
+typeof window < 'u' && ((window.__bpSocial = __bpSocial), (window.__bpNet = () => ({ url: __NET.url, ready: __NET.ready, id: __NET.id, peer: __NET.peer, lobby: __NET.lobby.size, rooms: [...__NET.rooms.keys()], links: [...__NET.rooms.values()].map((r) => r.name), fastTx: __NET.fastTx || 0, fastRx: __NET.fastRx || 0 })));
 // connect early (the Home screen shows friends online and the leaderboard)
 typeof window < 'u' && setTimeout(__netConnect, 1200);
 // a new name or look reaches the hub

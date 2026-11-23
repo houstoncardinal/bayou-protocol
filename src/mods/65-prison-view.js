@@ -52,26 +52,87 @@ const __PR_SURF = {
 };
 // the core material of an untagged visual -> a surface
 const __PR_DEF = { concrete: 'concrete', plaster: 'plaster', metal: 'paint', trim: 'paint', tile: 'tile', asphalt: 'asphalt', grass: 'grass', dirt: 'mud', roof: 'roof', wood: 'wood', panel: 'concrete', stone: 'granite', light: 'insul' };
+// The images are decoded off the main thread (createImageBitmap): decoded by three.js's loader they were decoded
+// on the main thread when first drawn, about a second of the loading freeze for a map's ~50 textures.
 function __prTex(name, srgb, base = __PR.base) {
-  const t = new jd().load(base + 'tex/' + name + '.webp', (tx) => {
-    // the colour texture's mean brightness: greyed textures are divided by it, so the paint colour is kept
-    if (!srgb || typeof document > 'u') return;
-    try {
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 16;
-      const c = cv.getContext('2d');
-      c.drawImage(tx.image, 0, 0, 16, 16);
-      const d = c.getImageData(0, 0, 16, 16).data;
-      let s = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        const l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-        s += Math.pow(l, 2.2);
-      }
-      __PR.mean[name.replace(/_diff$/, '')] = s / 256;
-      const u = __PR.meanU && __PR.meanU[name.replace(/_diff$/, '')];
-      u && u.forEach((f) => f());
-    } catch (e) {}
-  });
+  const url = base + 'tex/' + name + '.webp',
+    mean = (img) => {
+      // the colour texture's mean brightness: greyed textures are divided by it, so the paint colour is kept
+      if (!srgb || typeof document > 'u') return;
+      try {
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = 16;
+        const c = cv.getContext('2d');
+        c.drawImage(img, 0, 0, 16, 16);
+        const d = c.getImageData(0, 0, 16, 16).data;
+        let s = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+          s += Math.pow(l, 2.2);
+        }
+        __PR.mean[name.replace(/_diff$/, '')] = s / 256;
+        const u = __PR.meanU && __PR.meanU[name.replace(/_diff$/, '')];
+        u && u.forEach((f) => f());
+      } catch (e) {}
+    };
+  let t;
+  // phones: the GPU-compressed copy (01b-ktx2.js, tools/build-ktx2.mjs), transcoded in a worker; its mean
+  // brightness was measured when it was built. The texture is handed back at once and filled when it arrives.
+  const k2 = typeof __K2 < 'u' && __K2.on && __K2.tex && __K2.tex[url.replace(/^.*?game\//, '').replace(/\.webp$/, '')],
+    k2l = k2 && __k2Loader();
+  if (k2l) {
+    const u2 = url.replace(/\.webp$/, '.ktx2'),
+      key = name.replace(/_diff$/, '');
+    t = new sd();
+    t.flipY = !1;
+    srgb &&
+      k2.mean != null &&
+      Promise.resolve().then(() => {
+        __PR.mean[key] = k2.mean;
+        const u = __PR.meanU && __PR.meanU[key];
+        u && u.forEach((f) => f());
+      });
+    n3.itemStart(u2);
+    k2l.load(
+      u2,
+      (tx) => {
+        const ws = t.wrapS,
+          wt = t.wrapT,
+          an = t.anisotropy,
+          cs = t.colorSpace;
+        t.copy(tx);
+        (t.wrapS = ws), (t.wrapT = wt), (t.anisotropy = an), (t.colorSpace = cs), (t.flipY = !1);
+        t.needsUpdate = !0;
+        __K2.nt++;
+        n3.itemEnd(u2);
+      },
+      void 0,
+      (e) => {
+        console.warn('[prison] texture', u2, e);
+        n3.itemError(u2);
+        n3.itemEnd(u2);
+      },
+    );
+  } else if (typeof createImageBitmap < 'u' && typeof fetch < 'u') {
+    t = new Fi();
+    // a bitmap is decoded already flipped (WebGL cannot flip one as it uploads)
+    t.flipY = !1;
+    n3.itemStart(url);
+    fetch(url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(r.status + ' ' + url))))
+      .then((b) => createImageBitmap(b, { imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))
+      .then((bm) => {
+        t.image = bm;
+        t.needsUpdate = !0;
+        mean(bm);
+        n3.itemEnd(url);
+      })
+      .catch((e) => {
+        console.warn('[prison] texture', url, e);
+        n3.itemError(url);
+        n3.itemEnd(url);
+      });
+  } else t = new jd().load(url, (tx) => mean(tx.image));
   t.wrapS = t.wrapT = 1e3;
   t.anisotropy = 8;
   srgb && (t.colorSpace = 'srgb');
@@ -411,7 +472,8 @@ function __prLoad(kit = __PR_KITS.prison) {
     T = (__PR.tex = {}),
     want = [...(kit.tex || []).map((n) => [n, kit.base]), ...(kit.shared || [])];
   for (const [id, base] of want) for (const k of ['diff', 'nor', 'rough']) T[id + '_' + k] = old[id + '_' + k] || __prTex(id + '_' + k, k === 'diff', base);
-  for (const k in old) T[k] || old[k].dispose();
+  // (a decoded bitmap is freed with its texture)
+  for (const k in old) T[k] || (old[k].dispose(), old[k].image && old[k].image.close && old[k].image.close());
   for (const [k, f] of [['sky', kit.sky[0]], ['skyDusk', kit.sky[1]]]) {
     __PR[k] && __PR[k].dispose();
     const s = new jd().load(/^\.|\//.test(f) ? f : kit.base + f);

@@ -101,14 +101,23 @@ const __SH_PARS = `
 	#define BP_SOFT ${__SH_SOFT.toFixed(4)}
 	#define BP_MIN ${__SH_MIN.toFixed(4)}
 	#define BP_BAND 0.08
-	#if NUM_DIR_LIGHT_SHADOWS > 2
+${
+  typeof __PHONE < 'u' && __PHONE
+    ? // phones (00c-mobile-memory.js): 5 + 8 reads a pixel instead of 9 + 12 (the edge a little grainier up close)
+      `#define BP_TAPS 8
+		const vec3 bpPcf[ 8 ] = ${__shDisk(8)};
+	#define BP_FIND 4
+	const vec3 bpFind[ 4 ] = ${__shDisk(4)};`
+    : `#if NUM_DIR_LIGHT_SHADOWS > 2
 		#define BP_TAPS 16
 		const vec3 bpPcf[ 16 ] = ${__shDisk(16)};
 	#else
 		#define BP_TAPS 12
 		const vec3 bpPcf[ 12 ] = ${__shDisk(12)};
 	#endif
-	const vec3 bpFind[ 8 ] = ${__shDisk(8)};
+	#define BP_FIND 8
+	const vec3 bpFind[ 8 ] = ${__shDisk(8)};`
+}
 	float bpDepth( sampler2D m, vec2 uv ) {
 		return unpackRGBAToDepth( textureLod( m, uv, 0.0 ) );
 	}
@@ -124,13 +133,13 @@ const __SH_PARS = `
 		float z0 = c.z - texel * k;
 		float b = bpDepth( m, c.xy );
 		if ( b < z0 ) { sum += b; n += 1.0; }
-		for ( int i = 0; i < 8; i ++ ) {
+		for ( int i = 0; i < BP_FIND; i ++ ) {
 			vec3 d = bpFind[ i ];
 			b = bpDepth( m, c.xy + rot * d.xy * findR );
 			if ( b < c.z - ( texel + d.z * findR ) * k ) { sum += b; n += 1.0; }
 		}
 		if ( n < 0.5 ) return 1.0;   // nothing near: fully lit
-		if ( n > 8.5 ) return 0.0;   // surrounded: fully in shadow
+		if ( n > float( BP_FIND ) + 0.5 ) return 0.0;   // surrounded: fully in shadow
 		// 2. the soft edge's width grows with the distance from the caster
 		float soft = ( c.z - sum / n ) * BP_RANGE * BP_SOFT;
 		float r = clamp( soft * toUV, max( BP_MIN * toUV, 1.2 * texel ), findR );

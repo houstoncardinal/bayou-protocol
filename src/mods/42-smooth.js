@@ -281,9 +281,11 @@ function __warmTick(g) {
   if (key !== __WARM.key) {
     __WARM.key = key;
     const list = [];
+    // first-person rigs are drawn in the first-person view (its lights, to the screen); third-person guns and
+    // brass in the world (its lights, into the effect chain's target): each compiled for where it is drawn
     for (const k in __RIG) {
       const c = __RIG[k];
-      c && c.rig && c.rig.wrap && list.push(c.rig.wrap);
+      c && c.rig && c.rig.wrap && ((c.rig.wrap.userData.__warmVm = 1), list.push(c.rig.wrap));
     }
     for (const k in __XG) __XG[k] && __XG[k].tpl && list.push(__XG[k].tpl);
     typeof __BRASS < 'u' && __BRASS.pool[0] && list.push(...Object.values(__BRASS_TYPES).filter((t) => t.geo).map((t) => new Ow(t.geo, t.mat)));
@@ -292,10 +294,23 @@ function __warmTick(g) {
   const o = __WARM.queue.shift();
   if (!o || !g.gl.compileAsync) return;
   __WARM.done.add(o.uuid + __WARM.key);
+  const gl = g.gl,
+    prev = gl.getRenderTarget(),
+    vm = typeof window < 'u' && window.__vmScene;
   try {
     o.updateMatrixWorld(!0);
-    g.gl.compileAsync(o, g.camera, g.scene).catch(() => {});
-  } catch (e) {}
+    if (o.userData.__warmVm) {
+      if (!vm) return;
+      gl.setRenderTarget(null);
+      for (const x of __hasLight(o) ? __lightFree(o) : [o]) gl.compileAsync(x, g.camera, vm).catch(() => {});
+    } else {
+      typeof __SMOOTH < 'u' && __SMOOTH.rt && gl.setRenderTarget(__SMOOTH.rt);
+      __withoutVm(g.scene, () => { for (const x of __hasLight(o) ? __lightFree(o) : [o]) gl.compileAsync(x, g.camera, g.scene).catch(() => {}); });
+    }
+  } catch (e) {
+  } finally {
+    gl.setRenderTarget(prev);
+  }
 }
 {
   const coreDet = __detTick;

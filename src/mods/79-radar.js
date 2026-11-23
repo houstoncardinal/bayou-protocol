@@ -55,8 +55,10 @@ function __radRender(s, m) {
   cam.lookAt(0, cut - 1, 0);
   cam.updateMatrixWorld(!0);
   cam.updateProjectionMatrix();
+  // drawn with the same shader versions the game uses (a linear target, the fog kept but pushed out of reach):
+  // an sRGB target and no fog made every surface compile again just for this picture (slow on phones); the
+  // colours are converted to sRGB below
   const rt = new Ti(pw, ph);
-  rt.texture.colorSpace = 'srgb';
   // people, the sky and the fog are left out
   const hidden = [];
   scene.traverse((o) => {
@@ -69,7 +71,10 @@ function __radRender(s, m) {
     ca = gl.getClearAlpha(),
     prevRT = gl.getRenderTarget(),
     sm = gl.shadowMap.autoUpdate;
-  scene.fog = null;
+  const fogN = fog && fog.near,
+    fogF = fog && fog.far,
+    fogD = fog && fog.density;
+  fog && (fog.isFogExp2 ? (fog.density = 0) : ((fog.near = 1e6), (fog.far = 2e6)));
   scene.background = null;
   gl.shadowMap.autoUpdate = !1;
   gl.setClearColor(0x0b0f18, 1);
@@ -88,6 +93,10 @@ function __radRender(s, m) {
       im = x.createImageData(pw, ph),
       row = pw * 4;
     for (let y = 0; y < ph; y++) im.data.set(buf.subarray((ph - 1 - y) * row, (ph - y) * row), y * row);
+    // linear to sRGB (the target is linear: see above)
+    const lut = __RAD.lut || (__RAD.lut = Uint8Array.from({ length: 256 }, (_, i) => { const c = i / 255; return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055)); })),
+      d = im.data;
+    for (let i = 0; i < d.length; i += 4) (d[i] = lut[d[i]]), (d[i + 1] = lut[d[i + 1]]), (d[i + 2] = lut[d[i + 2]]);
     x.putImageData(im, 0, 0);
     out = cv;
   } catch (e) {
@@ -96,7 +105,7 @@ function __radRender(s, m) {
     gl.setRenderTarget(prevRT);
     gl.setClearColor(cc, ca);
     gl.shadowMap.autoUpdate = sm;
-    scene.fog = fog;
+    fog && (fog.isFogExp2 ? (fog.density = fogD) : ((fog.near = fogN), (fog.far = fogF)));
     scene.background = bg;
     for (const o of hidden) o.visible = !0;
     rt.dispose();
@@ -111,13 +120,15 @@ function __radRender(s, m) {
         const m = aw();
         if (!m || m.__terrain || !eA.state || eA.attract) return;
         const L = window.__bpLoading && window.__bpLoading();
-        if (!L || L.state !== 'shown') return void (__RAD.readyAt = 0);
+        // once the loading screen lifts, or under it once the map is compiled (68-loading.js waits for it)
+        const under = L && L.state === 'loading' && L.compiling && !L.hold;
+        if (!L || (L.state !== 'shown' && !under)) return void (__RAD.readyAt = 0);
         const key = __radKey(m);
         if (__RAD.cache.has(key)) return;
         // (a moment after the loading screen lifts: the last textures and the light are in)
         const now = performance.now();
         if (!__RAD.readyAt || __RAD.busyFor !== key) return void ((__RAD.readyAt = now), (__RAD.busyFor = key));
-        if (now - __RAD.readyAt < 1200) return;
+        if (now - __RAD.readyAt < (under ? 400 : 1200)) return;
         const img = __radRender(s, m);
         __RAD.cache.set(key, img || null);
         img && __RAD.last && __RAD.last.m === m && __radDraw(__RAD.last.c, img, m);

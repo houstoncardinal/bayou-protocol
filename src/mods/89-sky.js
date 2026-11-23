@@ -307,6 +307,9 @@ function __SkyView({ cfg, mine }) {
       [, setRev] = S.useState(__SKY.rev);
     S.useEffect(() => {
       __SKY.subs.add(setRev);
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__SKY.rev);
       return () => __SKY.subs.delete(setRev);
     }, []);
     let m = null;

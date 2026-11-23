@@ -355,7 +355,17 @@ function __rayCapsule(ox, oy, oz, dx, dy, dz, ax, ay, az, bx, by, bz, r) {
 // ---------------------------------------------------------------- per-frame hook (after the weapon IK)
 {
   const prev = __locoAfter;
-  __locoAfter = function (s, v, K, dt, speed) {
+  __locoAfter = function (s, v, K, dt, speed, held) {
+    // a held frame (99b: __animLod): the pose is last frame's, so the upper-body blend and the feet (which add
+    // to the pose) are left; the hitboxes follow the character, which has moved
+    if (held) {
+      try {
+        s && s.userData && s.userData.bpChar && v.alive && (K.updateWorldMatrix(!1, !1), __hbCapture(s, v, K));
+      } catch (e) {
+        window.__hbErr = String(e && e.stack);
+      }
+      return;
+    }
     prev.apply(this, arguments);
     if (!s || !s.userData || !s.userData.bpChar) return;
     try {

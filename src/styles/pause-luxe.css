@@ -453,3 +453,15 @@ html.bp-lite .pm-wrap {
     transition-duration: 0.01s !important;
   }
 }
+/* phones: Quit match was the last of ten items in the strip, off the right edge until you scrolled for it: it stays
+   pinned at the strip's right end (opaque, so the items scrolling under it don't show through) */
+@media (max-width: 760px) {
+  .pm-wrap .pm-item--leave {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background:
+      linear-gradient(rgba(224, 80, 63, 0.16), rgba(224, 80, 63, 0.16)),
+      rgb(16, 18, 26) !important;
+  }
+}

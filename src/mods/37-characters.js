@@ -846,7 +846,7 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
     // which fought the clip and left guns floating beside the hands. Here the arms keep the clip's pose and
     // the gun is put into them instead (__gunInHands); the core still builds the gun and leans the upper body.
     const r = coreIk.call(this, { ...o, pitch: this.__p, aiming, crouch: 0, hidden: !0 });
-    if (!o.hidden)
+    if (!o.hidden && __ghOnScreen(body))
       try {
         __gunHold(this, o, aiming);
       } catch (e) {
@@ -855,6 +855,27 @@ Object.defineProperty(Q3.prototype, 'timeScale', {
       }
     return r;
   };
+}
+// Putting the gun into the hands (below) is the costliest part of a player's frame (a dozen bone chains walked
+// for world positions): a player well outside the view (behind the camera or beside it) is left in the clip's
+// pose, the gun where it was; a player coming into view is solved again in the same frame, before it is drawn.
+const __GHV = { v: new U(), cam: null, at: -1 };
+function __ghOnScreen(body) {
+  try {
+    const g = typeof __R3F < 'u' && __R3F,
+      st = g && (g.get ? g.get() : g),
+      cam = st && st.camera,
+      par = body && body.parent;
+    if (!cam || !par) return !0;
+    const e = par.matrixWorld.elements,
+      v = __GHV.v.set(e[12], e[13] + 1, e[14]);
+    // (within a few metres it always counts: an arm can reach into the view)
+    if (v.distanceToSquared(cam.position) < 16) return !0;
+    v.project(cam);
+    return v.z < 1 && Math.abs(v.x) < 1.35 && Math.abs(v.y) < 1.35;
+  } catch (e) {
+    return !0;
+  }
 }
 // the gun into the animated hands: grip in the right palm, barrel through the left palm, kept upright
 const __gh = { a: new U(), b: new U(), c: new U(), d: new U(), f: new U(), u: new U(), x: new U(), m: new _A(), q: new Kw(), pq: new Kw(), up: new U(0, 1, 0) };

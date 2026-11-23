@@ -54,6 +54,31 @@ const __TEXCAP = (() => {
   return s < 600 ? 512 : 1024;
 })();
 typeof document < 'u' && __LOWMEM && document.documentElement.classList.add('bp-lowmem');
+// ---------------------------------------------------------------- the phone profile
+// Phones and tablets (touch, iOS, Android) draw with a mobile graphics chip: 5-10 times less than a laptop's, and
+// built to draw the screen in small tiles kept on the chip, so every extra full-screen pass (an effect that reads
+// and writes the whole picture) costs far more than on a desktop. With the profile on (src/mods/99d-phone.js):
+// a sharper picture (drawn at up to twice the screen's points, held to the screen's rate by dynamic resolution),
+// and the effects phones pay most for and show least off: the realism pass, SMAA, the softest shadow filtering.
+// ?phone=classic (remembered) turns it off, ?phone=on back on: to compare on the same device.
+const __PHONE = (() => {
+  if (typeof window > 'u' || typeof navigator > 'u') return !1;
+  try {
+    const q = /[?&]phone=(classic|on)\b/.exec(location.search);
+    q && localStorage.setItem('bp-phone', q[1]);
+    if (localStorage.getItem('bp-phone') === 'classic') return !1;
+  } catch {}
+  try {
+    const ua = navigator.userAgent || '',
+      ios = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+      android = /Android/i.test(ua),
+      coarse = matchMedia('(pointer:coarse)').matches && !matchMedia('(pointer:fine)').matches;
+    return ios || android || coarse;
+  } catch {
+    return !1;
+  }
+})();
+typeof document < 'u' && __PHONE && document.documentElement.classList.add('bp-phone');
 // ---------------------------------------------------------------- the GPU's size limit, as the renderer sees it
 if (__LOWMEM && typeof window < 'u')
   for (const C of [window.WebGL2RenderingContext, window.WebGLRenderingContext]) {
@@ -219,7 +244,7 @@ if (typeof window < 'u' && typeof sessionStorage < 'u') {
       } catch {}
     }, 0);
 }
-typeof window < 'u' && (window.__bpLowMem = () => ({ on: __LOWMEM, cap: __TEXCAP, aux: __AUXCAP, crashes: __CRASHES }));
+typeof window < 'u' && (window.__bpLowMem = () => ({ on: __LOWMEM, cap: __TEXCAP, aux: __AUXCAP, crashes: __CRASHES, phone: __PHONE }));
 
 // Play offline / online: picking a mode moves on to the map step by itself on a desktop; on phones and narrow
 // windows it stays, so the choice is seen (the mode list fills the screen there), and Next moves on

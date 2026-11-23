@@ -361,6 +361,9 @@ function __vegKinds(m) {
       [rev, setRev] = S.useState(__VEG.rev);
     S.useEffect(() => {
       __VEG.subs.add(setRev);
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__VEG.rev);
       return () => __VEG.subs.delete(setRev);
     }, []);
     const kinds = __vegKinds(m);

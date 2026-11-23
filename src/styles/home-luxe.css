@@ -2879,3 +2879,69 @@
 .hx--lite .hx-slide-img {
   transform: scale(1.02);
 }
+
+/* ---- phones: the career "no matches yet" card squeezed its text into a one-word column and pushed
+   "Play your first match" off the right edge; the footer links were 29 px tall ---- */
+@media (max-width: 520px) {
+  .hx-first {
+    flex-wrap: wrap;
+  }
+  .hx-first p {
+    flex: 1 1 calc(100% - 56px);
+    min-width: 0;
+  }
+  .hx-first .hx-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+html.swat-touch .hx-links > * {
+  min-height: 44px;
+}
+html.swat-touch .hx-link {
+  padding: 13px 0;
+  margin: -5px 0;
+}
+html.swat-touch .hx-link::after {
+  bottom: 7px;
+}
+
+/* ---- phones: the Friends / Servers / Leaderboard panel (src/mods/81-net.js). Its header ran off the right edge,
+   taking "Go online" and the close button with it (x 473-558 on a 320 px screen); its fields zoomed the page on
+   focus on iOS (14 px text) ---- */
+@media (max-width: 760px) {
+  html.swat-touch #bp-net .bpn-head {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 12px 14px;
+  }
+  html.swat-touch #bp-net .bpn-tabs {
+    order: 2;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  html.swat-touch #bp-net .bpn-tabs button {
+    flex: 1 0 auto;
+    min-height: 40px;
+    padding: 9px 12px;
+  }
+  html.swat-touch #bp-net .bpn-net {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  html.swat-touch #bp-net .bpn-x {
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+}
+html.swat-touch #bp-net input:not([type='checkbox']):not([type='radio']),
+html.swat-touch #bp-net select {
+  font-size: 16px !important;
+}
+html.swat-touch #bp-net button:not(.bpn-x):not([data-tab]) {
+  min-height: 44px;
+}

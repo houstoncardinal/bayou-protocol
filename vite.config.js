@@ -83,9 +83,38 @@ function bayouNet() {
   return { name: 'bayou-net', configureServer: attach, configurePreviewServer: attach };
 }
 
+// Dev only: test devices on the LAN (a phone opening http://<this machine>:5173) post their measurements here
+// (src/mods/99c-devlog.js); they're appended to .data/devlog.jsonl (git-ignored) to be read on this machine.
+function bayouDevlog() {
+  const file = path.resolve(process.cwd(), '.data/devlog.jsonl');
+  return {
+    name: 'bayou-devlog',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url.split('?')[0] !== '/__bp_devlog' || req.method !== 'POST') return next();
+        const chunks = [];
+        let size = 0;
+        req.on('data', (c) => { size += c.length; if (size <= 64 * 1024) chunks.push(c); });
+        req.on('end', () => {
+          try {
+            const o = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+            o.at = new Date().toISOString();
+            o.from = (req.socket && req.socket.remoteAddress) || '';
+            fs.mkdirSync(path.dirname(file), { recursive: true });
+            fs.appendFileSync(file, JSON.stringify(o) + '\n');
+          } catch {}
+          res.writeHead(204);
+          res.end();
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [bayouMods(), bayouShowings(), bayouNet()],
+  plugins: [bayouMods(), bayouShowings(), bayouNet(), bayouDevlog()],
   // the online hub's address (set BAYOU_NET_URL when building for the web, e.g. wss://bayou-net.<you>.workers.dev);
   // empty: the game uses the server it was loaded from (/net: the dev/preview server, LAN parties)
   // (or net.config.json's "url": written when the hub is deployed, so every build finds it)

@@ -71,6 +71,8 @@ const __FRAME = { calls: 0, triangles: 0 };
   const coreDet = __detTick;
   __detTick = function (g) {
     __R3F = g;
+    // (from the first frame: the menus' idle 3D view is not drawn, 54-speed.js)
+    typeof __spdIdleGuard == 'function' && __spdIdleGuard(g.gl);
     // whole-frame totals: the renderer would otherwise reset its counters on every render pass
     const info = g.gl.info;
     info.autoReset && (info.autoReset = !1);

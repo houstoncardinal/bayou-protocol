@@ -468,6 +468,7 @@ function __rbSkirts(group) {
   let terrainMat = null,
     made = 0,
     edges = 0;
+  const jobs = [];
   const add = (mesh, geo, mat) => {
     const o = new Ow(geo, mat);
     o.name = 'rb-skirt';
@@ -489,8 +490,10 @@ function __rbSkirts(group) {
       // map's outer edge, at +-W, needs none, and the tunnel cuts are closed by the tunnels' own skirts: a
       // skirt from a cut's upper edge would hang across the tunnel's mouth)
       const seam = (v) => Math.abs(v - Math.round(v / 50) * 50) < 0.05 && Math.abs(v) < W - 0.05;
-      const g = __rbSkirtGeo(m.geometry, 1.5, (A, B) => (seam(A.x) && seam(B.x)) || (seam(A.z) && seam(B.z)));
-      g && add(m, g, m.material);
+      jobs.push(() => {
+        const g = __rbSkirtGeo(m.geometry, 1.5, (A, B) => (seam(A.x) && seam(B.x)) || (seam(A.z) && seam(B.z)));
+        g && add(m, g, m.material);
+      });
     }
   });
   if (!terrainMat) return;
@@ -503,7 +506,8 @@ function __rbSkirts(group) {
     for (let p = o; p && p !== group; p = p.parent) /tunnel/i.test(p.name) && /floor/i.test(p.name) && (isT = !0);
     isT && tunnels.push(o);
   });
-  for (const m of tunnels) {
+  for (const m of tunnels)
+    jobs.push(() => {
     m.userData.rbSkirt = 1;
     // (the tunnel meshes are scaled by their nodes: depths in the mesh's own units)
     const sc = m.getWorldScale(new U()).y || 1;
@@ -515,8 +519,24 @@ function __rbSkirts(group) {
       return ny / (Math.hypot(nx, ny, nz) || 1) > 0.5;
     }, 0.02 / sc, 0.6 / sc);
     g && add(m, g, terrainMat);
-  }
-  __RB.stats.skirts = { meshes: made, edges: Math.round(edges) };
+    });
+  // Built a few at a time between frames (all at once it was one stall of half a second on a desktop and two or
+  // more on a phone, the loading screen frozen); the loading screen waits for the last (counted as a load).
+  const tag = 'ridgeback-skirts';
+  n3.itemStart(tag);
+  const step = () => {
+    const t0 = performance.now();
+    try {
+      while (jobs.length && performance.now() - t0 < 10) jobs.shift()();
+    } catch (e) {
+      console.warn('[ridgeback] skirts', e);
+      jobs.length = 0;
+    }
+    if (jobs.length) return void setTimeout(step, 0);
+    __RB.stats.skirts = { meshes: made, edges: Math.round(edges) };
+    n3.itemEnd(tag);
+  };
+  step();
 }
 function __rbFastTerrain(group) {
   group.traverse((o) => {
@@ -610,7 +630,11 @@ function __rbLoadView(q, gl) {
     t0 = performance.now();
   group.name = 'bp-ridgeback';
   group.position.set(__rbOFF, 0, __rbOFF);
-  load({ scene: group, world: null, RAPIER: null, renderer: gl, quality: q, atmosphere: !1, shadows: q === 'high', tunnelLights: 'none', resolve: (p) => p, loadGLB: __rbGLB, loadJSON: __rbJSON })
+  // phones (__PHONE): every tree, rock and clutter kind in range is a draw call of its own (each detail level and
+  // part), the largest share of a phone's frame here; small ground clutter ends nearer and trees take their
+  // lighter models sooner (densities unchanged)
+  const preset = typeof __PHONE < 'u' && __PHONE ? { tree0: 18, tree1: 70, rock0: 20, decorFar: 22 } : void 0;
+  load({ scene: group, world: null, RAPIER: null, renderer: gl, quality: q, preset, atmosphere: !1, shadows: q === 'high', tunnelLights: 'none', resolve: (p) => p, loadGLB: __rbGLB, loadJSON: __rbJSON })
     .then((map) => {
       if (__RB.viewLoading !== q) return map.dispose(); // the quality changed (or the map was left) meanwhile
       __RB.viewLoading = null;
@@ -720,6 +744,9 @@ function __rbFrame(v, s) {
       [, setRev] = S.useState(__RB.rev);
     S.useEffect(() => {
       __RB.subs.add(setRev);
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__RB.rev);
       return () => __RB.subs.delete(setRev);
     }, []);
     S.useEffect(() => {

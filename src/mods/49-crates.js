@@ -215,6 +215,9 @@ function __crBuild(m) {
     S.useEffect(() => {
       __CR.subs.add(setRev);
       __crLoad();
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__CR.rev);
       return () => __CR.subs.delete(setRev);
     }, []);
     const group = S.useMemo(() => {

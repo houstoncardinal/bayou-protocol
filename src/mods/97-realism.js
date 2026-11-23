@@ -38,6 +38,7 @@ const __RL = {
   probes: [],
   map: null,
   bake: null,
+  bakeN: 0,
   pass: null,
   frame: 0,
   jit: [0, 0],
@@ -48,7 +49,10 @@ const __RL = {
 const __rlOff = (k) => typeof window < 'u' && (window.__fxOff || '').includes(k);
 // On (Medium and High; Low has none of it). localStorage.setItem('bp-realism', '0') and a reload switch it off
 // entirely (the shaders unchanged), window.__fxOff any part of it live.
+// Off on phones (00c-mobile-memory.js: __PHONE): its passes and its lighting loop in every surface's shader cost
+// a mobile chip far more than they show on a small screen.
 const __RL_ON = (() => {
+  if (typeof __PHONE < 'u' && __PHONE) return !1;
   try {
     return !(typeof localStorage < 'u' && localStorage.getItem('bp-realism') === '0');
   } catch (e) {
@@ -365,27 +369,49 @@ function __rlPlace(m) {
   }
   return out;
 }
-// one face of one probe a frame: rendered at 16 x 16 into a float target, read back without waiting, folded into
-// the probe's spherical harmonics (the first two bands: the light's average and its main direction)
+// One face of one probe at a time, rendered at 16 x 16 into its tile of a float atlas: a row of six faces per probe,
+// eight probes to the atlas (96 x 128). Reading pixels back from the card makes the page wait for the card to catch
+// up on everything queued, about a frame's work at a time, so it is done once per atlas (eight probes, 48 faces), not
+// per face; through a buffer on the card and a fence, fetched only once the fence says the copy is done, at the
+// start of a frame (before that frame's drawing is queued). three's readRenderTargetPixelsAsync is not used: it
+// first asks the context for the target's read format (getParameter), which waits the same way.
 const __RL_FACES = [[1, 0, 0, 0, -1, 0], [-1, 0, 0, 0, -1, 0], [0, 1, 0, 0, 0, 1], [0, -1, 0, 0, 0, -1], [0, 0, 1, 0, -1, 0], [0, 0, -1, 0, -1, 0]];
+const __RL_ATLAS = { w: 96, h: 128, slots: 8 };
+function __rlBakeNew() {
+  return { rt: new Ti(__RL_ATLAS.w, __RL_ATLAS.h, { type: 1015, depthBuffer: !0 }), buf: new Float32Array(__RL_ATLAS.w * __RL_ATLAS.h * 4), cam: new ui(90, 1, 0.05, 80), busy: !1, slots: [], first: 0, pend: null, pbo: null };
+}
 function __rlBakeStep(st) {
   const B = __RL.bake;
-  if (!B || B.busy || !st.gl.readRenderTargetPixelsAsync) return;
+  if (!B || B.busy) return;
+  // not under the loading screen (the world is not drawn there: a probe would capture nothing)
+  if (typeof __LD < 'u' && __LD.state === 'loading') return;
   // the nearest unbaked probe within 30 m (rooms are baked as you come near them: then they are drawn and their
   // lamps are among the lit ones, as they will be when you are in them); re-sorted every second
   const c = st.camera.position,
     now = performance.now();
-  if (!B.cur || B.cur.sh) {
-    if (now - (B.sorted || 0) > 1000 || !B.near) {
-      B.sorted = now;
-      B.near = __RL.probes.filter((p) => !p.sh && p.pos.distanceTo(c) < 30).sort((a, b) => a.pos.distanceTo(c) - b.pos.distanceTo(c));
+  if (!B.cur || B.cur.face >= 6) {
+    B.cur = null;
+    if (B.slots.length < __RL_ATLAS.slots) {
+      if (now - (B.sorted || 0) > 1000 || !B.near) {
+        B.sorted = now;
+        B.near = __RL.probes.filter((p) => !p.sh && !p.slot && p.pos.distanceTo(c) < 30).sort((a, b) => a.pos.distanceTo(c) - b.pos.distanceTo(c));
+      }
+      while (B.near.length && (B.near[0].sh || B.near[0].slot)) B.near.shift();
+      const P = B.near.shift();
+      if (P) {
+        P.slot = B.slots.length + 1;
+        P.face = 0;
+        P.qs = [];
+        B.slots.length || (B.first = now);
+        B.slots.push(P);
+        B.cur = P;
+      }
     }
-    while (B.near.length && B.near[0].sh) B.near.shift();
-    B.cur = B.near[0] || null;
   }
-  const P = B.cur;
-  if (!P) return;
-  const gl = st.gl,
+  // the atlas is read back when full, or when nothing near is left to add (after a moment)
+  if (!B.cur) return void (B.slots.length && (B.slots.length >= __RL_ATLAS.slots || now - B.first > 1500) && __rlBakeRead(st));
+  const P = B.cur,
+    gl = st.gl,
     f = P.face,
     F = __RL_FACES[f],
     cam = B.cam;
@@ -395,49 +421,117 @@ function __rlBakeStep(st) {
   cam.updateMatrixWorld(!0);
   const prev = gl.getRenderTarget(),
     sm = gl.shadowMap.autoUpdate,
-    giOn = __RL.P[0].x;
+    giOn = __RL.P[0].x,
+    rt = B.rt,
+    x = f * 16,
+    y = (P.slot - 1) * 16;
   gl.shadowMap.autoUpdate = !1;
   const shown = [];
   if (typeof __FH < 'u' && __FH.groups && P.pos.y < -0.5) for (const k in __FH.groups) __FH.groups[k].visible || (shown.push(__FH.groups[k]), (__FH.groups[k].visible = !0));
   if (typeof __FW < 'u' && __FW.group && !__FW.group.visible && P.pos.y < -6) shown.push(__FW.group), (__FW.group.visible = !0);
   try {
-    gl.setRenderTarget(B.rt);
+    rt.viewport.set(x, y, 16, 16);
+    rt.scissor.set(x, y, 16, 16);
+    rt.scissorTest = !0;
+    gl.setRenderTarget(rt);
     gl.clear();
     gl.render(st.scene, cam);
   } finally {
+    rt.scissorTest = !1;
     gl.setRenderTarget(prev);
     gl.shadowMap.autoUpdate = sm;
     __RL.P[0].x = giOn;
     for (const o of shown) o.visible = !1;
   }
+  P.qs[f] = cam.quaternion.clone();
+  P.face++;
+}
+// the whole atlas copied into a buffer on the card, behind a fence
+function __rlBakeRead(st) {
+  const B = __RL.bake,
+    gl = st.gl,
+    ctx = gl.getContext(),
+    fb = gl.properties.get(B.rt).__webglFramebuffer;
+  if (!fb || !ctx.fenceSync) return;
   B.busy = !0;
-  const q = cam.quaternion.clone();
-  gl.readRenderTargetPixelsAsync(B.rt, 0, 0, 16, 16, B.buf)
-    .then(() => {
-      B.busy = !1;
-      const acc = P.acc || (P.acc = { c: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], w: 0 }),
-        d = new U();
+  B.pbo || ((B.pbo = ctx.createBuffer()), ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, B.pbo), ctx.bufferData(ctx.PIXEL_PACK_BUFFER, B.buf.byteLength, ctx.STREAM_READ), ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, null));
+  const cur = gl.getRenderTarget();
+  gl.state.bindFramebuffer(ctx.FRAMEBUFFER, fb);
+  ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, B.pbo);
+  ctx.readPixels(0, 0, __RL_ATLAS.w, __RL_ATLAS.h, ctx.RGBA, ctx.FLOAT, 0);
+  ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, null);
+  gl.setRenderTarget(cur);
+  B.pend = { fence: ctx.fenceSync(ctx.SYNC_GPU_COMMANDS_COMPLETE, 0), slots: B.slots, gl };
+  B.slots = [];
+  ctx.flush();
+}
+// at the start of a frame: a finished copy (fence signalled) is fetched and each probe's six faces folded into its
+// spherical harmonics (the first two bands: the light's average and its main direction)
+function __rlBakeFetch() {
+  const B = __RL.bake,
+    R = B && B.pend;
+  if (!R) return;
+  const ctx = R.gl.getContext(),
+    st = ctx.clientWaitSync(R.fence, 0, 0);
+  if (st === ctx.TIMEOUT_EXPIRED) return;
+  ctx.deleteSync(R.fence);
+  B.pend = null;
+  B.busy = !1;
+  const ok = st !== ctx.WAIT_FAILED;
+  if (ok) {
+    ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, B.pbo);
+    ctx.getBufferSubData(ctx.PIXEL_PACK_BUFFER, 0, B.buf);
+    ctx.bindBuffer(ctx.PIXEL_PACK_BUFFER, null);
+  }
+  const W = __RL_ATLAS.w,
+    d = new U();
+  for (const P of R.slots) {
+    const y0 = (P.slot - 1) * 16;
+    P.slot = 0;
+    if (!ok || P.qs.length < 6) continue;
+    const acc = new Array(12).fill(0);
+    let wsum = 0;
+    for (let f = 0; f < 6; f++) {
+      const q = P.qs[f];
       for (let j = 0; j < 16; j++)
         for (let i = 0; i < 16; i++) {
           const x = ((i + 0.5) / 16) * 2 - 1,
             y = ((j + 0.5) / 16) * 2 - 1,
             w = 1 / Math.pow(1 + x * x + y * y, 1.5),
-            o = (j * 16 + i) * 4;
+            o = ((y0 + j) * W + f * 16 + i) * 4;
           d.set(x, y, -1).normalize().applyQuaternion(q);
-          const Y = [0.282095, 0.488603 * d.y, 0.488603 * d.z, 0.488603 * d.x];
-          for (let k = 0; k < 4; k++) for (let c = 0; c < 3; c++) acc.c[k * 3 + c] += B.buf[o + c] * Y[k] * w;
-          acc.w += w;
+          const Y0 = 0.282095 * w,
+            Y1 = 0.488603 * w;
+          for (let c = 0; c < 3; c++) {
+            const v = B.buf[o + c];
+            acc[c] += v * Y0;
+            acc[3 + c] += v * Y1 * d.y;
+            acc[6 + c] += v * Y1 * d.z;
+            acc[9 + c] += v * Y1 * d.x;
+          }
+          wsum += w;
         }
-      P.face++;
-      if (P.face >= 6) {
-        const s = (4 * Math.PI) / acc.w;
-        P.sh = [0, 1, 2, 3].map((k) => new U(acc.c[k * 3] * s, acc.c[k * 3 + 1] * s, acc.c[k * 3 + 2] * s));
-        P.acc = null;
-        __RL.stats.baked = (__RL.stats.baked || 0) + 1;
-      }
-    })
-    .catch(() => (B.busy = !1));
+    }
+    const s = (4 * Math.PI) / wsum;
+    P.sh = [0, 1, 2, 3].map((k) => new U(acc[k * 3] * s, acc[k * 3 + 1] * s, acc[k * 3 + 2] * s));
+    P.qs = null;
+    __RL.stats.baked = (__RL.stats.baked || 0) + 1;
+  }
 }
+typeof window < 'u' &&
+  __RL_ON &&
+  (() => {
+    // registered before the game's own frame loop, so it runs first in each frame
+    const loop = () => {
+      requestAnimationFrame(loop);
+      try {
+        __rlBakeFetch();
+      } catch (e) {
+        __RL.err = String(e && e.stack);
+      }
+    };
+    requestAnimationFrame(loop);
+  })();
 // each frame: the 16 probes nearest the camera into the shaders' arrays
 function __rlChoose(cam) {
   const P = __RL.P,
@@ -497,12 +591,16 @@ __RL_ON && (() => {
           __RL.probes = m && q !== 'low' ? __rlPlace(m) : [];
           __RL.stats = { probes: __RL.probes.length };
           if (__RL.probes.length) {
-            const B = __RL.bake || (__RL.bake = { rt: new Ti(16, 16, { type: 1015, depthBuffer: !0 }), buf: new Float32Array(16 * 16 * 4), cam: new ui(90, 1, 0.05, 80), busy: !1 });
+            const B = __RL.bake || (__RL.bake = __rlBakeNew());
             B.cur = null;
             B.near = null;
+            // a copy still on its way belongs to the old map's probes: they are dropped with it
+            for (const P of B.slots) P.slot = 0;
+            B.slots = [];
           }
         }
-        if (__RL.probes.length) __rlBakeStep(st);
+        // a probe face every third frame (each is a whole extra render of the scene)
+        if (__RL.probes.length && ++__RL.bakeN % 3 === 0) __rlBakeStep(st);
         __rlChoose(cam);
       } catch (e) {
         __RL.err = String(e && e.stack);

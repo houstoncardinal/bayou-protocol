@@ -417,6 +417,10 @@ function __phxCharsSync(state) {
       P.chars.delete(id);
     }
 }
+// (Not passed to the character controller any more: a box that is off (an open door, broken glass) has its
+// collider switched off before every step (__phxPreStep), and switched-off colliders are never hit. The filter was
+// a call from the physics engine back into JavaScript for every collider near every player, every tick: about a
+// tenth of the game's simulation time on a phone.)
 const __kccPred = (c) => {
   const b = __PHX.boxOf.get(c.handle);
   return b ? !b.off : !0;
@@ -457,7 +461,7 @@ function __phxMove(w, dt) {
   __kv.x = w.vel.x * dt;
   __kv.y = stick ? 0 : w.vel.y * dt;
   __kv.z = w.vel.z * dt;
-  k.computeColliderMovement(c.probe, __kv, P.R.QueryFilterFlags.EXCLUDE_SENSORS, __CF.kcc, __kccPred);
+  k.computeColliderMovement(c.probe, __kv, P.R.QueryFilterFlags.EXCLUDE_SENSORS, __CF.kcc);
   P.stats.kcc++;
   const mv = k.computedMovement();
   let nx = w.pos.x + mv.x,
@@ -516,7 +520,7 @@ function __phxMove(w, dt) {
       __kv.x = px;
       __kv.y = 0;
       __kv.z = pz;
-      k.computeColliderMovement(c.probe, __kv, P.R.QueryFilterFlags.EXCLUDE_SENSORS, __CF.kcc, __kccPred);
+      k.computeColliderMovement(c.probe, __kv, P.R.QueryFilterFlags.EXCLUDE_SENSORS, __CF.kcc);
       const m2 = k.computedMovement();
       nx += m2.x;
       nz += m2.z;
@@ -560,21 +564,21 @@ function __phxStepUp(w, c, k, lift, mv) {
   try {
     c.probe.setTranslation({ x: x0, y: y0 + lift, z: z0 });
     __su.up.y = max;
-    k.computeColliderMovement(c.probe, __su.up, F, __CF.kcc, __kccPred);
+    k.computeColliderMovement(c.probe, __su.up, F, __CF.kcc);
     const rise = k.computedMovement().y,
       S = P.stats.step || (P.stats.step = { ok: 0, rise: 0, fwd: 0, land: 0 });
     if (rise < 0.06) return S.rise++, null;
     c.probe.setTranslation({ x: x0, y: y0 + rise + lift, z: z0 });
     __su.f.x = __kv.x;
     __su.f.z = __kv.z;
-    k.computeColliderMovement(c.probe, __su.f, F, __CF.kcc, __kccPred);
+    k.computeColliderMovement(c.probe, __su.f, F, __CF.kcc);
     const f = k.computedMovement(),
       fx = f.x,
       fz = f.z;
     if (Math.hypot(fx, fz) < got + 0.004) return S.fwd++, null;
     c.probe.setTranslation({ x: x0 + fx, y: y0 + rise + lift, z: z0 + fz });
     __su.d.y = -(rise + 0.06);
-    k.computeColliderMovement(c.probe, __su.d, F, __CF.kcc, __kccPred);
+    k.computeColliderMovement(c.probe, __su.d, F, __CF.kcc);
     const dn = k.computedMovement().y,
       y = y0 + rise + dn,
       up = y - y0;

@@ -1051,6 +1051,9 @@ function __flLoad() {
     S.useEffect(() => {
       __FL.subs.add(setRev);
       on && __flLoad();
+      // catch up: a load that finished between the first render and this subscription was missed (the view
+      // then never built: the map's bare base geometry, untextured)
+      setRev(__FL.rev);
       return () => __FL.subs.delete(setRev);
     }, [on]);
     const root = S.useMemo(() => {
